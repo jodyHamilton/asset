@@ -1,0 +1,3 @@
+name = assets
+description = file asset manager
+package = Asset

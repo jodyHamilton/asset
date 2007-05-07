@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * Implementation of hook_install()
+ */
+function asset_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+    	db_query("CREATE TABLE asset (
+			  aid int(10) unsigned NOT NULL,
+			  dirname varchar(128) NOT NULL default '',
+			  extension varchar(128) NOT NULL default '',
+			  filename varchar(255) NOT NULL default '',
+			  filesize int(11) NOT NULL default '0',
+              uid int(10) unsigned NOT NULL,
+              status tinyint unsigned NOT NULL, 
+			  author varchar(128) NOT NULL default '',
+			  title varchar(128) NOT NULL default '',
+			  description text NOT NULL,
+			  PRIMARY KEY  (aid)
+			) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;");
+			db_query("CREATE TABLE asset_node (
+			  aid int(10) unsigned NOT NULL,
+			  nid int(10) unsigned NOT NULL,
+			  refs int(10) unsigned NOT NULL default '0',
+			  PRIMARY KEY  (aid,nid)
+			) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;");
+						
+    case 'pgsql':
+    	//TODO: postgresql 
+      break;
+  }
+  drupal_set_message(t('Asset tables have been configured.'));
+}
+
+function asset_uninstall() {
+  db_query('DROP TABLE {asset}');
+  db_query('DROP TABLE {asset_node}');
+}

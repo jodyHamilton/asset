@@ -1,0 +1,4 @@
+name = Asset Bonus Pack
+description = Extra formatters for Asset.module
+dependencies = asset
+package = Asset
