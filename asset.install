@@ -7,7 +7,7 @@ function asset_install() {
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
-    	db_query("CREATE TABLE asset (
+    	db_query("CREATE TABLE {asset} (
 			  aid int(10) unsigned NOT NULL,
 			  dirname varchar(128) NOT NULL default '',
 			  extension varchar(128) NOT NULL default '',
@@ -20,7 +20,7 @@ function asset_install() {
 			  description text NOT NULL,
 			  PRIMARY KEY  (aid)
 			) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;");
-			db_query("CREATE TABLE asset_node (
+			db_query("CREATE TABLE {asset_node} (
 			  aid int(10) unsigned NOT NULL,
 			  nid int(10) unsigned NOT NULL,
 			  refs int(10) unsigned NOT NULL default '0',
