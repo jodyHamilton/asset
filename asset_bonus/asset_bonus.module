@@ -4,239 +4,257 @@ define('ASSET_PRIVATE',0);
 define('ASSET_PUBLIC',1);
 
 function asset_bonus_menu($may_cache){
-	if(!$may_cache){
-		$items[] = array(
-			'path' => 'admin/settings/asset_bonus',
-			'title' => t('Asset Bonus'),
-			'access' => user_access('administer assets'),
-			'callback' => 'asset_bonus_admin_overview',
-		);
-		$items[] = array(
-  		'path' => 'admin/settings/asset_bonus/overview',
-  		'type' => MENU_DEFAULT_LOCAL_TASK,
-  		'title' => t('Overview'),
-  		'weight' => -10,
-  		'access' => user_access('administer assets'),
-  		'callback' => 'asset_bonus_admin_overview',
-		);
-		$items[] = array(
-  		'path' => 'admin/settings/asset_bonus/mp3player',
-  		'type' => MENU_LOCAL_TASK,
-  		'title' => t('mp3 Player'),
-  		'access' => user_access('administer assets'),
-  		'callback' => 'drupal_get_form',
-  		'callback arguments' => array('asset_bonus_admin_mp3player'),
-		);
+  if(!$may_cache){
+    $items[] = array(
+      'path' => 'admin/settings/asset/asset_bonus',
+      'title' => t('Asset Bonus'),
+      'access' => user_access('administer assets'),
+      'callback' => 'asset_bonus_admin_overview',
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 1,
+    );
+    $items[] = array(
+      'path' => 'admin/settings/asset/asset_bonus/overview',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'title' => t('Overview'),
+      'weight' => -10,
+      'access' => user_access('administer assets'),
+      'callback' => 'asset_bonus_admin_overview',
+    );
+    $items[] = array(
+      'path' => 'admin/settings/asset/asset_bonus/mp3player',
+      'type' => MENU_LOCAL_TASK,
+      'title' => t('mp3 Player'),
+      'access' => user_access('administer assets'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('asset_bonus_admin_mp3player'),
+    );
 
-	}
-	return $items;
+  }
+  return $items;
 }
 
 function asset_bonus_admin_overview(){
-	if(!file_exists(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js')){
-		$output .= '<p>Asset Bonus Pack requires the download of an additional set of files '
-						. ' available <a href="http://digett.com/sites/digett.com/files/asset_bonus.zip">here</a>.</p>';
-	}else{
-		$output .= '<p>Asset Bonus Pack has been successfully configured.</p>';
-	}
-	return $output;
+  if(!file_exists(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js')){
+    $output .= '<p>Asset Bonus Pack requires the download of an additional set of files '
+            . ' available <a href="http://digett.com/asset_bonus.zip">here</a>.</p>';
+  }else{
+    $output .= '<p>Asset Bonus Pack has been successfully configured.</p>';
+  }
+  return $output;
 }
 
 function asset_bonus_mp3player_colors(){
-	return array(
-		'bg' => t('Background'),
-		'leftbg' => t('Left Background'),
-		'lefticon' => t('Left Icon'),
-		'rightbg' => t('Right Background'),
-		'rightbghover' => t('Right Background Hover'),
-		'righticon' => t('Right Icon'),
-		'righticonhover' => t('Right Icon Hover'),
-		'text' => t('Text'),
-		'slider' => t('Slider'),
-		'track' => t('Track'),
-		'border' => t('Border'),
-		'loader' => t('Loader'),
-	);
+  return array(
+    'bg' => t('Background'),
+    'leftbg' => t('Left Background'),
+    'lefticon' => t('Left Icon'),
+    'rightbg' => t('Right Background'),
+    'rightbghover' => t('Right Background Hover'),
+    'righticon' => t('Right Icon'),
+    'righticonhover' => t('Right Icon Hover'),
+    'text' => t('Text'),
+    'slider' => t('Slider'),
+    'track' => t('Track'),
+    'border' => t('Border'),
+    'loader' => t('Loader'),
+  );
 }
-	
+  
 function asset_bonus_admin_mp3player(){
   // Add Farbtastic color picker
   drupal_add_css('misc/farbtastic/farbtastic.css', 'module', 'all', FALSE);
   drupal_add_js('misc/farbtastic/farbtastic.js');
+  drupal_add_js(array('asset_bonus_path' => drupal_get_path('module','asset_bonus')),'setting');
 
   drupal_add_css(drupal_get_path('module','asset_bonus').'/asset_bonus.css');
   drupal_add_js(drupal_get_path('module','asset_bonus').'/asset_bonus.js');
-	
+  
   $colors = asset_bonus_mp3player_colors();
-	$form['palette'] = array(
-		'#type' => 'fieldset',
-		'#title' => t('Color Palette'),
-		'#attributes' => array('id'=>'palette'),
-		);
-	foreach($colors as $key=>$title){
-		$form['palette']['asset_bonus_mp3player_'.$key] = array(
-			'#type' => 'textfield',
-			'#title' => $title,
-			'#default_value' => variable_get('asset_bonus_mp3player_'.$key,''),
-			'#size' => 8,
-		);
-	}
-	$form[] = array('#value' => '<div id="color-map">'.theme('image',drupal_get_path('module','asset_bonus').'/audioplayer/map.gif').'</div>');
-	$form[] = array('#value' => '<div>Audio Player by:<br/>'.l(theme('image',drupal_get_path('module','asset_bonus').'/audioplayer/logo.gif'),'http://www.1pixelout.net/code/audio-player-wordpress-plugin/',array(),null,null,false,true).'</div>');
-	return system_settings_form($form);
+  $form['palette'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Color Palette'),
+    '#attributes' => array('id'=>'palette'),
+    );
+  foreach($colors as $key=>$title){
+    $form['palette']['asset_bonus_mp3player_'.$key] = array(
+      '#type' => 'textfield',
+      '#title' => $title,
+      '#default_value' => variable_get('asset_bonus_mp3player_'.$key,''),
+      '#size' => 8,
+    );
+  }
+  $form[] = array('#value' => '<div id="color-map">'.theme('image',drupal_get_path('module','asset_bonus').'/audioplayer/map.gif').'</div>');
+  $form[] = array('#value' => '<div>Audio Player by:<br/>'.l(theme('image',drupal_get_path('module','asset_bonus').'/audioplayer/logo.gif'),'http://www.1pixelout.net/code/audio-player-wordpress-plugin/',array(),null,null,false,true).'</div>');
+  return system_settings_form($form);
 }
 
-function asset_bonus_assetapi($op='list',$asset=null,$attr=array()){
-  switch($op){					
-		case 'list':
-			$formats['mp3player'] = array(
-				'name' => 'mp3 Player',
-  			'types' => array('mp3'),
-			);
-			$formats['swfobject'] = array(
-    		'name' => 'swfobject',
-    		'types' => array('swf'),
-			);
-			return $formats;
-		case 'init':
-			drupal_add_js(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js');
-			drupal_add_js(drupal_get_path('module','asset_bonus').'/audioplayer/audio-player.js');
-			break;			
-		case 'options':
-		case 'preview':
-		case 'details':
-			$function = 'asset_bonus_'.$attr['format'].'_'.$op;
-			if(function_exists($function)){
-				return call_user_func($function,$asset);
-			}
-			break;
-		case 'render':
-			$function = 'asset_bonus_'.$attr['format'];
-			return theme($function,$asset,$attr);
+function asset_bonus_asset_formatter($op='list',$asset=null,$attr=array()){
+  switch($op){          
+    case 'info':
+      $formats['mp3player'] = array(
+        'name' => 'mp3 Player',
+        'types' => array('local' => array('mp3')),
+        'description' => t('Embed the mp3 file using the !1pixelout audio player',
+          array('!1pixelout'=>l('1pixelout','http://www.1pixelout.net/code/audio-player-wordpress-plugin/'))),
+      );
+      $formats['swfobject'] = array(
+        'name' => 'swfobject',
+        'types' => array('local' => array('swf')),
+        'description' => t('Embed the flash movie using the !swfobject javascript library',
+          array('!swfobject'=>l('swfobject','http://blog.deconcept.com/swfobject/'))),
+      );
+      return $formats;
+    case 'init':
+      drupal_add_js(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js');
+      drupal_add_js(drupal_get_path('module','asset_bonus').'/audioplayer/audio-player.js');
+      break;      
+    case 'options':
+    case 'preview':
+    case 'details':
+    case 'img':
+      $function = 'asset_bonus_'.$attr['format'].'_'.$op;
+      if(function_exists($function)){
+        return call_user_func($function,$asset);
+      }
+      break;
+    case 'render':
+      $function = 'asset_bonus_'.$attr['format'];
+      return theme($function,$asset,$attr);
   }
 }
 
 function asset_bonus_swfobject_options($asset){
-	require_once(drupal_get_path('module','asset_bonus').'/swfheader/swfheader.class.php');
-	$swf = new swfheader();
-	$swf->getDimensions($asset->filepath);
-	$form['width'] = array(
-		'#type' => 'textfield',
-		'#title' => t('Width'),
-		'#description' => t('Width in pixels'),
-		'#default_value' => $swf->width,
-		'#size' => 5,
-		'#required' => true,
-	);
-	$form['height'] = array(
-		'#type' => 'textfield',
-		'#title' => t('Height'),
-		'#description' => t('Height in pixels'),
-		'#default_value' => $swf->height,
-		'#size' => 5,
-		'#required' => true,
-	);
-	$form['version'] = array(
-		'#type' => 'textfield',
-		'#title' => t('Minimum Version'),
-		'#default_value' => $swf->version, 
-		'#size' => 5,
-		'#required' => true,
-	);
-	$form['bgcolor'] = array(
-		'#type' => 'textfield',
-		'#title' => t('Background Color'),
-		'#description' => t('Hex formatted background color like #FFFFFF. Make sure to include the #.'),
-		'#default_value' => '#FFFFFF',
-		'#size' => 7,
-		'#required' => true,
-	);
-	return $form;
+  require_once(drupal_get_path('module','asset_bonus').'/swfheader/swfheader.class.php');
+  $swf = new swfheader();
+  $swf->getDimensions($asset->filepath);
+  $form['width'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Width'),
+    '#description' => t('Width in pixels'),
+    '#default_value' => $swf->width,
+    '#size' => 5,
+    '#required' => true,
+  );
+  $form['height'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Height'),
+    '#description' => t('Height in pixels'),
+    '#default_value' => $swf->height,
+    '#size' => 5,
+    '#required' => true,
+  );
+  $form['version'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Minimum Version'),
+    '#default_value' => $swf->version, 
+    '#size' => 5,
+    '#required' => true,
+  );
+  $form['bgcolor'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Background Color'),
+    '#description' => t('Hex formatted background color like #FFFFFF. Make sure to include the #.'),
+    '#default_value' => '#FFFFFF',
+    '#size' => 7,
+    '#required' => true,
+  );
+  return $form;
 }
 
 function asset_bonus_swfobject_preview($asset){
-	require_once(drupal_get_path('module','asset_bonus').'/swfheader/swfheader.class.php');
-	$swf = new swfheader();
-	list($w,$h) = explode('|',$swf->getDimensions($asset->filepath));
-	$r = ($w > $h) ? ($w / 150) : ($h / 150);
-	$attr = array('height'=>($h/$r),'width'=>($w/$r),'version'=>$swf->version,'bgcolor'=>'#FFFFFF');
-	$output = theme('asset_bonus_swfobject',$asset,$attr);
-	return $output;
+  require_once(drupal_get_path('module','asset_bonus').'/swfheader/swfheader.class.php');
+  $swf = new swfheader();
+  list($w,$h) = explode('|',$swf->getDimensions($asset->filepath));
+  $r = ($w > $h) ? ($w / 150) : ($h / 150);
+  $attr = array('height'=>($h/$r),'width'=>($w/$r),'version'=>$swf->version,'bgcolor'=>'#FFFFFF');
+  $output = theme('asset_bonus_swfobject',$asset,$attr);
+  return $output;
 }
 
 function asset_bonus_swfobject_details($asset){
-	require_once(drupal_get_path('module','asset_bonus').'/swfheader/swfheader.class.php');
-	$swf = new swfheader();
-	$swf->getDimensions($asset->filepath);
-	
-	$details = array(
-  	t('Width') => $swf->width.'px',
-  	t('Height') => $swf->height.'px',
-		t('Flash Version') => $swf->version,
-		t('Compressed') => ($swf->compressed ? t('Yes') : t('No')),
-		t('FPS') => $swf->fps[1],
-		t('Frames') => $swf->frames,
-	);
-	
-	return $details;
+  require_once(drupal_get_path('module','asset_bonus').'/swfheader/swfheader.class.php');
+  $swf = new swfheader();
+  $swf->getDimensions($asset->filepath);
+  
+  $details = array(
+    t('Width') => $swf->width.'px',
+    t('Height') => $swf->height.'px',
+    t('Flash Version') => $swf->version,
+    t('Compressed') => ($swf->compressed ? t('Yes') : t('No')),
+    t('FPS') => $swf->fps[1],
+    t('Frames') => $swf->frames,
+  );
+  
+  return $details;
 }
 
 function theme_asset_bonus_swfobject($asset, $options=array()){
-	$embed_id = 'embed-'.preg_replace('/[^A-Za-z_-]/','-',substr($asset->filename,0,strlen($asset->filename)-4));
-	$div_id = 'swfobject-'.preg_replace('/[^A-Za-z_-]/','-',substr($asset->filename,0,strlen($asset->filename)-4));
-	$embed_id = 'swfobject-object-'.$asset->aid;
-	$div_id = 'swfobject-'.$asset->aid;
-	
-	// build a list of addVariable statements for each flashVar
-	$addVariable = '';
-	foreach((array)$options['vars'] as $k=>$v){
-		$addVariable .= "oSwf.addVariable('$k','$v');\n";
-	}
-	// build a list of addParam statements for known params
-	if($options['transparent']){
-		$addParam .= "oSwf.addParam('wmode','transparent');\n";
-	}
-	
-	$output = <<<OUT
-	<div id="$div_id" class="asset-swfobject">Replacement Text</div>
-	<script type="text/javascript">
-  	var oSwf = new SWFObject("{$asset->url}","$embed_id","{$options['width']}","{$options['height']}","{$options['version']}","{$options['bgcolor']}");
-		$addVariable
-		$addParam
-  	oSwf.write("$div_id");
-		oSwf = null;
-	</script>			
+  $embed_id = 'embed-'.preg_replace('/[^A-Za-z_-]/','-',substr($asset->filename,0,strlen($asset->filename)-4));
+  $div_id = 'swfobject-'.preg_replace('/[^A-Za-z_-]/','-',substr($asset->filename,0,strlen($asset->filename)-4));
+  $embed_id = 'swfobject-object-'.$asset->aid;
+  $div_id = 'swfobject-'.$asset->aid;
+  
+  // build a list of addVariable statements for each flashVar
+  $addVariable = '';
+  foreach((array)$options['vars'] as $k=>$v){
+    $addVariable .= "oSwf.addVariable('$k','$v');\n";
+  }
+  // build a list of addParam statements for known params
+  if($options['transparent']){
+    $addParam .= "oSwf.addParam('wmode','transparent');\n";
+  }
+  
+  $output = <<<OUT
+  <div id="$div_id" class="asset-swfobject">Replacement Text</div>
+  <script type="text/javascript">
+    var oSwf = new SWFObject("{$asset->url}","$embed_id","{$options['width']}","{$options['height']}","{$options['version']}","{$options['bgcolor']}");
+    $addVariable
+    $addParam
+    oSwf.write("$div_id");
+    oSwf = null;
+  </script>      
 OUT;
 
   return $output;
 }
 
+function asset_bonus_mp3player_options($asset){
+  $form['width'] = array('#type' => 'hidden', '#value' => '290');
+  $form['height'] = array('#type' => 'hidden', '#value' => '24');
+  return $form;
+}
+
 function asset_bonus_mp3player_preview($asset){
-	return theme('asset_bonus_mp3player',$asset,$attr);
+  return theme('asset_bonus_mp3player',$asset,$attr);
+}
+
+function asset_bonus_mp3player_img($asset){
+  return drupal_get_path('module','asset_bonus').'/audioplayer.png';
 }
 
 function theme_asset_bonus_mp3player($asset, $options=array()){
-	$swffile = url(drupal_get_path('module','asset_bonus').'/audioplayer/player.swf');
-	$colors = asset_bonus_mp3player_colors();
-	foreach($colors as $key => $title){
-		$color = variable_get('asset_bonus_mp3player_'.$key,'');
-		if($color){
-			$color = str_replace('#','0x',$color);
-			$colorvars .= "oSwf.addVariable('$key','$color');";
-		}
-	}
-	$output = <<<OUT
-	<div id="mp3player-{$asset->aid}" class="asset-swfobject">Replacement Text</div>
-	<script type="text/javascript">
-  	var oSwf = new SWFObject("$swffile","mp3player-object-{$asset->aid}","290","24","7","#FFFFFF");		
-		oSwf.addVariable('playerID','{$asset->aid}');
-		oSwf.addVariable('soundFile','{$asset->url}');
-		$colorvars
-		oSwf.addParam('wmode','transparent');
-		oSwf.addParam('menu','false');
-  	oSwf.write("mp3player-{$asset->aid}");
-		oSwf = null;
-	</script>			
+  $swffile = url(drupal_get_path('module','asset_bonus').'/audioplayer/player.swf');
+  $colors = asset_bonus_mp3player_colors();
+  foreach($colors as $key => $title){
+    $color = variable_get('asset_bonus_mp3player_'.$key,'');
+    if($color){
+      $color = str_replace('#','0x',$color);
+      $colorvars .= "oSwf.addVariable('$key','$color');";
+    }
+  }
+  $output = <<<OUT
+  <div id="mp3player-{$asset->aid}" class="asset-swfobject">Replacement Text</div>
+  <script type="text/javascript">
+    var oSwf = new SWFObject("$swffile","mp3player-object-{$asset->aid}","290","24","7","#FFFFFF");    
+    oSwf.addVariable('playerID','{$asset->aid}');
+    oSwf.addVariable('soundFile','{$asset->url}');
+    $colorvars
+    oSwf.addParam('wmode','transparent');
+    oSwf.addParam('menu','false');
+    oSwf.write("mp3player-{$asset->aid}");
+    oSwf = null;
+  </script>      
 OUT;
   return $output;
 }

@@ -1,0 +1,138 @@
+/**
+ * Default Skin
+ */
+
+/**
+ * TinyMCE pulls in editor_popup.css through js so we include our own version of it
+ * to kill all the unwanted styling.
+ **/
+@import url(editor_popup.css);
+
+#asset-popup{
+  background-color: #0072b9;
+}
+#asset-popup .content{
+  background-color: #d8eaf4;
+}  
+#asset-popup h1{
+  background: #5ab5ee;
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  height: 36px;
+  line-height: 36px;
+  padding: 0 1em;
+}
+#asset-popup-footer{
+  background: #0072b9;
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  padding: 10px 1em;
+}
+#asset-popup-main{
+  padding: 0;
+}
+.crumb-left{
+  height: 25px;
+  line-height: 25px;
+  background: url(images/crumb.bg.gif) no-repeat top left;
+  padding-left: 12px;
+  border: solid 5px #0072b9;
+}
+.crumb-right{
+  height: 25px;
+  line-height: 25px;
+  background: url(images/crumb.bg.gif) no-repeat top right;
+  padding-right: 12px;
+}
+.toolbar{
+  background: url(images/toolbar.top.gif) repeat-x top left;
+  margin-bottom: 5px;
+  height: 32px;
+  line-height: 32px;
+}
+.toolbar .container-inline{
+  height: 32px;
+  background: url(images/newfolder.bg.gif) no-repeat top left;
+}
+.toolbar-separator{
+  padding: 0 1em;
+  font-weight: bold;
+}
+
+#asset-popup #edit-folder{
+  background: transparent url(../../lullacons/folder-option-add.png) no-repeat 0 0;
+  padding: 2px 0 2px 20px;
+  margin: 3px 12px 0;
+  width: 115px;
+  border: none;
+  height: 28px;
+  line-height: 28px;
+  font-size: 11px;
+  vertical-align: middle;
+}
+#asset-popup #edit-newfolder-submit{
+  display: none;
+}
+.toolbar .form-image{
+  padding: 4px;
+  vertical-align: middle;
+  border: none;
+}
+#asset-popup ul.folder-list{
+  margin-left: 5px;
+  border: inset 2px ButtonFace;
+  height: 196px;
+}
+#asset-popup ul.folder-list li{
+}
+#asset-popup ul.folder-list li a{
+  display: block;
+  padding: 0 5px;
+}
+#asset-popup ul.folder-list li a:hover{
+  background-color: Highlight;
+  color: HighlightText;
+}
+#asset-popup .asset-preview{
+  border: inset 2px ButtonFace;
+  height: 196px;
+}
+option:active{
+  background: #ebebeb;
+}
+.button-replacement,
+.button-replacement:link{
+  float: right;
+  padding-left: 12px;
+  height: 27px;
+  line-height: 27px;
+  background: url(images/button.normal.gif) no-repeat top left;
+  margin: 0 10px;
+  text-decoration: none;
+  color: #777;
+}
+.button-replacement span{
+  padding-right: 18px;
+  padding-left: 6px;
+  margin-right: -12px;
+  float: left;
+  height: inherit;
+  background-image: inherit;
+  background-repeat: no-repeat;
+  background-position: top right;
+}
+.button-replacement:hover{
+  background-image: url(images/button.active.gif);
+	text-decoration: none;
+	color: #555;
+}
+#button-edit-cancel{
+  background-image: none;
+  float: left;
+  color: #7fb9df;
+}
+#button-edit-cancel:hover{
+  text-decoration: underline;
+}

@@ -56,43 +56,15 @@ body{
   overflow: auto;
 }
   
-#asset-popup .container-inline label{
-  display: block;
-}
-
 #asset-popup .container-inline .form-submit{
   margin: 0;
 }
-
-
-
-#asset{
-  height: 300px;
-  overflow: auto;
-  border: solid 1px;
+#asset-popup .container-inline .form-item{
+  margin: 0;
 }
-
-#asset .toolbar{
-  width: 100%;
-  background: #eee;
-  border-top: solid 1px #fff;
-  border-bottom: solid 1px #999;
-  height: 22px;
-  overflow: hidden;
-}
-#asset .toolbar a{
-  float: left;
-  width: 16px;
-  height: 16px;
-  padding: 3px;
-  text-align: center;
-}
-#asset .toolbar a:hover{
-  border-top: solid 1px #fff;
-  border-right: solid 1px #999;
-  border-bottom: solid 1px #999;
-  border-left: solid 1px #fff;
-  padding: 2px;
+#asset-popup .asset-selected-preview{
+  float: right;
+  margin-left: 20px;
 }
 
 .item-list ul li.file,
@@ -109,3 +81,22 @@ body{
 .item-list ul li.folder{
   background: url(i/folder-closed-white.png) no-repeat 0 0;
 }
+
+.messages{
+  border: dashed 1px #333;
+  background: #f0f0f0f;
+  background: Highlight;
+  color : #333;
+  color: HighlightText;
+  padding: 10px 100px 10px 20px;
+  margin: 10px 0;
+}
+.messages a.okay{
+  background: ButtonFace;
+  border: outset 2px ButtonFace;
+  color: ButtonText;
+  float: right;
+  padding: 3px 5px;
+  cursor: pointer;
+}
+
