@@ -1,4 +1,5 @@
 <?php
+// $Id$
 require_once (drupal_get_path('module', 'asset') .'/asset_views.inc');
 
 // Load all our module 'on behalfs'.
@@ -12,6 +13,9 @@ foreach ($files as $file) {
     require_once ("./$file->filename");
   }
 }
+
+define('ASSET_PRIVATE', 0);
+define('ASSET_PUBLIC', 1);
 
 /**
  * Implementation of hook_menu()
@@ -78,6 +82,9 @@ function asset_menu($may_cache) {
   return $items;
 }
 
+/**
+ * Implementation of hook_perm().
+ */
 function asset_perm() {
   return array (
     'create assets',
@@ -90,17 +97,37 @@ function asset_perm() {
  * 
  * @param $asset
  *   asset object with filename, filepath, filemime, and filesize properties
+ * @param $form_values
+ *   form_values array from asset creation form. this allows asset_save to set
+ *   the defaults for fields like title, author and permissions.
  */
-function asset_save($asset) {
+function asset_save($asset, $form_values = array()) {
+  $asset->filepath = trim(str_replace(file_directory_path(),'',$asset->filepath),'/');
+  
   $info = pathinfo($asset->filepath);
-
+  if($info['dirname'] == '.'){
+    $info['dirname'] = '';
+  }
+  
+  $default_fields = array('title', 'author', 'description', 'roles', 'status');
+  foreach($default_fields as $field){
+    $asset->$field = $form_values[$field]; 
+  }
+  
   $asset->uid = $asset->uid ? $asset->uid : $GLOBALS['user']->uid;
   $asset->status = $asset->status ? ASSET_PUBLIC : ASSET_PRIVATE;
   $asset->type = $asset->type ? $asset->type : 'local';
-
+  
   // make sure to set aid on the asset object, so modules can use it in assetapi insert
   $asset->aid = db_next_id('{asset}_aid');
   db_query('INSERT INTO {asset} (aid,type,dirname,filename,extension,filesize,uid,status,title,author,description) VALUE (%d,"%s","%s","%s","%s",%d,%d,%d,"%s","%s","%s")', $asset->aid, $asset->type, $info['dirname'], $info['basename'], $info['extension'], $asset->filesize, $asset->uid, $asset->status, $asset->title, $asset->author, $asset->description);
+  
+  if($asset->status == ASSET_PRIVATE && is_array($asset->roles)){
+    foreach($asset->roles as $rid => $status){
+      db_query('INSERT INTO {asset_role} (aid, rid, status) VALUES (%d, %d, %d)', array($asset->aid, $rid, ($status ? ASSET_PUBLIC : ASSET_PRIVATE))); 
+    }
+  }
+  
   module_invoke_all('assetapi', 'insert', $asset);
   
   return asset_load($asset->aid);
@@ -142,9 +169,19 @@ function asset_load($param = array(), $reset = NULL) {
   if(!$asset){
     return false;
   }
+  $result = db_query('SELECT * FROM {asset_role} WHERE aid=%d', $asset->aid);
+  while($role = db_fetch_array($result)){
+    $asset->roles[$role['rid']] = $role['status'] ? $role['rid'] : 0;
+  }
+  
   $asset->filepath = file_create_path($asset->dirname . '/' . $asset->filename);
   $asset->url = file_create_url($asset->dirname . '/' . $asset->filename);
   $asset->extension = strtolower($asset->extension);
+  $asset->title = $asset->title ? $asset->title : $asset->filename;
+  
+  if($asset->type == 'directory' && $asset->dirname == '' && $asset->filename == $GLOBALS['user']->name){
+    $asset->title = t('My Assets');
+  }
 
   if ($asset->aid) {
     if ($extra = module_invoke_all('assetapi', 'load', $asset)) {
@@ -156,27 +193,6 @@ function asset_load($param = array(), $reset = NULL) {
   }
 
   return $asset;
-}
-
-/**
- * Access control function.  The status key represents a user's ability to USE this asset,
- * not a user's ability to VIEW this asset, so this function is only really used to conrol 
- * access in the asset insertion process. 
- */
-function asset_access($asset, $account = null) {
-  global $user;
-  static $perm = array ();
-
-  if (is_null($account)) {
-    $account = $user;
-  }
-
-  // User #1 has all privileges:
-  if ($account->uid == 1) {
-    return TRUE;
-  }
-
-  return (($account->uid == $asset->uid) || ($asset->status == ASSET_PUBLIC));
 }
 
 /**
@@ -226,25 +242,12 @@ function asset_admin_settings() {
   return system_settings_form($form);
 }
 
-function theme_asset_wizard_theme_form($form){
-  foreach(element_children($form) as $filename){
-    if(file_exists(dirname($filename).'/asset_wizard.png')){
-      $screenshot = theme('image',dirname($filename).'/asset_wizard.png');
-    }else{
-      $screenshot = 'No screenshot available';
-    }
-    $rows[] = array(
-      $screenshot,
-      '<strong>'.basename(dirname($filename)).'</strong><br/>'.$filename,
-      drupal_render($form[$filename]),
-    );
-  }
-  return theme('table',array(t('Screenshot'),t('Name'),''),$rows);
-}
-
+/**
+ * Menu callback for selection of default formatting options.
+ */
 function asset_admin_formatter_defaults(){
   $form[] = array('#value' => '<p>This form is currently just a placeholder. The values are not used anywhere yet.</p>');
-  $formatters = asset_get_formatters();
+  $formatters = asset_get_formatters(true);
   foreach ($formatters as $type => $exts){
     $form[$type] = array(
       '#type' => 'fieldset',
@@ -267,24 +270,6 @@ function asset_admin_formatter_defaults(){
     }
   }
   return system_settings_form($form);
-}
-
-function theme_asset_admin_formatter_defaults($form){
-  $formatters = asset_get_formatters();
-  foreach($formatters as $type => $exts){
-    $rows = array();
-    foreach($exts as $ext => $formats){
-      unset($form[$type]['asset_default_formatter_'. $type . '_'.$ext]['#title']);
-      unset($form[$type]['asset_default_formatter_teaser_'. $type . '_'.$ext]['#title']);
-      $rows[] = array(
-        $ext,
-        drupal_render($form[$type]['asset_default_formatter_'. $type . '_'.$ext]),
-        drupal_render($form[$type]['asset_default_formatter_teaser_'. $type . '_'.$ext]),
-      );
-    }
-    $form[$type]['#value'] = theme('table',array('','Full Page','Teaser'),$rows);
-  }
-  return drupal_render($form);
 }
 
 /**
@@ -311,7 +296,6 @@ function asset_nodeapi(& $node, $op, $a3 = NULL, $a4 = NULL) {
       }
       foreach ($refs as $aid => $ref) {
         db_query('INSERT INTO {asset_node} (aid,nid,refs) VALUES (%d,%d,%d)', $aid, $node->nid, $ref);
-        drupal_set_message('found '.$ref.' refs of asset#'.$aid);
       }
       break;
     case 'load' :
@@ -346,7 +330,19 @@ function asset_filter($op, $delta = 0, $format = -1, $text = '') {
 }
 
 /**
- * Return all img_assist macros as an array.
+ * Implementation of hook_filter_tips().
+ */
+function asset_filter_tips($delta, $format, $long = false) {
+  if ($long) {
+    return t('Inline assets are allowed.  Use the Insert Assets link or the WYSIWYG editor button to insert the proper format.');
+  }
+  else {
+    return t('Inline assets are allowed.');
+  }
+} 
+
+/**
+ * Return all macros as an array.
  */
 function asset_get_macros($text) {
   $m = array ();
@@ -387,13 +383,6 @@ function asset_render_macro($attr = array ()) {
   } else {
     return theme('asset_render_default', $asset);
   }
-}
-
-/**
- * Default rendering available to all assets.
- */
-function theme_asset_render_default($asset) {
-  return '<a href="' . url($asset->url) . '" class="asset">' . ($asset->title ? $asset->title : $asset->filename) . '</a>';
 }
 
 /**
@@ -472,6 +461,241 @@ function asset_formatter_options($type = '*', $filename = null) {
   }
   return $options;
 }
+
+/**
+ * Menu callback to load the asset popup window.
+ */
+function asset_wizard() {
+  // all wizard related functionality first comes through this function so load the wizard inc
+  require_once (drupal_get_path('module', 'asset') . '/asset_wizard.inc');
+
+  drupal_add_js(drupal_get_path('module', 'asset') . '/asset.js');
+  drupal_add_css(drupal_get_path('module', 'asset') . '/asset.css');
+  $theme = variable_get('asset_wizard_theme',drupal_get_path('module','asset').'/themes/default/asset_wizard.css');
+  drupal_add_css($theme);
+  
+  switch (arg(2)) {
+    case 'textarea' :
+      drupal_add_js(drupal_get_path('module', 'asset') . '/asset_textarea.js');
+      break;
+    case 'tinymce' :
+      drupal_add_js(drupal_get_path('module', 'tinymce') . '/tinymce/jscripts/tiny_mce/tiny_mce_popup.js');
+      drupal_add_js(drupal_get_path('module', 'asset') . '/tinymce/asset_tinymce.js');
+      break;
+  }
+  $output = drupal_get_form('asset_wizard_form');
+  ob_end_clean();
+  print theme('asset_popup', $output);
+  exit;
+}
+
+/**
+ * Implementation of hook_elements
+ * This is where we add the link to textareas
+ */
+function asset_elements() {
+  $type['textarea'] = array ('#process' => array ('asset_textarea' => array()));
+  return $type;
+}
+
+/**
+ * The #process callback function for the textareas
+ */
+function asset_textarea($element) {
+  if(_asset_page_match()){
+    $output = theme('asset_textarea_link', $element);
+    $element['#suffix'] .= $output;
+  }
+  return $element;
+}
+
+/**
+ * Should we show the insert access link, determined by admin setting
+ * Borrowed from tinymce.module
+ *
+ * @return
+ *   TRUE if can render, FALSE if not allowed.
+ */
+function _asset_page_match() {
+  $page_match = FALSE;
+  $access_option = variable_get('asset_access_option',1);
+  $access_pages = variable_get('asset_access_pages',"node/add/*\nnode/*/edit");
+
+  if ($access_pages) {
+    // If the PHP option wasn't selected
+    if ($access_option < 2) {
+      $path = drupal_get_path_alias($_GET['q']);
+      $regexp = '/^('. preg_replace(array('/(\r\n?|\n)/', '/\\\\\*/', '/(^|\|)\\\\<front\\\\>($|\|)/'), array('|', '.*', '\1'. preg_quote(variable_get('site_frontpage', 'node'), '/') .'\2'), preg_quote($access_pages, '/')) .')$/';
+      $page_match = !($access_option xor preg_match($regexp, $path));
+    }
+    else {
+      $page_match = drupal_eval($access_pages);
+    }
+  }
+  // No pages were specified to block so show on all
+  else {
+    $page_match = TRUE;
+  }
+
+  return $page_match;
+}
+
+/**
+ * Menu Callback from javascript to print an assets preview
+ */
+function asset_js_preview($aid, $show_details=true, $return=false) {
+  $asset = asset_load($aid);
+  $formatters = asset_get_formatters();
+  if (isset ($formatters[$asset->type][$asset->extension][0])) {
+    $format = $formatters[$asset->type][$asset->extension][0];
+  } else if( isset($formatters[$asset->type]['*'][0]) ){
+    $format = $formatters[$asset->type]['*'][0];
+  } else {
+    $format = $formatters['*']['*'][0];
+  }
+  $output .= '<div>' . $asset->filename . '</div>';
+  $output .= module_invoke($format['module'], 'asset_formatter', 'preview', $asset, $format);
+
+  if($show_details){
+    $details[t('File Size')] = format_size($asset->filesize);
+    $details = array_merge($details, (array) module_invoke($format['module'], 'asset_formatter', 'details', $asset, $format));
+    foreach ($details as $label => $value) {
+      $output .= '<div><strong>' . check_plain($label) . '</strong>: ' . check_plain($value) . '</div>';
+    }
+  }
+
+  if($return){
+    return $output;
+  }
+    
+  print $output;
+  exit;
+}
+
+/**
+ * Callback function to output an image for preview of an asset.
+ */
+function asset_img_preview($aid, $module = NULL, $format = NULL) {
+  $asset = asset_load($aid);
+  if ($module) {
+    $src = module_invoke($module, 'asset_formatter', 'img', $asset, array ('format' => $format));
+  }
+  if (!$src) {
+    $src = module_invoke('asset', 'asset_formatter', 'img', $asset);
+  }
+  
+  if(strpos($src, 'http') === 0){
+    return drupal_goto($src);
+  }
+  return asset_img_output($src);
+}
+
+/**
+ * Modified version of file_transfer()
+ * 
+ * Only output image formats and do not require src to be in file_directory_path
+ */
+function asset_img_output($src) {
+  ob_end_clean();
+
+  $mimes = array (
+    'jpg' => 'image/jpeg',
+    'gif' => 'image/gif',
+    'png' => 'image/x-png',
+  );
+
+  $info = pathinfo($src);
+  if (!$mimes[$info['extension']]) {
+     return drupal_not_found();
+  }
+
+  header('Content-type: ' . $mimes[$info['extension']]);
+
+  if ($fd = fopen($src, 'rb')) {
+    while (!feof($fd)) {
+      print fread($fd, 1024);
+    }
+    fclose($fd);
+  } else {
+    drupal_not_found();
+  }
+  exit ();
+}
+
+/**
+ * Wrapper for file_check_directory that also checks/adds a matching asset
+ */
+function asset_check_directory(&$directory, $mode = 0, $form_item = NULL){
+  $return = file_check_directory(file_create_path($directory), $mode, $form_item);
+  
+  $pathinfo = asset_pathinfo($directory);
+  
+  if($return && ($mode & FILE_CREATE_DIRECTORY)){
+    $asset = asset_load(array('dirname'=> $pathinfo['dirname'], 'filename' => $pathinfo['filename']));
+    if(!$asset){
+      $asset = new stdClass();
+      $asset->filepath = $directory;
+      $asset->filesize = 0;
+      $asset->type = 'directory';
+      asset_save($asset);
+    }
+  }
+  
+  return $return;
+}
+
+/**
+ * Get the default formatter for a given type and extension
+ */
+function asset_get_default_formatter($type, $ext, $teaser = false){
+  $prefix = 'asset_default_formatter_' . ($teaser ? 'teaser_' : '');
+  $vars = array(
+    $prefix . $type . '_' . $ext,
+    $prefix . $type . '_*',
+    $prefix . '*_*',
+  );
+  
+  foreach($vars as $var){
+    if($formatter = variable_get($var, false)){
+      break;
+    }
+  }
+  if(!$formatter){
+    $formatter = 'asset:link';
+  }
+  return $formatter;
+}
+
+/**
+ * Helper function to build a query string from an array
+ */
+function asset_build_query($data){
+  foreach($data as $k=>$v){
+    $items[] = "$k=$v";
+  }
+  return join('&',$items);
+}
+
+/**
+ * wrapper around pathinfo() that strips file_directory_path from path and .
+ * from dirname
+ */
+function asset_pathinfo($path){
+  $path = trim(str_replace(file_directory_path(),'',$path),'/');
+    
+  $info = pathinfo($path);
+  if($info['dirname'] == '.'){
+    $info['dirname'] = '';
+  }
+  
+  return $info;
+  
+}
+
+
+/** 
+ * Asset API Implementation ===================================================
+ */
 
 /**
  * Implementation of hook_asset_formatter().
@@ -569,185 +793,118 @@ function asset_asset_formatter($op = 'info', $asset = NULL, $attr = array()){
 }
 
 /**
- * Implemetation of hook_assetapi()
+ * Implementation of hook_asset_type().
  */
-/** REMOVE
-function asset_assetapi($op = 'list', $asset = null, $attr = array ()) {
-  switch ($op) {
-    case 'list' :
-      $formats['link'] = array (
-        'name' => t('Link'), 
-        'types' => array ('*'),
-        'description' => t('A simple download link.'),
+function asset_asset_type($op = 'info', $delta = 0, $form_values=array()){
+  switch($op){
+    case 'info':
+      return array(
+        'upload' => array(
+          'value' => t('Upload'),
+          'title' => t('Upload a new file.'),
+          'src' => drupal_get_path('module','asset').'/lullacons/doc-option-add.png',
+        ),
+        'directory' => array(
+          'value' => t('New Folder'),
+          'title' => t('Create a new folder.'),
+          'src' => drupal_get_path('module','asset').'/lullacons/folder-option-add.png',
+        ),
       );
-      $formats['image'] = array (
-        'name' => t('Image'), 
-        'types' => array ('jpg','gif','png'),
-        'description' => t('The full-size image.'),
+    case 'form':
+      $form['module'] = array('#type'=>'value', '#value'=>'asset');
+      if($delta == 'upload'){
+        $form['upload'] = array(
+          '#type' => 'file',
+          '#title' => t('New File'),
+          '#size' => 35,
+        );
+      }
+      $form['#attributes']['enctype'] = 'multipart/form-data';
+      return $form;
+    case 'validate':
+      // must return a valid asset aid
+      if($delta == 'upload'){
+        if($file = file_check_upload('upload')){
+          $path = file_create_path($form_values['parent'].'/'.$file->filename);
+          if($file = file_save_upload('upload', $path)){
+            $asset = asset_save($file, $form_values);
+            return $asset->aid;
+          }else{
+            form_set_error('upload','Error saving file to <em>'.$path.'</em>');
+          }
+        }else{
+          form_set_error('upload','Error uploading file</em>');
+        }
+      }else{
+        $dir = join(array($form_values['parent'],$form_values['title']), '/');
+        if(asset_check_directory($dir, FILE_CREATE_DIRECTORY)){
+          $query = $_GET;
+          unset($query['q']);
+          $query['dir'] = trim(str_replace(file_create_path(), '', $dir),'/');
+          drupal_goto($_GET['q'],asset_build_query($query));
+        }else{
+          form_set_error('title', t('Error creating directory.'));
+        }
+      }
+      break;
+    case 'submit':
+      break;
+  }
+      
+}
+
+/**
+ * Theme Functions ============================================================
+ */
+
+/**
+ * Theme the wizard theme selection table.
+ */
+function theme_asset_wizard_theme_form($form){
+  foreach(element_children($form) as $filename){
+    if(file_exists(dirname($filename).'/asset_wizard.png')){
+      $screenshot = theme('image',dirname($filename).'/asset_wizard.png');
+    }else{
+      $screenshot = 'No screenshot available';
+    }
+    $rows[] = array(
+      $screenshot,
+      '<strong>'.basename(dirname($filename)).'</strong><br/>'.$filename,
+      drupal_render($form[$filename]),
+    );
+  }
+  return theme('table',array(t('Screenshot'),t('Name'),''),$rows);
+}
+
+function theme_asset_admin_formatter_defaults($form){
+  $formatters = asset_get_formatters();
+  foreach($formatters as $type => $exts){
+    $rows = array();
+    foreach($exts as $ext => $formats){
+      unset($form[$type]['asset_default_formatter_'. $type . '_'.$ext]['#title']);
+      unset($form[$type]['asset_default_formatter_teaser_'. $type . '_'.$ext]['#title']);
+      $rows[] = array(
+        $ext,
+        drupal_render($form[$type]['asset_default_formatter_'. $type . '_'.$ext]),
+        drupal_render($form[$type]['asset_default_formatter_teaser_'. $type . '_'.$ext]),
       );
-      return $formats;
-    case 'options' :
-      switch ($attr['format']) {
-        case 'image' :
-          $info = image_get_info(file_create_path($asset->filepath));
-          $form['height'] = array (
-            '#type' => 'textfield',
-            '#title' => t('Height'),
-            '#size' => '10',
-            '#default_value' => $info['height'],            
-          );
-          $form['width'] = array (
-            '#type' => 'textfield',
-            '#title' => t('Width'),
-            '#size' => '10',
-            '#default_value' => $info['width'],            
-          );
-          $form['resizable'] = array (
-            '#type' => 'hidden',
-            '#value' => 'true',
-          );
-          return $form;
-        default :
-          return array();
-      }
-      break;
-    case 'preview' :
-      switch ($attr['format']) {
-        case 'image' :
-          return theme('image', file_create_path($asset->filepath), '', '', array ('width' => '100'), false);
-        case 'link' :
-          return;
-      }
-      break;
-    case 'details' :
-      switch ($attr['format']) {
-        case 'image' :
-          $info = image_get_info(file_create_path($asset->filepath));
-          return array (
-            t('Width') => $info['width'] . 'px', 
-            t('Height') => $info['height'] . 'px',
-          );
-      }
-      return array ();
-    case 'img' :
-      switch ($attr['format']) {
-        case 'image' :
-          return file_create_path($asset->filepath);
-        case 'link' :
-        default :
-          // when we get around to building icons.
-          $icon = drupal_get_path('module', 'asset') . '/icons/' . $asset->extension . '.png';
-          if (file_exists($icon)) {
-            return $icon;
-          }
-          // if all else fails send back a transparent gif so the default bg image shows
-          return drupal_get_path('module', 'asset') . '/transparent.gif';
-      }
-      break;
-    case 'render' :
-      switch ($attr['format']) {
-        case 'image' :
-          $img_attributes = array ();
-          if ($attr['height']) {
-            $img_attributes['height'] = $attr['height'];
-          }
-          if ($attr['width']) {
-            $img_attributes['width'] = $attr['width'];
-          }
-
-          return '<img src="' . file_create_url($asset->filepath) . '" ' . drupal_attributes($img_attributes) . ' />';
-
-        default :
-          return theme('asset_render_default', $asset);
-      }
-  }
-}
-END REMOVE **/
-
-/**
- * Menu callback to load the asset popup window.
- */
-function asset_wizard() {
-  // all wizard related functionality first comes through this function so load the wizard inc
-  require_once (drupal_get_path('module', 'asset') . '/asset_wizard.inc');
-
-  drupal_add_js(drupal_get_path('module', 'asset') . '/asset.js');
-  drupal_add_css(drupal_get_path('module', 'asset') . '/asset.css');
-  $theme = variable_get('asset_wizard_theme',drupal_get_path('module','asset').'/themes/default/asset_wizard.css');
-  drupal_add_css($theme);
-  
-  switch (arg(2)) {
-    case 'textarea' :
-      drupal_add_js(drupal_get_path('module', 'asset') . '/asset_textarea.js');
-      break;
-    case 'tinymce' :
-      drupal_add_js(drupal_get_path('module', 'tinymce') . '/tinymce/jscripts/tiny_mce/tiny_mce_popup.js');
-      drupal_add_js(drupal_get_path('module', 'asset') . '/tinymce/asset_tinymce.js');
-      break;
-  }
-  $output = drupal_get_form('asset_wizard_form');
-  ob_end_clean();
-  print theme('asset_popup', $output);
-  exit;
-}
-
-/**
- * Implementation of hook_elements
- * This is where we add the link to textareas
- */
-function asset_elements() {
-  $type['textarea'] = array ('#process' => array ('asset_textarea' => array()));
-  return $type;
-}
-
-/**
- * The #process callback function for the textareas
- */
-function asset_textarea($element) {
-  if(_asset_page_match()){
-    $output = theme('asset_textarea_link', $element);
-    $element['#suffix'] .= $output;
-  }
-  return $element;
-}
-
-/**
- * Should we show the insert access link, determined by admin setting
- * Borrowed from tinymce.module
- *
- * @return
- *   TRUE if can render, FALSE if not allowed.
- */
-function _asset_page_match() {
-  $page_match = FALSE;
-  $access_option = variable_get('asset_access_option',1);
-  $access_pages = variable_get('asset_access_pages',"node/add/*\nnode/*/edit");
-
-  if ($access_pages) {
-    // If the PHP option wasn't selected
-    if ($access_option < 2) {
-      $path = drupal_get_path_alias($_GET['q']);
-      $regexp = '/^('. preg_replace(array('/(\r\n?|\n)/', '/\\\\\*/', '/(^|\|)\\\\<front\\\\>($|\|)/'), array('|', '.*', '\1'. preg_quote(variable_get('site_frontpage', 'node'), '/') .'\2'), preg_quote($access_pages, '/')) .')$/';
-      $page_match = !($access_option xor preg_match($regexp, $path));
     }
-    else {
-      $page_match = drupal_eval($access_pages);
-    }
+    $form[$type]['#value'] = theme('table',array('','Full Page','Teaser'),$rows);
   }
-  // No pages were specified to block so show on all
-  else {
-    $page_match = TRUE;
-  }
-
-  return $page_match;
+  return drupal_render($form);
 }
 
+/**
+ * Default rendering available to all assets.
+ */
+function theme_asset_render_default($asset) {
+  return '<a href="' . url($asset->url) . '" class="asset">' . ($asset->title ? $asset->title : $asset->filename) . '</a>';
+}
 
 /**
  * Theme the textarea link
  */
 function theme_asset_textarea_link($element) {
-  $output = '<div><a class="asset-textarea-link" id="asset-link-' . $element['#id'] . '" title="' . t('Click here to insert assets') . '" href="' . url('asset/wizard/textarea', 'textarea=' . $element['#name']) . '" onclick="window.open(this.href, \'asset_textarea_link\', \'width=600,height=400,scrollbars=yes,status=yes,resizable=yes,toolbar=no,menubar=no\'); return false">';
   $link = l(t('Insert Assets'),'asset/wizard/textarea',array(
     'class'=>'asset-textarea-link',
     'id'=>'asset-link-' . $element['#id'],
@@ -757,121 +914,3 @@ function theme_asset_textarea_link($element) {
   return $output;
 }
 
-/**
- * Menu Callback from javascript to print an assets preview
- */
-function asset_js_preview($aid, $show_details=true, $return=false) {
-  $asset = asset_load($aid);
-  $formatters = asset_get_formatters();
-  if (isset ($formatters[$asset->type][$asset->extension][0])) {
-    $format = $formatters[$asset->type][$asset->extension][0];
-  } else if( isset($formatters[$asset->type]['*'][0]) ){
-    $format = $formatters[$asset->type]['*'][0];
-  } else {
-    $format = $formatters['*']['*'][0];
-  }
-  $output .= '<div>' . $asset->filename . '</div>';
-  $output .= module_invoke($format['module'], 'asset_formatter', 'preview', $asset, $format);
-
-  if($show_details){
-    $details[t('File Size')] = format_size($asset->filesize);
-    $details = array_merge($details, (array) module_invoke($format['module'], 'asset_formatter', 'details', $asset, $format));
-    foreach ($details as $label => $value) {
-      $output .= '<div><strong>' . check_plain($label) . '</strong>: ' . check_plain($value) . '</div>';
-    }
-  }
-
-  if($return){
-    return $output;
-  }
-    
-  print $output;
-  exit;
-}
-
-/**
- * Callback function to output an image for preview of an asset.
- */
-function asset_img_preview($aid, $module = NULL, $format = NULL) {
-  $asset = asset_load($aid);
-  if ($module) {
-    $src = module_invoke($module, 'asset_formatter', 'img', $asset, array ('format' => $format));
-  }
-  if (!$src) {
-    $src = module_invoke('asset', 'asset_formatter', 'img', $asset);
-  }
-  //drupal_goto($src);
-  asset_img_output($src);
-}
-
-/**
- * Modified version of file_transfer()
- * 
- * Only output image formats and do not require src to be in file_directory_path
- */
-function asset_img_output($src) {
-  ob_end_clean();
-
-  $mimes = array (
-    'jpg' => 'image/jpeg',
-    'gif' => 'image/gif',
-    'png' => 'image/x-png',
-  );
-
-  $info = pathinfo($src);
-  if (!$mimes[$info['extension']]) {
-    drupal_not_found();
-  }
-
-  header('Content-type: ' . $mimes[$info['extension']]);
-
-  if ($fd = fopen($src, 'rb')) {
-    while (!feof($fd)) {
-      print fread($fd, 1024);
-    }
-    fclose($fd);
-  } else {
-    drupal_not_found();
-  }
-  exit ();
-}
-
-function asset_check_directory(&$directory, $mode = 0, $form_item = NULL){
-  if(!$directory){
-    return false;
-  }
-//  if(strpos($directory, file_directory_path()) !== 0){
-    $directory = file_create_path($directory);
-//  }
-  $return = file_check_directory($directory, $mode, $form_item);
-  if($mode & FILE_CREATE_DIRECTORY){
-    $asset = asset_load(array('dirname'=> dirname($directory), 'filename' => basename($directory)));
-    if(!$asset){
-      $asset = new stdClass();
-      $asset->filepath = $directory;
-      $asset->filesize = 0;
-      asset_save($asset);
-    }
-  }
-  
-  return $return;
-}
-
-function asset_get_default_formatter($type, $ext, $teaser = false){
-  $prefix = 'asset_default_formatter_' . ($teaser ? 'teaser_' : '');
-  $vars = array(
-    $prefix . $type . '_' . $ext,
-    $prefix . $type . '_*',
-    $prefix . '*_*',
-  );
-  
-  foreach($vars as $var){
-    if($formatter = variable_get($var, false)){
-      break;
-    }
-  }
-  if(!$formatter){
-    $formatter = 'asset:link';
-  }
-  return $formatter;
-}

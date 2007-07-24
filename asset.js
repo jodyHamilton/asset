@@ -16,7 +16,7 @@ $(document).ready(function(){
   });
   
   // replace buttons with links for better styling
-  $("#asset-popup-footer input[@type=submit]").each(function(){
+  $("#1asset-popup-footer input[@type=submit]").each(function(){
     var button = this;
     var html = '<a class="button-replacement" id="button-' + button.id + '" href="#"><span>' + button.value + '</span></a>';
     $(html).prependTo($("#asset-popup-footer")).click(function(){
@@ -37,5 +37,43 @@ $(document).ready(function(){
   $("#button-edit-cancel").click(cancelAction);
   $("#button-edit-cancel span").html($("#edit-cancel")[0].alt);
   
+  $(window).bind('resize', function(){
+    var h = window.innerHeight ||
+        $.boxModel && document.documentElement.clientHeight || 
+        document.body.clientHeight;
+    
+    h = h - parseInt($('.toolbar:eq(0)').height()) - parseInt($('#asset-popup-footer').height());
+    //$('#asset-popup-main').height(h);
+  }).trigger('resize');
+  
+  $('input[@name=status]').change(updatePermissions);
+  updatePermissions();
+  locationBar();
+  
   initLoader();
 });
+
+function locationBar(){
+  if($('.location ul').size() < 1){
+    return false;
+  }
+ 
+  $('<span>'+$('.location li:eq(0) a').html()+'</span>').prependTo($('.location'));
+  $('.location').click(
+    function(){
+      $('ul',this).toggle();
+    }
+  );
+}
+
+function updatePermissions(){
+  if($('#permissions-private').size() < 1){
+    return false;
+  }
+  
+  if($('#permissions-private')[0].checked){
+    $('.roles input').removeAttr('disabled');
+  }else{
+    $('.roles input').attr('disabled','disabled');
+  }
+}

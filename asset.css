@@ -62,7 +62,7 @@ body{
 #asset-popup .container-inline .form-item{
   margin: 0;
 }
-#asset-popup .asset-selected-preview{
+.asset-selected-preview{
   float: right;
   margin-left: 20px;
 }
@@ -80,6 +80,10 @@ body{
 
 .item-list ul li.folder{
   background: url(i/folder-closed-white.png) no-repeat 0 0;
+}
+
+.form-radios .roles{
+  margin-left: 2em;
 }
 
 .messages{

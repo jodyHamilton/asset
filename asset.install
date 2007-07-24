@@ -27,6 +27,12 @@ function asset_install() {
         refs int(10) unsigned NOT NULL default '0',
         PRIMARY KEY  (aid,nid)
       ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;");
+      db_query("CREATE TABLE {asset_role} (
+        aid int(10) unsigned NOT NULL,
+        rid int(10) unsigned NOT NULL,
+        status tinyint unsigned NOT NULL default '0',
+        PRIMARY KEY  (aid,rid)
+      ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;");
             
     case 'pgsql':
       //TODO: postgresql 
@@ -48,7 +54,50 @@ function asset_update_1(){
   return $ret; 
 }
 
+function asset_update_2(){
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("UPDATE {asset} SET dirname = TRIM('/' FROM REPLACE(dirname,'sites/default/files',''))");
+      break;
+    case 'pgsql':
+      break;
+  }
+  return $ret; 
+}
+
+/*
+ * Add asset_role table
+ */
+function asset_update_3(){
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("CREATE TABLE {asset_role} (
+        aid int(10) unsigned NOT NULL,
+        rid int(10) unsigned NOT NULL,
+        status tinyint unsigned NOT NULL default '0',
+        PRIMARY KEY  (aid,rid)
+      ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;");
+  }
+  return $ret;
+}
+
+/**
+ * Give directories their own asset type.
+ */
+function asset_update_4(){
+  $ret[] = update_sql("UPDATE {asset} SET type='directory' WHERE type='local' AND extension=''");
+  $dir = 'PUBLIC';
+  if(asset_check_directory($dir, FILE_CREATE_DIRECTORY)){
+    drupal_set_message('Created PUBLIC asset directory');
+    db_query("UPDATE {asset} SET status=1 WHERE type='directory' AND dirname='' AND filename='PUBLIC'");
+  }
+  return $ret;
+}
+
 function asset_uninstall() {
   db_query('DROP TABLE {asset}');
   db_query('DROP TABLE {asset_node}');
+  db_query('DROP TABLE {asset_role}');
 }
