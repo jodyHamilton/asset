@@ -265,7 +265,6 @@ function asset_bonus_mp3player_img($asset){
 function theme_asset_bonus_mp3player($asset, $options=array()){
   global $base_url;
   $swffile = $base_url .'/'. drupal_get_path('module', 'asset_bonus') .'/audioplayer/player.swf';
-print "swffile=$swffile<br>\n";
   $colors = asset_bonus_mp3player_colors();
   foreach($colors as $key => $title){
     $color = variable_get('asset_bonus_mp3player_'.$key,'');
