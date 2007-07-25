@@ -105,14 +105,17 @@ function asset_bonus_asset_formatter($op='list',$asset=null,$attr=array()){
         'description' => t('Embed the flash movie using the !swfobject javascript library',
           array('!swfobject'=>l('swfobject','http://blog.deconcept.com/swfobject/'))),
       );
-      $formats['id3'] = array(
-        'name' => 'id3',
-        'types' => array('local' => array( // @TODO: what are these?
-          /*aud*/ 'mp3', 'wav', 'aac', 'ram',
-          /*vid*/ 'avi', 'mov', 'wmv', 'mpeg', 'mp4', 'mpeg2', 'dv', 'swf',
-          /*img*/ 'bmp', 'gif', 'jpg', 'png')),
-        'description' => t('Display the getid3 Audio/Video information'),
-      );
+      // @NOTE: the formatter info array is cached which causes problems here
+      if (_asset_is_id3()) {
+        $formats['id3'] = array(
+          'name' => 'id3',
+          'types' => array('local' => array( // @TODO: what are these?
+            /*aud*/ 'mp3', 'wav', 'aac', 'ram',
+            /*vid*/ 'avi', 'mov', 'wmv', 'mpeg', 'mp4', 'mpeg2', 'dv', 'swf',
+            /*img*/ 'bmp', 'gif', 'jpg', 'png')),
+          'description' => t('Display the getid3 Audio/Video information'),
+        );
+      }
       return $formats;
     case 'init':
       drupal_add_js(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js');
@@ -170,7 +173,9 @@ function asset_bonus_swfobject_options($asset){
   );
 
   // add the id3 options
-  $form = array_merge($form, asset_bonus_id3_options_form());
+  if (isset($asset->id3)) {
+    $form = array_merge($form, asset_bonus_id3_options_form());
+  }
 
   return $form;
 }
@@ -230,7 +235,9 @@ function theme_asset_bonus_swfobject($asset, $options=array()){
 OUT;
 
   // add the id3 options
-  $output .= theme('asset_bonus_id3', $asset, $options);
+  if (isset($asset->id3)) {
+    $output .= theme('asset_bonus_id3', $asset, $options);
+  }
 
   return $output;
 }
@@ -240,7 +247,9 @@ function asset_bonus_mp3player_options($asset){
   $form['height'] = array('#type' => 'hidden', '#value' => '24');
 
   // add the id3 options
-  $form = array_merge($form, asset_bonus_id3_options_form());
+  if (isset($asset->id3)) {
+    $form = array_merge($form, asset_bonus_id3_options_form());
+  }
 
   return $form;
 }
@@ -280,7 +289,9 @@ print "swffile=$swffile<br>\n";
 OUT;
 
   // add the id3 options
-  $output .= theme('asset_bonus_id3', $asset, $options);
+  if (isset($asset->id3)) {
+    $output .= theme('asset_bonus_id3', $asset, $options);
+  }
 
   return $output;
 }
@@ -292,7 +303,9 @@ function asset_bonus_id3_options($asset) {
   $form['align'] = array('#type' => 'hidden', '#value' => 'none');
 
   // add the id3 options
-  $form = array_merge($form, asset_bonus_id3_options_form());
+  if (isset($asset->id3)) {
+    $form = array_merge($form, asset_bonus_id3_options_form());
+  }
 
   return $form;
 }
@@ -400,17 +413,28 @@ function _asset_bonus_add_id3_rows($a, &$rows, $prefix = '') {
   }
 }
 
+function _asset_is_id3($require = FALSE) {
+  $lib = 'misc/lib/getid3/getid3/getid3.php';
+  if (file_exists($lib)) {
+    if ($require) {
+      require_once($lib);
+    }
+    return 1;
+  }
+}
+
 function asset_bonus_assetapi($op, $asset) {
   switch ($op) {
     case 'load':
-      return array('id3' => unserialize(db_result(db_query("SELECT data FROM {asset_bonus} WHERE aid=%d", $asset->aid))));
+      if ($data = db_result(db_query("SELECT data FROM {asset_bonus} WHERE aid=%d", $asset->aid))) {
+        return array('id3' => unserialize($data));
+      }
+      break;
 
     case 'insert':
       if ($asset->status) {
         if ($path = realpath(file_directory_path() .'/'. $asset->filepath)) {
-          $lib = 'misc/lib/getid3/getid3/getid3.php';
-          if (file_exists($lib)) {
-            require_once($lib);
+          if (_asset_is_id3(TRUE)) {
             $id3 = new getID3();
             $id3->option_md5_data = true;
             $id3->option_md5_data_source = true;
