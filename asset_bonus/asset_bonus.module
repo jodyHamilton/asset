@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 define('ASSET_PRIVATE',0);
 define('ASSET_PUBLIC',1);
@@ -104,6 +105,14 @@ function asset_bonus_asset_formatter($op='list',$asset=null,$attr=array()){
         'description' => t('Embed the flash movie using the !swfobject javascript library',
           array('!swfobject'=>l('swfobject','http://blog.deconcept.com/swfobject/'))),
       );
+      $formats['id3'] = array(
+        'name' => 'id3',
+        'types' => array('local' => array( // @TODO: what are these?
+          /*aud*/ 'mp3', 'wav', 'aac', 'ram',
+          /*vid*/ 'avi', 'mov', 'wmv', 'mpeg', 'mp4', 'mpeg2', 'dv', 'swf',
+          /*img*/ 'bmp', 'gif', 'jpg', 'png')),
+        'description' => t('Display the getid3 Audio/Video information'),
+      );
       return $formats;
     case 'init':
       drupal_add_js(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js');
@@ -159,6 +168,10 @@ function asset_bonus_swfobject_options($asset){
     '#size' => 7,
     '#required' => true,
   );
+
+  // add the id3 options
+  $form = array_merge($form, asset_bonus_id3_options_form());
+
   return $form;
 }
 
@@ -216,12 +229,19 @@ function theme_asset_bonus_swfobject($asset, $options=array()){
   </script>      
 OUT;
 
+  // add the id3 options
+  $output .= theme('asset_bonus_id3', $asset, $options);
+
   return $output;
 }
 
 function asset_bonus_mp3player_options($asset){
   $form['width'] = array('#type' => 'hidden', '#value' => '290');
   $form['height'] = array('#type' => 'hidden', '#value' => '24');
+
+  // add the id3 options
+  $form = array_merge($form, asset_bonus_id3_options_form());
+
   return $form;
 }
 
@@ -258,5 +278,158 @@ print "swffile=$swffile<br>\n";
     oSwf = null;
   </script>      
 OUT;
+
+  // add the id3 options
+  $output .= theme('asset_bonus_id3', $asset, $options);
+
   return $output;
+}
+
+function asset_bonus_id3_options($asset) {
+  // don't display the width/height/or alignment
+  $form['width'] = array('#type' => 'hidden', '#value' => 0);
+  $form['height'] = array('#type' => 'hidden', '#value' => 0);
+  $form['align'] = array('#type' => 'hidden', '#value' => 'none');
+
+  // add the id3 options
+  $form = array_merge($form, asset_bonus_id3_options_form());
+
+  return $form;
+}
+
+function asset_bonus_id3_options_form() {
+  // give the user some control over the display
+  $form['id3_playtime'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Playtime'),
+    '#default_value' => TRUE,
+  );
+  $form['id3_tags'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Tags'),
+    '#default_value' => TRUE,
+  );
+  $form['id3_tech'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Technical Details'),
+  );
+  if (user_access('administer assets')) {
+    $form['id3_all'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Everything (Mostly for Debugging)'),
+    );
+  }
+  return $form;
+}
+
+function asset_bonus_id3_preview($asset) {
+  return theme('asset_bonus_id3', $asset);
+}
+
+function theme_asset_bonus_id3($asset, $options = array()) {
+  $header = array(t('Name'), t('Value'));
+  $rows = array();
+  if ($options['id3_all']) {
+    _asset_bonus_add_id3_rows($asset->id3, $rows);
+  }
+  else {
+    // add the playtime string
+    if ($options['id3_playtime']) {
+      $rows[] = array(t('Playtime'), $asset->id3['playtime_string']);
+    }
+
+    // add the id3 tags
+    if ($options['id3_tags']) {
+      // store the tag values in a temporary array, letting higher numbered
+      // id3 version tags override lower number version tags
+      $tags = array();
+      foreach ($asset->id3['tags'] as $id3v) {
+        foreach ($id3v as $tag => $value) {
+          $tags[$tag] = $value[0];
+        }
+      }
+
+      // remove id3v1 tags that exist in id3v2 with a slightly different name
+      if (isset($tags['comments'])) {
+        unset($tags['comments']);
+      }
+      if (isset($tags['track_number'])) {
+        unset($tags['track']);
+      }
+
+      // now add all of the tags to the output array
+      foreach ($tags as $tag => $value) {
+        $rows[] = array($tag, $value);
+      }
+    }
+
+    // add the technical information
+    if ($options['id3_tech']) {
+      $rows[] = array('filesize', $asset->id3['filesize']);
+      $rows[] = array('fileformat', $asset->id3['fileformat']);
+
+      if (isset($asset->id3['audio'])) {
+        $options = array(
+          '%channels' => $asset->id3['audio']['channels'],
+          '%channelmode' => $asset->id3['audio']['channelmode'],
+          '%sample_rate' => $asset->id3['audio']['sample_rate'],
+          '%bitrate' => $asset->id3['audio']['bitrate']
+        );
+        $value = t('%channels %channelmode channels %sample_rate samplerate %bitrate bitrate', $options);
+        $rows[] = array('audio', $value);
+      }
+    }
+  }
+  return theme('asset_bonus_id3_table', $header, $rows);
+}
+
+function theme_asset_bonus_id3_table($header, $rows) {
+  if (count($rows) > 0) {
+    return theme('table', $header, $rows);
+  }
+}
+
+function _asset_bonus_add_id3_rows($a, &$rows, $prefix = '') {
+  foreach ($a as $key => $value) {
+    if (is_array($value)) {
+      _asset_bonus_add_id3_rows($value, $rows, $prefix . $key .'.');
+    }
+    else {
+      $rows[] = array($prefix . $key, $value);
+    }
+  }
+}
+
+function asset_bonus_assetapi($op, $asset) {
+  switch ($op) {
+    case 'load':
+      return array('id3' => unserialize(db_result(db_query("SELECT data FROM {asset_bonus} WHERE aid=%d", $asset->aid))));
+
+    case 'insert':
+      if ($asset->status) {
+        if ($path = realpath(file_directory_path() .'/'. $asset->filepath)) {
+          $lib = 'misc/lib/getid3/getid3/getid3.php';
+          if (file_exists($lib)) {
+            require_once($lib);
+            $id3 = new getID3();
+            $id3->option_md5_data = true;
+            $id3->option_md5_data_source = true;
+            $id3->encoding = 'UTF-8';
+            $info = $id3->analyze($path);
+            if (isset($info['id3v2']['APIC'])) {
+              // @TODO: save the picture, but don't store in the database
+              unset($info['id3v2']['APIC']);
+            }
+            db_query("INSERT INTO {asset_bonus} (aid, data) VALUES (%d, '%s')", $asset->aid, serialize($info));
+          }
+        }
+      }
+      break;
+
+    // NOTE: not implemented yet
+    case 'update':
+      break;
+    case 'delete':
+      break;
+  }    
 }

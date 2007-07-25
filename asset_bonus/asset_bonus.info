@@ -1,4 +1,5 @@
+// $Id$
 name = Asset Bonus Pack
-description = Extra formatters for Asset.module
+description = "Extra formatters (Audio and Video) for Asset.module"
 dependencies = asset
 package = Asset
