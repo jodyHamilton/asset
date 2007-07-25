@@ -224,7 +224,7 @@ function asset_admin_settings() {
     
   $paths = array(
     drupal_get_path('module', 'asset') . '/themes',
-    path_to_theme(),
+    drupal_get_path('theme', variable_get('theme_default', 'garland')),
   );
   
   foreach($paths as $path){
