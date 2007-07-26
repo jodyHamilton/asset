@@ -1,21 +1,28 @@
 <?php
 // $Id$
-require_once (drupal_get_path('module', 'asset') .'/asset_views.inc');
-
-// Load all our module 'on behalfs'.
-$path = drupal_get_path('module', 'asset') . '/modules';
-$files = drupal_system_listing('asset_.*\.inc$', $path, 'name', 0);
-
-foreach ($files as $file) {
-  // The filename format is very specific. It must be asset_MODULENAME.inc
-  $module = substr_replace($file->name, '', 0, 6);
-  if (module_exists($module)) {
-    require_once ("./$file->filename");
-  }
-}
 
 define('ASSET_PRIVATE', 0);
 define('ASSET_PUBLIC', 1);
+
+function _asset_include() {
+  // get the path once
+  $path = drupal_get_path('module', 'asset');
+
+  // load the views hooks if the views module is enabled
+  if (module_exists('views')) {
+    require_once ($path .'/asset_views.inc');
+  }
+
+  // Load all our module 'on behalfs'.
+  $files = drupal_system_listing('asset_.*\.inc$', $path .'/modules', 'name', 0);
+  foreach ($files as $file) {
+    // The filename format is very specific. It must be asset_MODULENAME.inc
+    $module = substr_replace($file->name, '', 0, 6);
+    if (module_exists($module)) {
+      require_once ("./$file->filename");
+    }
+  }
+}
 
 /**
  * Implementation of hook_menu()
@@ -75,6 +82,9 @@ function asset_menu($may_cache) {
       'access' => user_access('administer assets'),
     );
   } else {
+    // load all of the necessary includes
+    _asset_include();
+
     // provide a way for formatters to include js/css since render result gets cached
     // TODO: investigate possibly better ways to do this
     module_invoke_all('asset_formatter', 'init');
