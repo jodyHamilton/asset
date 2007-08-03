@@ -163,7 +163,7 @@ var TinyMCE_DrupalAssetPlugin = {
           var attribs = TinyMCE_DrupalAssetPlugin._parseHTMLAttributes(content.substring(startPos + 2, endPos));
           endPos += 4;
           
-          if (attribs['class'].indexOf("mceItemDrupalAsset") == -1) {
+          if (!attribs['class'] || attribs['class'].indexOf("mceItemDrupalAsset") == -1) {
             continue;
           }
           
