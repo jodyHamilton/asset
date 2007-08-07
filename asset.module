@@ -88,6 +88,7 @@ function asset_menu($may_cache) {
     // provide a way for formatters to include js/css since render result gets cached
     // TODO: investigate possibly better ways to do this
     module_invoke_all('asset_formatter', 'init');
+    drupal_add_css(drupal_get_path('module', 'asset') . '/asset.css');
   }
   return $items;
 }
@@ -96,10 +97,19 @@ function asset_menu($may_cache) {
  * Implementation of hook_perm().
  */
 function asset_perm() {
-  return array (
+  $perms = array (
     'create assets',
     'administer assets'
   );
+  
+  foreach(module_implements('asset_type') as $module){
+    $types = module_invoke($module, 'asset_type', 'info');
+    foreach($types as $delta=>$type){
+      $perms[] = 'create ' . $delta . ' assets';
+    }
+  }
+  
+  return $perms;
 }
 
 /**
@@ -389,7 +399,8 @@ function asset_get_macros($text) {
 function asset_render_macro($attr = array ()) {
   $asset = asset_load($attr['aid']);
   if ($attr['formatter']) {
-    return module_invoke($attr['formatter'], 'asset_formatter', 'render', $asset, $attr);
+    $content = module_invoke($attr['formatter'], 'asset_formatter', 'render', $asset, $attr);
+    return theme('asset', $content, $attr);
   } else {
     return theme('asset_render_default', $asset);
   }
@@ -480,7 +491,7 @@ function asset_wizard() {
   require_once (drupal_get_path('module', 'asset') . '/asset_wizard.inc');
 
   drupal_add_js(drupal_get_path('module', 'asset') . '/asset.js');
-  drupal_add_css(drupal_get_path('module', 'asset') . '/asset.css');
+  drupal_add_css(drupal_get_path('module', 'asset') . '/asset_wizard.css');
   $theme = variable_get('asset_wizard_theme',drupal_get_path('module','asset').'/themes/default/asset_wizard.css');
   drupal_add_css($theme);
   
@@ -808,25 +819,25 @@ function asset_asset_formatter($op = 'info', $asset = NULL, $attr = array()){
 function asset_asset_type($op = 'info', $delta = 0, $form_values=array()){
   switch($op){
     case 'info':
-      return array(
-        'upload' => array(
-          'value' => t('Upload'),
-          'title' => t('Upload a new file.'),
-          'src' => drupal_get_path('module','asset').'/lullacons/doc-option-add.png',
-        ),
-        'directory' => array(
-          'value' => t('New Folder'),
-          'title' => t('Create a new folder.'),
-          'src' => drupal_get_path('module','asset').'/lullacons/folder-option-add.png',
-        ),
+      $info['upload'] = array(
+        'value' => t('Upload'),
+        'title' => t('Upload a new file.'),
+        'src' => drupal_get_path('module','asset').'/lullacons/doc-option-add.png',
       );
+      $info['directory'] = array(
+        'value' => t('New Folder'),
+        'title' => t('Create a new folder.'),
+        'src' => drupal_get_path('module','asset').'/lullacons/folder-option-add.png',
+      );
+      return $info;
     case 'form':
       $form['module'] = array('#type'=>'value', '#value'=>'asset');
       if($delta == 'upload'){
         $form['upload'] = array(
           '#type' => 'file',
-          '#title' => t('New File'),
+          '#title' => t('Upload a File'),
           '#size' => 35,
+          '#weight' => -1,
         );
       }
       $form['#attributes']['enctype'] = 'multipart/form-data';
@@ -866,6 +877,16 @@ function asset_asset_type($op = 'info', $delta = 0, $form_values=array()){
 /**
  * Theme Functions ============================================================
  */
+
+/**
+ * Theme rendered assets
+ */
+function theme_asset($content, $attributes){
+  $class = 'asset-'.$attributes['formatter'].'-'.$attributes['format'];
+  $class .= ' asset-align-'. ($attributes['align'] ? $attributes['align'] : 'none');
+  $output = '<div class="'.$class.'">'.$content.'</div>';
+  return $output;
+}
 
 /**
  * Theme the wizard theme selection table.

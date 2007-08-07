@@ -43,7 +43,7 @@ function asset_youtube_asset_type($op = 'info', $delta=0, $form_values=array()){
         case 'embed': 
           $form['parent'] = array(
             '#type' => 'hidden',
-            '#value' => file_create_path($form_values['parent'] ? $form_values['parent'] : $_GET['dir']),
+            '#value' => $form_values['parent'] ? $form_values['parent'] : $_GET['dir'],
           );
           $form[] = array(
             '#type' => 'item',
@@ -102,7 +102,7 @@ function asset_youtube_asset_type($op = 'info', $delta=0, $form_values=array()){
       switch($delta){
         case 'embed':
           if($ytid = asset_youtube_extract_id($form_values['embed'])){
-            $path = file_create_path($form_values['parent'].'/'.$ytid.'.youtube');
+            $path = $form_values['parent'].'/'.$ytid.'.youtube';
             $asset->filepath = $path;
             $asset->status = $form_values['status']; 
             $asset->title = $form_values['title'];
@@ -124,7 +124,7 @@ function asset_youtube_asset_type($op = 'info', $delta=0, $form_values=array()){
           asset_youtube_sync();
           $query = $_GET;
           unset($query['q']);
-          $query['dir'] = file_create_path($user->name.'/My YouTube');
+          $query['dir'] = $user->name.'/My YouTube';
           drupal_goto($_GET['q'],asset_build_query($query));
           break;
       }

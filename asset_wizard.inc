@@ -546,21 +546,27 @@ function asset_wizard_toolbar($dir = ''){
   
   unset($query['q']);
   $buttons = array();
-  $buttons[] = l(t('Choose'), 'asset/wizard/'.arg(2), array(), asset_build_query($query), null, false, true);
+  $choose = t('Choose');
+  $html = theme('image', drupal_get_path('module','asset').'/icon.png', $choose, $choose, NULL, FALSE) . '<br/>' . $choose;
+  $buttons[] = l($html, 'asset/wizard/'.arg(2), array(), asset_build_query($query), null, false, true);
   foreach(module_implements('asset_type') as $module){
     $types = module_invoke($module, 'asset_type', 'info');
     foreach($types as $delta=>$type){
-      $key = $module.':'.$delta;
-      if($type['src']){
-        $html = theme('image', $type['src'], $type['value'], $type['value'], NULL, FALSE) . '<br/>' . $type['value'];
-      }else{
-        $html = $type['value'];
+      if(user_access('create ' . $delta . ' assets')){
+        $key = $module.':'.$delta;
+        if($type['src']){
+          $html = theme('image', $type['src'], $type['value'], $type['value'], NULL, FALSE) . '<br/>' . $type['value'];
+        }else{
+          $html = $type['value'];
+        }
+        $query['op'] = $type['value'];
+        $buttons[] = l($html, 'asset/wizard/'.arg(2), array(), asset_build_query($query), null, false, true);
       }
-      $query['op'] = $type['value'];
-      $buttons[] = l($html, 'asset/wizard/'.arg(2), array(), asset_build_query($query), null, false, true);
     }
     $i = count($buttons) - 1;
-    $buttons[$i] = array('data' => $buttons[$i], 'class' => 'last');
+    if(!is_array($buttons[$i])){
+      $buttons[$i] = array('data' => $buttons[$i], 'class' => 'last');
+    }
   }
   $form['toolbar'] = array('#value' => theme('item_list', $buttons));
   return theme('item_list', $buttons);  
