@@ -526,6 +526,10 @@ function asset_textarea($element) {
   if(_asset_page_match()){
     $output = theme('asset_textarea_link', $element);
     $element['#suffix'] .= $output;
+    
+    if(module_exists('tinymce')){
+      drupal_add_js(drupal_get_path('module','asset').'/tinymce/asset_tinymce_helper.js');
+    }
   }
   return $element;
 }
