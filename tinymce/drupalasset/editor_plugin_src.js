@@ -1,3 +1,4 @@
+// $Id$ 
 /* Import plugin specific language pack */
 tinyMCE.importPluginLanguagePack('drupalasset', 'en');
 
@@ -69,7 +70,7 @@ var TinyMCE_DrupalAssetPlugin = {
 				// tinymce will try to open a new window in IE using showModalDialog().
 				// And for some reason showModalDialog() doesn't respect the target="_top"
 				// attribute.
-				tinyMCE.openWindow(template, {editor_id : editor_id, nid : nid, captionTitle : captionTitle, captionDesc : captionDesc, width : width, height : height, action : action});
+				tinyMCE.openWindow(template, {editor_id : editor_id, nid : nid, captionTitle : captionTitle, captionDesc : captionDesc, width : width, height : height, action : action, scrollbars: 'yes', resizable: 'yes' });
 				//tinyMCE.openWindow(template, {editor_id : editor_id, nid : nid, captionTitle : captionTitle, captionDesc : captionDesc, link : link, align : align, width : width, height : height, action : action, resizable : 'yes', scrollbars : 'yes'});
 			return true;
 	   }
@@ -216,7 +217,6 @@ var TinyMCE_DrupalAssetPlugin = {
 			}else if(node.nodeName == "A" && tinyMCE.getAttrib(node, 'class').indexOf('mceItemDrupalAsset') == 0){
         tinyMCE.switchClass(editor_id + '_drupalasset', 'mceButtonSelected');
         $("#" + id + " img").src($("#"+id+" img").src().replace('-add.png','-edit.png'));
-        return true;
       }
 		} while ((node = node.parentNode));
 
