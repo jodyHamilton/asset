@@ -277,17 +277,18 @@ function asset_wizard_form_asset_selection(&$form, &$form_values, $current_asset
     $sql = 'SELECT DISTINCT(a.aid) FROM {asset} a ';
     $args = array();
     
-    // for everyone but the admin, only get assets with proper permissions.
-    if($user->uid != 1){
+    // for everyone but users with 'administer assets' access control, 
+    // only get assets with proper permissions.
+    if(user_access('administer assets')){
+      $sql .= 'WHERE a.dirname="%s" ';
+      $args = array($dir);
+    }else{
       $sql .= 'LEFT JOIN {asset_role} r ON a.aid=r.aid '
              . 'WHERE (a.uid = %d '
              . 'OR a.status = 1 '
              . 'OR (r.rid IN (%s) AND r.status = 1) ) '
              . 'AND a.dirname="%s" ';
       $args = array($user->uid, join(array_keys($user->roles),','), $dir);
-    }else{
-      $sql .= 'WHERE a.dirname="%s" ';
-      $args = array($dir);
     }
     
     $result = db_query($sql, $args);
@@ -347,14 +348,6 @@ function asset_wizard_default_fields($form_values){
     '#options' => asset_wizard_directory_options(),
     '#weight' => -5,
   );
-//  $form[] = array(
-//    '#type' => 'item',
-//    '#title' => 'Directory',
-//    '#value' => str_replace(file_directory_path(),'assets',$form['parent']['#value']),
-//    '#prefix' => '<div class="container-inline">',
-//    '#suffix' => '</div>',
-//    '#weight' => -5,
-//  );
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Title'),
@@ -377,7 +370,7 @@ function asset_wizard_default_fields($form_values){
     '#title' => t('Permissions'),
     '#description' => t('Select the permissions for this asset.  Selecting Public will allow anyone with asset permissions to use this asset.  By selecting Private, you can restrict which roles, if any, can access this asset.  If you select Private and do not select any roles, you will be the only user with access to this asset.'),
     '#required' => true,
-    '#default_value' => $parent->status,
+    '#default_value' => ASSET_PUBLIC,
     '#options' => array(
       ASSET_PUBLIC => t('Public'),
       ASSET_PRIVATE => t('Private'),
@@ -485,17 +478,18 @@ function asset_wizard_directory_options($dir = ''){
   $sql = 'SELECT DISTINCT(a.aid) FROM {asset} a ';
   $args = array();
   
-  // for everyone but the admin, only get assets with proper permissions.
-  if($user->uid != 1){
+  // for everyone but users with 'administer assets' access control, 
+  // only get assets with proper permissions.
+  if(user_access('administer assets')){
+    $sql .= 'WHERE a.dirname LIKE "%s%" ';
+    $args = array($dir);
+  }else{
     $sql .= 'LEFT JOIN {asset_role} r ON a.aid=r.aid '
            . 'WHERE (a.uid = %d '
            . 'OR a.status = 1 '
            . 'OR (r.rid IN (%s) AND r.status = 1) ) '
            . 'AND a.dirname LIKE "%s%" ';
     $args = array($user->uid, join(array_keys($user->roles),','), $dir);
-  }else{
-    $sql .= 'WHERE a.dirname LIKE "%s%" ';
-    $args = array($dir);
   }
   $sql .= ' AND a.type = "directory" ORDER BY a.dirname ASC';
   
@@ -505,12 +499,16 @@ function asset_wizard_directory_options($dir = ''){
     $asset = asset_load($asset->aid);
     $dir = $asset->dirname . ($asset->dirname ? '/' : '') . $asset->filename;
     $parts = explode('/',$dir);
-    if(count($parts) > 1){
-      $name = str_repeat('--', count($parts)-1) . ' ' . $asset->title;
+    if(count($parts)){
+      $name = str_repeat('--', count($parts)) . ' ' . $asset->title;
     }else{
       $name = $asset->title;
     }
     $options[$dir] = $name;
+  }
+  
+  if(user_access('administer assets')){
+    $options[''] = 'assets';
   }
   
   ksort($options);
@@ -538,37 +536,40 @@ function asset_wizard_location_bar($dir = ''){
  * Build a list of available asset_types that can be used.
  */
 function asset_wizard_toolbar($dir = ''){
-  $form['toolbar'] = array(
-    '#tree' => false,
-  );
-  $query = $_GET;
-  $query['dir'] = $dir;
+  $qarray = $_GET;
+  $qarray['dir'] = $dir;
   
-  unset($query['q']);
   $buttons = array();
+
+  // Create Choose button
   $choose = t('Choose');
   $html = theme('image', drupal_get_path('module','asset').'/icon.png', $choose, $choose, NULL, FALSE) . '<br/>' . $choose;
-  $buttons[] = l($html, 'asset/wizard/'.arg(2), array(), asset_build_query($query), null, false, true);
+  $qstring = drupal_query_string_encode($qarray, array('q','aid','op'));
+  $buttons[] = l($html, 'asset/wizard/'.arg(2), array(), $qstring, null, false, true);
+  
+  // Create other buttons
   foreach(module_implements('asset_type') as $module){
     $types = module_invoke($module, 'asset_type', 'info');
     foreach($types as $delta=>$type){
       if(user_access('create ' . $delta . ' assets')){
-        $key = $module.':'.$delta;
         if($type['src']){
           $html = theme('image', $type['src'], $type['value'], $type['value'], NULL, FALSE) . '<br/>' . $type['value'];
         }else{
           $html = $type['value'];
         }
-        $query['op'] = $type['value'];
-        $buttons[] = l($html, 'asset/wizard/'.arg(2), array(), asset_build_query($query), null, false, true);
+        $qarray['op'] = $type['value'];
+        $qstring = drupal_query_string_encode($qarray, array('q','aid'));
+        $buttons[] = l($html, 'asset/wizard/'.arg(2), array(), $qstring, null, false, true);
       }
     }
+    
+    // add class to last button from each module
     $i = count($buttons) - 1;
     if(!is_array($buttons[$i])){
       $buttons[$i] = array('data' => $buttons[$i], 'class' => 'last');
     }
   }
-  $form['toolbar'] = array('#value' => theme('item_list', $buttons));
+  
   return theme('item_list', $buttons);  
 }
 

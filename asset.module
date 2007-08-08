@@ -767,7 +767,10 @@ function asset_asset_formatter($op = 'info', $asset = NULL, $attr = array()){
     case 'render':
       switch ($attr['format']) {
         case 'image' :
-          $img_attributes = array ();
+          $img_attributes = array (
+            'title' => $attr['title'],
+            'alt'   => $attr['title'],
+          );
           if ($attr['height']) {
             $img_attributes['height'] = $attr['height'];
           }
