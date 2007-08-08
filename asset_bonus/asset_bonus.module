@@ -4,6 +4,31 @@
 define('ASSET_PRIVATE',0);
 define('ASSET_PUBLIC',1);
 
+function asset_bonus_help($section){
+  switch($section){
+    case 'admin/help#asset_bonus':
+    case 'admin/settings/asset/asset_bonus':
+      return t('<p>The Asset Bonus Pack adds additional functionality to the
+               Asset module for handling audio files and Flash objects.</p>
+               <p>The Asset Bonus Pack consists of two parts. The first part is
+               included with the Asset module. Due to licensing guidelines on
+               Drupal.org (only software licensed under the GPL may be included
+               in CVS) the second part must be downloaded separately from
+               !link. Though the additional files are open-source, they are not
+               GPL licensed.</p>
+               <p>The zip file includes three folders. Unzip these folders into
+               the <em>modules/asset/asset_bonus</em> folder and check below to
+               make sure that they were found.</p>
+              <p>The Asset Bonus module also uses !getid3, if it is available, to 
+              display additional information about the audio/video file. Follow
+              the instructions in the README.txt for installation of getid3.</p>  
+               ', array(
+                '!link' => l('digett.com','http://digett.com/sites/digett.com/files/asset_bonus.zip'),
+                '!getid3' => l('getid3', 'http://getid3.org/'),
+              ));
+  }
+}
+
 function asset_bonus_menu($may_cache){
   if(!$may_cache){
     $items[] = array(
@@ -36,29 +61,73 @@ function asset_bonus_menu($may_cache){
 }
 
 function asset_bonus_admin_overview(){
-  if(!file_exists(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js')){
-    $output .= '<p>Asset Bonus Pack requires the download of an additional set of files '
-            . ' available <a href="http://digett.com/asset_bonus.zip">here</a>.</p>';
-  }else{
-    $output .= '<p>Asset Bonus Pack has been successfully configured.</p>';
+  $path = drupal_get_path('module','asset_bonus');
+  $files = array(
+    $path . '/audioplayer/audio-player.js',
+    $path . '/audioplayer/player.swf',
+    $path . '/swfheader/swfheader.class.php',
+    $path . '/swfobject/swfobject.js',
+    '/misc/lib/getid3/getid3/getid3.php'
+  );
+  foreach($files as $file){
+    $found = file_exists($file);
+    $output .= '<tr class="'.($found ? 'ok' : 'error').'"><th>'.basename($file).'</th>'
+             . '<td>'. ($found ? 'Found' : 'Not found') .'</td></tr>';
   }
-  return $output;
+  
+  return '<table class="system-status-report">'.$output.'</table>';
 }
 
 function asset_bonus_mp3player_colors(){
   return array(
-    'bg' => t('Background'),
-    'leftbg' => t('Left Background'),
-    'lefticon' => t('Left Icon'),
-    'rightbg' => t('Right Background'),
-    'rightbghover' => t('Right Background Hover'),
-    'righticon' => t('Right Icon'),
-    'righticonhover' => t('Right Icon Hover'),
-    'text' => t('Text'),
-    'slider' => t('Slider'),
-    'track' => t('Track'),
-    'border' => t('Border'),
-    'loader' => t('Loader'),
+    'bg' => array(
+      'title' => t('Background'),
+      'default' => '#f8f8f8',
+    ),
+    'leftbg' => array(
+      'title' => t('Left Background'),
+      'default' => '#eeeeee',
+    ),
+    'lefticon' => array(
+      'title' => t('Left Icon'),
+      'default' => '#666666',
+    ),
+    'rightbg' => array(
+      'title' => t('Right Background'),
+      'default' => '#cccccc',
+    ),
+    'rightbghover' => array(
+      'title' => t('Right Background Hover'),
+      'default' => '#999999',
+    ),
+    'righticon' => array(
+      'title' => t('Right Icon'),
+      'default' => '#666666',
+    ),
+    'righticonhover' => array(
+      'title' => t('Right Icon Hover'),
+      'default' => '#ffffff',
+    ),
+    'text' => array(
+      'title' => t('Text'),
+      'default' => '#666666',
+    ),
+    'slider' => array(
+      'title' => t('Slider'),
+      'default' => '#666666',
+    ),
+    'track' => array(
+      'title' => t('Track'),
+      'default' => '#ffffff',
+    ),
+    'border' => array(
+      'title' => t('Border'),
+      'default' => '#666666',
+    ),
+    'loader' => array(
+      'title' => t('Loader'),
+      'default' => '#9fffb8',
+    ),
   );
 }
   
@@ -66,22 +135,26 @@ function asset_bonus_admin_mp3player(){
   // Add Farbtastic color picker
   drupal_add_css('misc/farbtastic/farbtastic.css', 'module', 'all', FALSE);
   drupal_add_js('misc/farbtastic/farbtastic.js');
-  drupal_add_js(array('asset_bonus_path' => drupal_get_path('module','asset_bonus')),'setting');
-
   drupal_add_css(drupal_get_path('module','asset_bonus').'/asset_bonus.css');
   drupal_add_js(drupal_get_path('module','asset_bonus').'/asset_bonus.js');
-  
+    
+  $settings = array(
+    'asset_bonus_swf' => base_path() . drupal_get_path('module','asset_bonus') . '/audioplayer/player.swf',
+    'asset_bonus_test_mp3' => base_path() . drupal_get_path('module','asset_bonus') . '/audioplayer/test.mp3'
+  );
+  drupal_add_js($settings,'setting');
+
   $colors = asset_bonus_mp3player_colors();
   $form['palette'] = array(
     '#type' => 'fieldset',
     '#title' => t('Color Palette'),
     '#attributes' => array('id'=>'palette'),
     );
-  foreach($colors as $key=>$title){
+  foreach($colors as $key=>$color){
     $form['palette']['asset_bonus_mp3player_'.$key] = array(
       '#type' => 'textfield',
-      '#title' => $title,
-      '#default_value' => variable_get('asset_bonus_mp3player_'.$key,''),
+      '#title' => $color['title'],
+      '#default_value' => variable_get('asset_bonus_mp3player_'.$key,$color['default']),
       '#size' => 8,
     );
   }
@@ -266,8 +339,8 @@ function theme_asset_bonus_mp3player($asset, $options=array()){
   global $base_url;
   $swffile = $base_url .'/'. drupal_get_path('module', 'asset_bonus') .'/audioplayer/player.swf';
   $colors = asset_bonus_mp3player_colors();
-  foreach($colors as $key => $title){
-    $color = variable_get('asset_bonus_mp3player_'.$key,'');
+  foreach($colors as $key => $color_data){
+    $color = variable_get('asset_bonus_mp3player_'.$key,$color_data['default']);
     if($color){
       $color = str_replace('#','0x',$color);
       $colorvars .= "oSwf.addVariable('$key','$color');";

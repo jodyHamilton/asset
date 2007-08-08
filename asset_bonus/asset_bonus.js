@@ -11,10 +11,13 @@ if (Drupal.jsEnabled) {
     var farb = $.farbtastic('#placeholder');
 
     function loadAudioPlayer(){
-      var path = Drupal.settings.basepath + Drupal.settings.asset_bonus_path;
-      var oSwf = new SWFObject(path+"/audioplayer/player.swf","color-preview","290","24","7","#FFFFFF");
+      var swfPath = Drupal.settings.asset_bonus_swf;
+      if(!swfPath){
+        return;
+      }
+      var oSwf = new SWFObject(swfPath,"color-preview","290","24","7","#FFFFFF");
       oSwf.addVariable('playerID','color-preview');
-      oSwf.addVariable('soundFile',path+'/audioplayer/test.mp3');
+      oSwf.addVariable('soundFile',Drupal.settings.asset_bonus_test_mp3);
       oSwf.addVariable('autostart','yes');
       oSwf.addVariable('loop','yes');
       oSwf.addParam('wmode','transparent');
