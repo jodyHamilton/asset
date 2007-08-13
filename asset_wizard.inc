@@ -93,6 +93,7 @@ function asset_wizard_form($form_values = null){
             '#type' => 'radio',
             '#title' => $formatter['name'],
             '#return_value' => $formatter['module'].':'.$formatter['format'],
+            '#default_value' => $default,
             '#description' => $formatter['description'] ? $formatter['description'] : NULL,
             '#parents' => array('formatter'),
           );
@@ -104,6 +105,7 @@ function asset_wizard_form($form_values = null){
             '#type' => 'radio',
             '#title' => $formatter['name'],
             '#return_value' => $formatter['module'].':'.$formatter['format'],
+            '#default_value' => $default,
             '#description' => $formatter['description'] ? $formatter['description'] : NULL,
             '#parents' => array('formatter'),
           );
