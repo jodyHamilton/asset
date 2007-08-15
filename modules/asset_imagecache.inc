@@ -54,8 +54,11 @@ function imagecache_asset_formatter($op='info',$asset=null,$attr=array()){
       );   
       return $form;
       break;
+    case 'preview':
+      return theme('imagecache', $attr['format'], $asset->filepath, $asset->title, $asset->title);
     case 'img':
-      return file_create_path('imagecache/'. $attr['format'] .'/'. $asset->filepath);
+      $path = file_directory_path() .'/imagecache/'. $attr['format'] .'/'. $asset->filepath;
+      return $path;
     case 'render':
       return theme('imagecache',$attr['format'],$asset->filepath);
   }

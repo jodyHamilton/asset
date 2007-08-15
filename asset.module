@@ -64,6 +64,16 @@ function asset_menu($may_cache) {
       'access' => user_access('administer assets'),
       'type' => MENU_LOCAL_TASK,
     );
+    $items[] = array (
+      'path' => 'asset/img',
+      'type' => MENU_CALLBACK,
+      'callback' => 'asset_img_preview',
+      'access' => user_access('administer assets'),
+    );
+  } else {
+    // load all of the necessary includes
+    _asset_include();
+
     foreach(module_implements('asset_settings') as $module){
       $items[] = array(
         'path' => 'admin/settings/asset/'.$module,
@@ -75,15 +85,6 @@ function asset_menu($may_cache) {
         'weight' => 5,
       );
     }    
-    $items[] = array (
-      'path' => 'asset/img',
-      'type' => MENU_CALLBACK,
-      'callback' => 'asset_img_preview',
-      'access' => user_access('administer assets'),
-    );
-  } else {
-    // load all of the necessary includes
-    _asset_include();
 
     // provide a way for formatters to include js/css since render result gets cached
     // TODO: investigate possibly better ways to do this
@@ -279,13 +280,15 @@ function asset_admin_formatter_defaults(){
         '#type' => 'select',
         '#title' => $ext,
         '#options' => asset_formatter_options($type, $ext), 
-        '#default_value' => variable_get('asset_default_formatter_'. $type . '_' . $ext, 'asset:link'),
+        //'#default_value' => variable_get('asset_default_formatter_'. $type . '_' . $ext, 'asset:link'),
+        '#default_value' => asset_get_default_formatter($type, $ext, FALSE),
       );
       $form[$type]['asset_default_formatter_teaser_' . $type . '_' . $ext] = array (
         '#type' => 'select',
         '#title' => $ext,
         '#options' => asset_formatter_options($type, $ext), 
-        '#default_value' => variable_get('asset_default_formatter_teaser_' . $type . '_' . $ext, 'asset:link'),
+//        '#default_value' => variable_get('asset_default_formatter_teaser_' . $type . '_' . $ext, 'asset:link'),
+        '#default_value' => asset_get_default_formatter($type, $ext, TRUE),
       );
     }
   }
@@ -579,8 +582,9 @@ function asset_js_preview($aid, $show_details=true, $return=false) {
     $format = $formatters['*']['*'][0];
   }
   $output .= '<div>' . $asset->filename . '</div>';
-  $output .= module_invoke($format['module'], 'asset_formatter', 'preview', $asset, $format);
+  $output .= asset_preview($asset->aid);
 
+  // @TODO: the details implementation is looking worse and worse to me. -rz
   if($show_details){
     $details[t('File Size')] = format_size($asset->filesize);
     $details = array_merge($details, (array) module_invoke($format['module'], 'asset_formatter', 'details', $asset, $format));
@@ -598,21 +602,34 @@ function asset_js_preview($aid, $show_details=true, $return=false) {
 }
 
 /**
+ * Build a preview of an asset based on module and format options.  If no module
+ * and format info is given then the default teaser formatter is used.
+ */
+function asset_preview($aid, $module = NULL, $format = NULL){
+  $asset = asset_load($aid);
+  if(!$module || !$format){
+    $formatter = asset_get_default_formatter($asset->type, $asset->extension, TRUE);
+    list($module, $format) = explode(':', $formatter);
+  }
+  
+  $output = module_invoke($module, 'asset_formatter', 'preview', $asset, array ('format' => $format));
+  
+  return $output;
+}
+
+/**
  * Callback function to output an image for preview of an asset.
  */
 function asset_img_preview($aid, $module = NULL, $format = NULL) {
   $asset = asset_load($aid);
-  if ($module) {
-    $src = module_invoke($module, 'asset_formatter', 'img', $asset, array ('format' => $format));
-  }
-  if (!$src) {
-    $src = module_invoke('asset', 'asset_formatter', 'img', $asset);
+  if(!$module || !$format){
+    $formatter = asset_get_default_formatter($asset->type, $asset->extension, TRUE);
+    list($module, $format) = explode(':', $formatter);
   }
   
-  if(strpos($src, 'http') === 0){
-    return drupal_goto($src);
-  }
-  return asset_img_output($src);
+  $src = module_invoke($module, 'asset_formatter', 'img', $asset, array ('format' => $format));
+  
+  return drupal_goto($src);
 }
 
 /**
@@ -685,9 +702,20 @@ function asset_get_default_formatter($type, $ext, $teaser = false){
       break;
     }
   }
+
+  // if var is not set, then cascade through possible formatters to find a suitable one  
   if(!$formatter){
-    $formatter = 'asset:link';
+    $formatters = asset_get_formatters();
+    if (isset ($formatters[$type][$ext][0])) {
+      $format = $formatters[$type][$ext][0];
+    } else if( isset($formatters[$type]['*'][0]) ){
+      $format = $formatters[$type]['*'][0];
+    } else {
+      $format = $formatters['*']['*'][0];
+    }
+    $formatter = $format['module'] .':'. $format['format'];
   }
+  
   return $formatter;
 }
 
@@ -805,7 +833,7 @@ function asset_asset_formatter($op = 'info', $asset = NULL, $attr = array()){
     case 'img':
       switch ($attr['format']) {
         case 'image' :
-          return file_create_path($asset->filepath);
+          return file_create_url($asset->filepath);
         case 'link' :
         default :
           // when we get around to building icons.

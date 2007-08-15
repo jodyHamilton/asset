@@ -22,6 +22,7 @@ body{
 }
 .asset-tree-widget ul{
   margin: 0;
+  padding: 0;
   border-top: solid 2px #888;
   border-left: solid 2px #888;
   background-color: #fff;
@@ -33,7 +34,7 @@ body{
 }
 .asset-tree-widget li{
   margin: 0;
-  padding: 0;
+  padding: 0 ;
   list-style: none;
   background: transparent;
 }

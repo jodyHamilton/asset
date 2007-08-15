@@ -591,7 +591,18 @@ function asset_wizard_finish(){
  */
 function theme_asset_popup($content){
   $title = drupal_get_title();
-  $styles = drupal_get_css();
+  // build $styles to not include theme styles
+  $styles = '';
+  $css = drupal_add_css();
+  foreach($css as $media => $types){
+    foreach($types as $type => $files){
+      if($type != 'theme'){
+        foreach($types[$type] as $file => $preprocess){
+          $styles .= '<style type="text/css" media="'. $media .'">@import "'. base_path() . $file .'";</style>' ."\n";
+        }
+      }
+    }
+  }
   $scripts = drupal_get_js();
   $head = drupal_get_html_head();
   $messages = theme('status_messages');
