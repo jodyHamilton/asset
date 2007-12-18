@@ -1,0 +1,5 @@
+; $Id$
+name = Asset Panels
+description = Panels support for the asset module
+package = Asset
+dependencies = asset

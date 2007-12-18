@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 define('ASSET_PRIVATE',0);
 define('ASSET_PUBLIC',1);
@@ -10,7 +9,7 @@ function asset_bonus_help($section){
     case 'admin/settings/asset/asset_bonus':
       return t('<p>The Asset Bonus Pack adds additional functionality to the
                Asset module for handling audio files and Flash objects.</p>
-               <p>The Asset Bonus Pack consists of two parts. The first part is
+               <p>The Assets Bonus Pack consists of two parts. The first part is
                included with the Asset module. Due to licensing guidelines on
                Drupal.org (only software licensed under the GPL may be included
                in CVS) the second part must be downloaded separately from
@@ -19,13 +18,7 @@ function asset_bonus_help($section){
                <p>The zip file includes three folders. Unzip these folders into
                the <em>modules/asset/asset_bonus</em> folder and check below to
                make sure that they were found.</p>
-              <p>The Asset Bonus module also uses !getid3, if it is available, to 
-              display additional information about the audio/video file. Follow
-              the instructions in the README.txt for installation of getid3.</p>  
-               ', array(
-                '!link' => l('digett.com','http://digett.com/sites/digett.com/files/asset_bonus.zip'),
-                '!getid3' => l('getid3', 'http://getid3.org/'),
-              ));
+               ', array('!link' => l('digett.com','http://digett.com/sites/digett.com/files/asset_bonus.zip')));
   }
 }
 
@@ -61,20 +54,17 @@ function asset_bonus_menu($may_cache){
 }
 
 function asset_bonus_admin_overview(){
-  $path = drupal_get_path('module','asset_bonus');
   $files = array(
-    $path . '/audioplayer/audio-player.js',
-    $path . '/audioplayer/player.swf',
-    $path . '/swfheader/swfheader.class.php',
-    $path . '/swfobject/swfobject.js',
-    '/misc/lib/getid3/getid3/getid3.php'
+    'audioplayer/audio-player.js',
+    'audioplayer/player.swf',
+    'swfheader/swfheader.class.php',
+    'swfobject/swfobject.js',
   );
   foreach($files as $file){
-    $found = file_exists($file);
-    $output .= '<tr class="'.($found ? 'ok' : 'error').'"><th>'.basename($file).'</th>'
+    $found = file_exists(drupal_get_path('module','asset_bonus').'/'.$file);
+    $output .= '<tr class="'.($found ? 'ok' : 'error').'"><th>'.$file.'</th>'
              . '<td>'. ($found ? 'Found' : 'Not found') .'</td></tr>';
   }
-  
   return '<table class="system-status-report">'.$output.'</table>';
 }
 
@@ -132,15 +122,15 @@ function asset_bonus_mp3player_colors(){
 }
   
 function asset_bonus_admin_mp3player(){
-  // Add Farbtastic color picker
+  
   drupal_add_css('misc/farbtastic/farbtastic.css', 'module', 'all', FALSE);
   drupal_add_js('misc/farbtastic/farbtastic.js');
   drupal_add_css(drupal_get_path('module','asset_bonus').'/asset_bonus.css');
   drupal_add_js(drupal_get_path('module','asset_bonus').'/asset_bonus.js');
     
   $settings = array(
-    'asset_bonus_swf' => base_path() . drupal_get_path('module','asset_bonus') . '/audioplayer/player.swf',
-    'asset_bonus_test_mp3' => base_path() . drupal_get_path('module','asset_bonus') . '/audioplayer/test.mp3'
+    'asset_bonus_swf' => '/' . drupal_get_path('module','asset_bonus') . '/audioplayer/player.swf',
+    'asset_bonus_test_mp3' => '/' . drupal_get_path('module','asset_bonus') . '/audioplayer/test.mp3'
   );
   drupal_add_js($settings,'setting');
 
@@ -163,6 +153,10 @@ function asset_bonus_admin_mp3player(){
   return system_settings_form($form);
 }
 
+function asset_bonus_swfobject_img($asset){
+  return drupal_get_path('module','asset_bonus').'/swfobject.jpg';
+}
+
 function asset_bonus_asset_formatter($op='list',$asset=null,$attr=array()){
   switch($op){          
     case 'info':
@@ -174,25 +168,13 @@ function asset_bonus_asset_formatter($op='list',$asset=null,$attr=array()){
       );
       $formats['swfobject'] = array(
         'name' => 'swfobject',
-        'types' => array('local' => array('swf')),
+        'types' => array('local' => array('swf', 'flv')),
         'description' => t('Embed the flash movie using the !swfobject javascript library',
           array('!swfobject'=>l('swfobject','http://blog.deconcept.com/swfobject/'))),
       );
-      // @NOTE: the formatter info array is cached which causes problems here
-      if (_asset_is_id3()) {
-        $formats['id3'] = array(
-          'name' => 'id3',
-          'types' => array('local' => array( // @TODO: what are these?
-            /*aud*/ 'mp3', 'wav', 'aac', 'ram',
-            /*vid*/ 'avi', 'mov', 'wmv', 'mpeg', 'mp4', 'mpeg2', 'dv', 'swf',
-            /*img*/ 'bmp', 'gif', 'jpg', 'png')),
-          'description' => t('Display the getid3 Audio/Video information'),
-        );
-      }
       return $formats;
     case 'init':
-      drupal_add_js(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js');
-      drupal_add_js(drupal_get_path('module','asset_bonus').'/audioplayer/audio-player.js');
+      //Moved init stuff to renderers to avoid unneeded loading
       break;      
     case 'options':
     case 'preview':
@@ -217,7 +199,7 @@ function asset_bonus_swfobject_options($asset){
     '#type' => 'textfield',
     '#title' => t('Width'),
     '#description' => t('Width in pixels'),
-    '#default_value' => $swf->width,
+    '#default_value' => !isset($_GET['width']) ? $swf->width : filter_xss($_GET['width']),
     '#size' => 5,
     '#required' => true,
   );
@@ -225,7 +207,7 @@ function asset_bonus_swfobject_options($asset){
     '#type' => 'textfield',
     '#title' => t('Height'),
     '#description' => t('Height in pixels'),
-    '#default_value' => $swf->height,
+    '#default_value' => !isset($_GET['height']) ? $swf->height : filter_xss($_GET['height']),
     '#size' => 5,
     '#required' => true,
   );
@@ -244,12 +226,6 @@ function asset_bonus_swfobject_options($asset){
     '#size' => 7,
     '#required' => true,
   );
-
-  // add the id3 options
-  if (isset($asset->id3)) {
-    $form = array_merge($form, asset_bonus_id3_options_form());
-  }
-
   return $form;
 }
 
@@ -257,6 +233,7 @@ function asset_bonus_swfobject_preview($asset){
   require_once(drupal_get_path('module','asset_bonus').'/swfheader/swfheader.class.php');
   $swf = new swfheader();
   list($w,$h) = explode('|',$swf->getDimensions($asset->filepath));
+  if(!$w) { $w = "240"; $h = "180"; }
   $r = ($w > $h) ? ($w / 150) : ($h / 150);
   $attr = array('height'=>($h/$r),'width'=>($w/$r),'version'=>$swf->version,'bgcolor'=>'#FFFFFF');
   $output = theme('asset_bonus_swfobject',$asset,$attr);
@@ -285,19 +262,44 @@ function theme_asset_bonus_swfobject($asset, $options=array()){
   $div_id = 'swfobject-'.preg_replace('/[^A-Za-z_-]/','-',substr($asset->filename,0,strlen($asset->filename)-4));
   $embed_id = 'swfobject-object-'.$asset->aid;
   $div_id = 'swfobject-'.$asset->aid;
+  $addVariable = '';
+  $addParam = '';
   
   // build a list of addVariable statements for each flashVar
-  $addVariable = '';
   foreach((array)$options['vars'] as $k=>$v){
     $addVariable .= "oSwf.addVariable('$k','$v');\n";
   }
+  
+  if($asset->extension=="flv") {
+    $addVariable .= "oSwf.addVariable('file','" . $asset->url . "');";
+    $addParam .= "oSwf.addParam('allowfullscreen','true');\n";
+    $asset->url = '/' . drupal_get_path('module','asset_bonus').'/swfobject/flvplayer.swf';
+    // if(arg(2)!="edit" && (arg(0)!="node" || $options['width']==0)) {
+    if(arg(2)!="edit" && ($options['height']=="112.5" || $options['height']=="100")) {
+      // Set a default width/height if none is available or when we're looking at an asset gallery (panels)
+      $options['width']  = 204;
+      $options['height'] = 145;
+    }
+    elseif(arg(2)=="edit") {
+      // Set a static width/height to keep the asset cck gui clean
+      $options['width']  = 120;
+      $options['height'] = 80;    	
+    }
+  }
+  elseif(substr($asset->url,0,4)!="http") {
+    $asset->url = '/' . $asset->url;
+  }
+
   // build a list of addParam statements for known params
   if($options['transparent']){
     $addParam .= "oSwf.addParam('wmode','transparent');\n";
   }
-  
+  if(empty($options['version'])) $options['version'] = "0";
+  // We're not using drupal_add_js(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js') because of caching issues
+  $swfobject = '/' . drupal_get_path('module','asset_bonus') . '/swfobject/swfobject.js';
   $output = <<<OUT
-  <div id="$div_id" class="asset-swfobject">Replacement Text</div>
+  <script type="text/javascript" src="{$swfobject}"></script>
+  <div id="$div_id" class="asset-swfobject">Video placeholder</div>
   <script type="text/javascript">
     var oSwf = new SWFObject("{$asset->url}","$embed_id","{$options['width']}","{$options['height']}","{$options['version']}","{$options['bgcolor']}");
     $addVariable
@@ -306,24 +308,12 @@ function theme_asset_bonus_swfobject($asset, $options=array()){
     oSwf = null;
   </script>      
 OUT;
-
-  // add the id3 options
-  if (isset($asset->id3)) {
-    $output .= theme('asset_bonus_id3', $asset, $options);
-  }
-
   return $output;
 }
 
 function asset_bonus_mp3player_options($asset){
   $form['width'] = array('#type' => 'hidden', '#value' => '290');
   $form['height'] = array('#type' => 'hidden', '#value' => '24');
-
-  // add the id3 options
-  if (isset($asset->id3)) {
-    $form = array_merge($form, asset_bonus_id3_options_form());
-  }
-
   return $form;
 }
 
@@ -336,8 +326,9 @@ function asset_bonus_mp3player_img($asset){
 }
 
 function theme_asset_bonus_mp3player($asset, $options=array()){
-  global $base_url;
-  $swffile = $base_url .'/'. drupal_get_path('module', 'asset_bonus') .'/audioplayer/player.swf';
+  drupal_add_js(drupal_get_path('module','asset_bonus').'/swfobject/swfobject.js');
+  drupal_add_js(drupal_get_path('module','asset_bonus').'/audioplayer/audio-player.js');
+  $swffile = '/' . drupal_get_path('module','asset_bonus') . '/audioplayer/player.swf';
   $colors = asset_bonus_mp3player_colors();
   foreach($colors as $key => $color_data){
     $color = variable_get('asset_bonus_mp3player_'.$key,$color_data['default']);
@@ -347,9 +338,9 @@ function theme_asset_bonus_mp3player($asset, $options=array()){
     }
   }
   $output = <<<OUT
-  <div id="mp3player-{$asset->aid}" class="asset-swfobject">Replacement Text</div>
+  <div id="mp3player-{$asset->aid}" class="asset-swfobject">Audio placeholder</div>
   <script type="text/javascript">
-    var oSwf = new SWFObject("$swffile","mp3player-object-{$asset->aid}","290","24","7","#FFFFFF");    
+    var oSwf = new SWFObject("$swffile","mp3player-object-{$asset->aid}","190","24","7","#FFFFFF");    
     oSwf.addVariable('playerID','{$asset->aid}');
     oSwf.addVariable('soundFile','{$asset->url}');
     $colorvars
@@ -359,173 +350,5 @@ function theme_asset_bonus_mp3player($asset, $options=array()){
     oSwf = null;
   </script>      
 OUT;
-
-  // add the id3 options
-  if (isset($asset->id3)) {
-    $output .= theme('asset_bonus_id3', $asset, $options);
-  }
-
   return $output;
-}
-
-function asset_bonus_id3_options($asset) {
-  // don't display the width/height/or alignment
-  $form['width'] = array('#type' => 'hidden', '#value' => 0);
-  $form['height'] = array('#type' => 'hidden', '#value' => 0);
-  $form['align'] = array('#type' => 'hidden', '#value' => 'none');
-
-  // add the id3 options
-  if (isset($asset->id3)) {
-    $form = array_merge($form, asset_bonus_id3_options_form());
-  }
-
-  return $form;
-}
-
-function asset_bonus_id3_options_form() {
-  // give the user some control over the display
-  $form['id3_playtime'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Playtime'),
-    '#default_value' => TRUE,
-  );
-  $form['id3_tags'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Tags'),
-    '#default_value' => TRUE,
-  );
-  $form['id3_tech'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Technical Details'),
-  );
-  if (user_access('administer assets')) {
-    $form['id3_all'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Everything (Mostly for Debugging)'),
-    );
-  }
-  return $form;
-}
-
-function asset_bonus_id3_preview($asset) {
-  return theme('asset_bonus_id3', $asset);
-}
-
-function theme_asset_bonus_id3($asset, $options = array()) {
-  $header = array(t('Name'), t('Value'));
-  $rows = array();
-  if ($options['id3_all']) {
-    _asset_bonus_add_id3_rows($asset->id3, $rows);
-  }
-  else {
-    // add the playtime string
-    if ($options['id3_playtime']) {
-      $rows[] = array(t('Playtime'), $asset->id3['playtime_string']);
-    }
-
-    // add the id3 tags
-    if ($options['id3_tags']) {
-      // store the tag values in a temporary array, letting higher numbered
-      // id3 version tags override lower number version tags
-      $tags = array();
-      foreach ($asset->id3['tags'] as $id3v) {
-        foreach ($id3v as $tag => $value) {
-          $tags[$tag] = $value[0];
-        }
-      }
-
-      // remove id3v1 tags that exist in id3v2 with a slightly different name
-      if (isset($tags['comments'])) {
-        unset($tags['comments']);
-      }
-      if (isset($tags['track_number'])) {
-        unset($tags['track']);
-      }
-
-      // now add all of the tags to the output array
-      foreach ($tags as $tag => $value) {
-        $rows[] = array($tag, $value);
-      }
-    }
-
-    // add the technical information
-    if ($options['id3_tech']) {
-      $rows[] = array('filesize', $asset->id3['filesize']);
-      $rows[] = array('fileformat', $asset->id3['fileformat']);
-
-      if (isset($asset->id3['audio'])) {
-        $options = array(
-          '%channels' => $asset->id3['audio']['channels'],
-          '%channelmode' => $asset->id3['audio']['channelmode'],
-          '%sample_rate' => $asset->id3['audio']['sample_rate'],
-          '%bitrate' => $asset->id3['audio']['bitrate']
-        );
-        $value = t('%channels %channelmode channels %sample_rate samplerate %bitrate bitrate', $options);
-        $rows[] = array('audio', $value);
-      }
-    }
-  }
-  return theme('asset_bonus_id3_table', $header, $rows);
-}
-
-function theme_asset_bonus_id3_table($header, $rows) {
-  if (count($rows) > 0) {
-    return theme('table', $header, $rows);
-  }
-}
-
-function _asset_bonus_add_id3_rows($a, &$rows, $prefix = '') {
-  foreach ($a as $key => $value) {
-    if (is_array($value)) {
-      _asset_bonus_add_id3_rows($value, $rows, $prefix . $key .'.');
-    }
-    else {
-      $rows[] = array($prefix . $key, $value);
-    }
-  }
-}
-
-function _asset_is_id3($require = FALSE) {
-  $lib = 'misc/lib/getid3/getid3/getid3.php';
-  if (file_exists($lib)) {
-    if ($require) {
-      require_once($lib);
-    }
-    return 1;
-  }
-}
-
-function asset_bonus_assetapi($op, $asset) {
-  switch ($op) {
-    case 'load':
-      if ($data = db_result(db_query("SELECT data FROM {asset_bonus} WHERE aid=%d", $asset->aid))) {
-        return array('id3' => unserialize($data));
-      }
-      break;
-
-    case 'insert':
-      if ($asset->status) {
-        if ($path = realpath(file_directory_path() .'/'. $asset->filepath)) {
-          if (_asset_is_id3(TRUE)) {
-            $id3 = new getID3();
-            $id3->option_md5_data = true;
-            $id3->option_md5_data_source = true;
-            $id3->encoding = 'UTF-8';
-            $info = $id3->analyze($path);
-            if (isset($info['id3v2']['APIC'])) {
-              // @TODO: save the picture, but don't store in the database
-              unset($info['id3v2']['APIC']);
-            }
-            db_query("INSERT INTO {asset_bonus} (aid, data) VALUES (%d, '%s')", $asset->aid, serialize($info));
-          }
-        }
-      }
-      break;
-
-    // NOTE: not implemented yet
-    case 'update':
-      break;
-    case 'delete':
-      break;
-  }    
 }

@@ -1,5 +1,16 @@
 // $Id$
 
+2007-12-18
+ - cck support
+ - panels support with the asset_panels module
+ - better support for i18n and multi-site
+ - GUI improvements
+ - flv support for asset_bonus module
+ - ability to edit/move/delete assets and folders
+ - add asset_import module
+ - improved imagecache support
+ - improved TinyMCE support
+
 2007-06-28
  - #155368: mp3 player admin page fixes
  - reset the formatter cache on formatter defaults admin page

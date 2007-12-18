@@ -1,4 +1,4 @@
-// $Id$ 
+// $Id$
 /* Import plugin specific language pack */
 tinyMCE.importPluginLanguagePack('drupalasset', 'en');
 
@@ -37,16 +37,16 @@ var TinyMCE_DrupalAssetPlugin = {
 				var template = new Array();
 				var inst = tinyMCE.getInstanceById(editor_id);
 				var focusElm = inst.getFocusElement();
-				
+
 				// get base url
 				var base_url = tinyMCE.baseURL;
 				base_url = base_url.substring(0, base_url.indexOf('modules'));
-				
+
 				template['file'] = base_url + 'index.php?q=asset/wizard/tinymce';
 				template['width'] = 600;
 				template['height'] = 400;
 				template['html'] = false;
-				
+
 				// Is selection a asset
 				if (focusElm != null && focusElm.nodeName.toLowerCase() == "img") {
 					name = tinyMCE.getAttrib(focusElm, 'class');
@@ -54,18 +54,26 @@ var TinyMCE_DrupalAssetPlugin = {
 					if (name.indexOf('mceItemDrupalAsset') == -1) // Not a DrupalImage
 						return true;
 
-					// Get the rest of the DrupalImage attributes
-					align = tinyMCE.getAttrib(focusElm, 'align');
-					width = tinyMCE.getAttrib(focusElm, 'width');
-					height = tinyMCE.getAttrib(focusElm, 'height');
-					alt = decodeURIComponent(tinyMCE.getAttrib(focusElm, 'title')); // using 'title' because this doesn't seem to work with 'alt'
-					var miscAttribs = TinyMCE_DrupalAssetPlugin._parsePipeAttributes(alt);	// parse the deliminated attributes in the alt tag
-					aid = miscAttribs['aid'];
-					
-          template['file'] += '&aid=' + miscAttribs['aid'];
-					action = "update";
+                                        // Get the rest of the DrupalImage attributes
+                                        // align = tinyMCE.getAttrib(focusElm, 'align');
+                                        align = tinyMCE.getAttrib(focusElm, 'class'); // class="mceItemDrupalAsset asset-right"
+                                        align = align.split(" ");
+                                        align = align[1].split("-");
+                                        align = align[1];
+                                        format = tinyMCE.getAttrib(focusElm, 'src'); // http://yoursite.tld/asset/img/1468/asset/image. asset = formatter, image = format
+                                        format = format.split("asset/img/");
+                                        format = format[1].split("/");
+                                        format = format [1] + ":" + format[2]; // we now have asset:image, just perfect
+                                        width = tinyMCE.getAttrib(focusElm, 'width');
+                                        height = tinyMCE.getAttrib(focusElm, 'height');
+                                        alt = decodeURIComponent(tinyMCE.getAttrib(focusElm, 'title')); // using 'title' because this doesn't seem to work with 'alt'
+                                        var miscAttribs = TinyMCE_DrupalAssetPlugin._parsePipeAttributes(alt);  // parse the deliminated attributes in the alt tag
+                                        aid = miscAttribs['aid'];
+
+          template['file'] += '&aid=' + miscAttribs['aid'] + '&align=' + align + '&width=' + width + '&height=' + height + '&format=' + format;
+                                        action = "update";
 				}
-				
+
 				//WARNING: "resizable : 'yes'" below is painfully important otherwise
 				// tinymce will try to open a new window in IE using showModalDialog().
 				// And for some reason showModalDialog() doesn't respect the target="_top"
@@ -78,14 +86,14 @@ var TinyMCE_DrupalAssetPlugin = {
 	   // Pass to next handler in chain
 	   return false;
 	},
-	
+
 	cleanup : function(type, content) {
 		switch (type) {
 			case "insert_to_editor_dom":
 				break;
 			case "get_from_editor_dom":
 				break;
-			case "insert_to_editor": // called when TinyMCE loads existing data or when updating code using Edit HTML Source plugin 
+			case "insert_to_editor": // called when TinyMCE loads existing data or when updating code using Edit HTML Source plugin
 				// Parse all drupalasset filter tags and replace them with asset placeholders
 				var startPos = 0;
 				var index = 0;
@@ -101,9 +109,9 @@ var TinyMCE_DrupalAssetPlugin = {
             alignClass = '';
           }
 					endPos++;
-					
+
 					miscAttribs = encodeURIComponent(TinyMCE_DrupalAssetPlugin._buildPipeAttributes(attribs)); // escape(miscAttribs);
-					
+
 					// Insert asset
 					var contentAfter = content.substring(endPos);
 					content = content.substring(0, startPos);
@@ -130,7 +138,7 @@ var TinyMCE_DrupalAssetPlugin = {
           }
 					content += contentAfter;
 					index++;
-					
+
 					startPos++;
 				}
 				break;
@@ -142,32 +150,32 @@ var TinyMCE_DrupalAssetPlugin = {
           var endPos = content.indexOf('/>', startPos);
           var attribs = TinyMCE_DrupalAssetPlugin._parseHTMLAttributes(content.substring(startPos + 4, endPos));
           endPos += 2;
-          
+
           if (attribs['name'] != "mceItemDrupalAsset") {
             continue;
           }
-          
+
           var miscAttribs = decodeURIComponent(attribs["alt"]);
           var arrayMiscAttribs = TinyMCE_DrupalAssetPlugin._parsePipeAttributes(miscAttribs);
           arrayMiscAttribs['width'] = attribs['width'];
           arrayMiscAttribs['height'] = attribs['height'];
-          
+
           var contentBefore = content.substring(0, startPos);
           var contentAfter = content.substring(endPos);
           var drupalHTML = '';
           drupalHTML += '[asset|' + TinyMCE_DrupalAssetPlugin._buildPipeAttributes(arrayMiscAttribs) + ']';
           content = contentBefore + drupalHTML + contentAfter;
         }
-        
+
         while ((startPos = content.indexOf('<a', startPos+1)) != -1) {
           var endPos = content.indexOf('</a>', startPos);
           var attribs = TinyMCE_DrupalAssetPlugin._parseHTMLAttributes(content.substring(startPos + 2, endPos));
           endPos += 4;
-          
+
           if (!attribs['class'] || attribs['class'].indexOf("mceItemDrupalAsset") == -1) {
             continue;
           }
-          
+
           var miscAttribs = decodeURIComponent(attribs["title"]);
           if(!miscAttribs){
             continue;
@@ -175,7 +183,7 @@ var TinyMCE_DrupalAssetPlugin = {
           var arrayMiscAttribs = TinyMCE_DrupalAssetPlugin._parsePipeAttributes(miscAttribs);
           arrayMiscAttribs['width'] = attribs['width'];
           arrayMiscAttribs['height'] = attribs['height'];
-          
+
           var contentBefore = content.substring(0, startPos);
           var contentAfter = content.substring(endPos);
           var drupalHTML = '';
@@ -189,7 +197,7 @@ var TinyMCE_DrupalAssetPlugin = {
 		// Pass through to next handler in chain
 		return content;
 	},
-	
+
 	handleNodeChange : function(editor_id, node, undo_index, undo_levels, visual_aid, any_selection) {
 		if (node == null)
 			return;
@@ -199,15 +207,15 @@ var TinyMCE_DrupalAssetPlugin = {
 		do {
 			// This code looks at the name of the image to see if the drupalasset button should be selected.
 			// However, by default 'name' is not accepted by TinyMCE as a parameter for the img tag, so it must
-			// be added using the initialization string.  As far as THIS code goes, it could look at 'className' 
-			// instead, therefore avoiding this requirement, however the regular image button looks at the 
-			// 'name' value to see if it starts with 'mce_'.  If it does, it considers it an internal image and 
+			// be added using the initialization string.  As far as THIS code goes, it could look at 'className'
+			// instead, therefore avoiding this requirement, however the regular image button looks at the
+			// 'name' value to see if it starts with 'mce_'.  If it does, it considers it an internal image and
 			// does not highlight the regular image button.  If 'className' is used here instead, BOTH buttons
 			// highlight when a drupalimage is selected.
 			if (node.nodeName == "IMG" && tinyMCE.getAttrib(node, 'class').indexOf('mceItemDrupalAsset') == 0) {
 				tinyMCE.switchClass(editor_id + '_drupalasset', 'mceButtonSelected');
         $("#" + id + " img").src($("#"+id+" img").src().replace('-add.png','-edit.png'));
-        console.log('handleNodeChange: '+node+','+tinyMCE.getAttrib(node, 'width')+'x'+tinyMCE.getAttrib(node,'height'));
+        //console.log('handleNodeChange: '+node+','+tinyMCE.getAttrib(node, 'width')+'x'+tinyMCE.getAttrib(node,'height'));
         if(tinyMCE.getAttrib(node, 'readonly') == 'readonly'){
           var attribs = TinyMCE_DrupalAssetPlugin._parsePipeAttributes(decodeURIComponent(node.title));
           node.height = attribs['height'];
@@ -225,9 +233,9 @@ var TinyMCE_DrupalAssetPlugin = {
 
 		return true;
 	},
-	
+
 	// pipes | must be escaped with a backslash like this: \|
-	// note: values also cannot contain ] because the functions that call 
+	// note: values also cannot contain ] because the functions that call
 	// this function use the ] symbol to find the end of the drupalasset filter code
 	_parsePipeAttributes : function(attribute_string) {
 		var attributes = new Array();
@@ -242,7 +250,7 @@ var TinyMCE_DrupalAssetPlugin = {
 		}
 		return attributes;
 	},
-  
+
   _buildPipeAttributes : function (attributes) {
     var strAttr = '';
     for ( key in attributes){
@@ -250,21 +258,21 @@ var TinyMCE_DrupalAssetPlugin = {
     }
     return strAttr.substr(1);
   },
-  
-	
-	/* 
+
+
+	/*
 	 * Parses HTML attributes into a key=>value array.  Take a look at the example strings and see how
 	 * standard HTML entities within any value, such as the title and desc (which are combined in the
 	 * alt tag as a piped string) need to be converted to: &quot; &amp; &lt; &gt;
-	 * simple example string: 
-	 *     name="mceItemDrupalImage" width="200" height="150" src="/images/spacer.gif" 
+	 * simple example string:
+	 *     name="mceItemDrupalImage" width="200" height="150" src="/images/spacer.gif"
 	 *     alt="nid=123|title=My Photos|desc=" class="mceItemDrupalImage" align="right"
-	 * advanced example string: 
-	 *     name="mceItemDrupalImage" width="200" height="150" src="/images/spacer.gif" 
+	 * advanced example string:
+	 *     name="mceItemDrupalImage" width="200" height="150" src="/images/spacer.gif"
 	 *     alt="nid=123|title=&quot;To be or not to be&quot;|desc=That is the question." class="mceItemDrupalImage" align="right"
-	 * Any pipes | or closing brackets would also be a problem, not for this parsing function, but 
+	 * Any pipes | or closing brackets would also be a problem, not for this parsing function, but
 	 * when parsing the pipe deliminated string.  These characters need to be escaped with a backslash.
-	 * Unlike the quotes, this cannot be accomplished automatically within this TinyMCE plugin.  Any  
+	 * Unlike the quotes, this cannot be accomplished automatically within this TinyMCE plugin.  Any
 	 * user or Drupal module that inserts drupalasset filter strings in a post, whether using TinyMCE
 	 * or not, must backslash any pipes or closing brackets.
 	*/
@@ -272,7 +280,7 @@ var TinyMCE_DrupalAssetPlugin = {
 		var attributes = new Array();
 		var innerMatches = new Array();
 		var regExp = '([a-zA-Z0-9]+)[\s]*=[\s]*"([^"](?:\\.|[^\\"]*)*)"';
-	
+
 		var outerRegExp = new RegExp(regExp, "g"); // doesn't work without global (g)
 		var outerMatches = attribute_string.match(outerRegExp);
 		var innerRegExp = new RegExp(regExp); // doesn't work with global (g)
@@ -282,7 +290,7 @@ var TinyMCE_DrupalAssetPlugin = {
 		}
 		return attributes;
 	},
-  
+
   _previewSrc : function(attribs) {
     var src = 'asset/img/' + attribs['aid'];
     if(attribs['formatter']){

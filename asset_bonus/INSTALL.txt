@@ -1,5 +1,5 @@
 In order to use this module please download an additional set of files from 
-http://digett.com/sites/digett.com/files/asset_bonus.zip.  Unzip these files into 
+http://mostrey.be/files/asset_bonus.zip.  Unzip these files into 
 the asset_bonus folder resulting in a file structure like:
 
 - asset_bonus
@@ -12,4 +12,5 @@ the asset_bonus folder resulting in a file structure like:
   |
   |--swfobject
      |--swfobject.js
-     
+     |--flvplayer.swf
+     |--flvplayer.txt
