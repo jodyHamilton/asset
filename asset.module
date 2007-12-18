@@ -150,7 +150,7 @@ function asset_save($asset, $form_values = array()) {
   
   // make sure to set aid on the asset object, so modules can use it in assetapi insert
   $asset->aid = db_next_id('{asset}_aid');
-  db_query('INSERT INTO {asset} (aid,type,dirname,filename,extension,filesize,uid,status,title,author,description) VALUE (%d,"%s","%s","%s","%s",%d,%d,%d,"%s","%s","%s")', $asset->aid, $asset->type, $info['dirname'], $info['basename'], $info['extension'], $asset->filesize, $asset->uid, $asset->status, $asset->title, $asset->author, $asset->description);
+  db_query("INSERT INTO {asset} (aid,type,dirname,filename,extension,filesize,uid,status,title,author,description) VALUES (%d,'%s','%s','%s','%s',%d,%d,%d,'%s','%s','%s')", $asset->aid, $asset->type, $info['dirname'], $info['basename'], $info['extension'], $asset->filesize, $asset->uid, $asset->status, $asset->title, $asset->author, $asset->description);
   
   if($asset->status == ASSET_PRIVATE && is_array($asset->roles)){
     foreach($asset->roles as $rid => $status){

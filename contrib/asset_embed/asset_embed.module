@@ -230,7 +230,7 @@ function asset_embed_assetapi($op='list',$asset=null){
       return $fields;
     case 'insert':
       if($asset->type == 'embed'){
-        db_query('INSERT INTO {asset_embed} (aid, data) VALUES (%d, "%s")', $asset->aid, serialize($asset->embed_data));
+        db_query("INSERT INTO {asset_embed} (aid, data) VALUES (%d, '%s')", $asset->aid, serialize($asset->embed_data));
       }
       break;
   }
