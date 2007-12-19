@@ -259,15 +259,14 @@ function asset_admin_settings() {
   foreach($paths as $path){
     $files = file_scan_directory($path, 'asset_wizard\.css$');
     foreach ($files as $filename=>$file) {
-      list($lost, $lost, $filename) = split("/", $filename, 3);
       $form['asset_wizard_theme'][$filename] = array(
         '#type' => 'radio',
         '#return_value' => $filename,
-        '#default_value' => variable_get('asset_wizard_theme',substr(drupal_get_path('module','asset'),10).'/themes/default/asset_wizard.css'),
+        '#default_value' => variable_get('asset_wizard_theme',drupal_get_path('module','asset').'/themes/default/asset_wizard.css'),
         '#parents' => array('asset_wizard_theme'),
       );      
     }
-  }     
+  }
   
   return system_settings_form($form);
 }
@@ -335,33 +334,21 @@ function asset_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
       while ($asset = db_fetch_object($result)) {
         $additions['assets'][] = $asset->aid;
       }
-    case 'rss item':
-      // If there's an "image" field and it contains an actual image, we'll attach it to the rss feed
-      /*      if (!empty($node->field_images[0][aid])) {
-       	$asset = asset_load($node->field_images[0][aid]);
-        $mimes = array (
-         'jpg' => 'image/jpeg',
-         'gif' => 'image/gif',
-         'png' => 'image/x-png',
-        );
-        $info = pathinfo($asset->filepath);
-        if ($mimes[$info['extension']]) {
-          return array(            array(              'key' => 'enclosure',              'attributes' => array(                'url' => $asset->url,                'length' => $asset->filesize,                'type' => $mimes[$info['extension']],              )            )
-          );
-        }      }      return array();
-      */
-      break;
     case 'view' :
       foreach($node as $fieldname => $value) {
         if(substr($fieldname, 0, 6)=="field_") {
           // For each cck field, check if it's an asset field
           $fields = content_fields($fieldname, $node->type);
           if($fields['type']=="value") { // The asset computer name is "value"
-          	$assetcheck = 1;
+            $assetcheck = 1;
+          	/*
+          	// Only works in PHP5, as reported by scroogie
             foreach($node->$fieldname as &$asset) {
               // Add the html code for the preview
               if(!empty($asset['aid'])) $asset['value'] = asset_preview($asset['aid']);
             }
+            */
+            foreach (array_keys($node->fieldname) as $key) {              // Add the html code for the preview              if(!empty($node->fieldname[$key]['aid'])) $node->fieldname[$key]['value'] = asset_preview($node->fieldname[$key]['aid']);            }
           }
         }
       }
@@ -602,7 +589,7 @@ function asset_wizard() {
   drupal_add_js(drupal_get_path('module', 'asset') . '/asset.js');
   drupal_add_css(drupal_get_path('module', 'asset') . '/asset_wizard.css');
   list($sites, $site, $lost) = split("/", drupal_get_path('module', 'asset'), 3);
-  $theme = "sites/" . $site . "/" . variable_get('asset_wizard_theme', substr(drupal_get_path('module','asset'),10) . '/themes/default/asset_wizard.css');
+  $theme = variable_get('asset_wizard_theme',drupal_get_path('module','asset').'/themes/default/asset_wizard.css');
   drupal_add_css($theme);
   
   switch (arg(2)) {

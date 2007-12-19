@@ -32,7 +32,7 @@ function asset_panels_content_gallery($conf, $more_link = "") {
       // For each cck field, check if it's an asset field
       $fields = content_fields($fieldname, $node->type);
       if($fields['type']=="asset") {
-        foreach($node->$fieldname as &$asset) {
+        foreach($node->$fieldname as $asset) {
           // Add the html code for the preview
           if(!empty($asset['aid'])) {
             $a = asset_load(array('aid' => $asset['aid']));
