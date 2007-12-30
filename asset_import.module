@@ -46,7 +46,7 @@ function asset_import_menu($may_cache) {
       'title' => t('Asset import'),
       'callback' => 'drupal_get_form',
       'callback arguments' => array('asset_import_admin_settings'),
-      'access' => user_access('administer site configuration'),
+      'access' => user_access('import asset images'),
       'type' => MENU_NORMAL_ITEM,
       'description' => t('Change settings for the Asset import module.')
     );
