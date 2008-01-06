@@ -9,8 +9,8 @@
 function asset_import_help($section = '') {
   switch ($section) {
     case 'admin/content/asset_import':
-      $output = '<p>'. t("Import multiple image files and save them as image nodes. The files will be moved from their location into the image module's files directory. ")
-        . t("Searching for image files in %dirpath.", array('%dirpath' => realpath(variable_get('asset_import_path', '')))) .'</p>';
+      $output = '<p>'. t("Import multiple files and save them as assets. The files will be moved from their location into the chosen asset module's directory. ")
+        . t("Searching for files in %dirpath.", array('%dirpath' => realpath(variable_get('asset_import_path', '')))) .'</p>';
       return $output;
     case 'admin/settings/asset_import':
       return t("Configure the Asset import module's settings.");
@@ -73,32 +73,47 @@ function asset_import_form() {
   	$list = asset_wizard_directory_options();
     $form['parent'] = array(
       '#type' => 'select',
-      '#title' => t('Parent directory'),
+      '#title' => t('Parent Directory'),
       '#default_value' => $form_values['parent'] ? $form_values['parent'] : $_GET['dir'],
       '#options' => asset_wizard_directory_options(),
     );
-    // Put the image files into an array for the checkboxes and gather
-    // additional information like dimensions and filesizes. Make sure that
+    // Offer to create a subdirectory in the chosen asset directory
+    $form['subdirectory'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Create subdirectory'),
+      '#size' => 13,
+      '#description' => t('Enter the name of the subdirectory to be created in the chose Parent Directory. Don\'t add a leading or trailing slash. Leave blank to import all files in the Parent Directory.'),
+    );
+    // Copy or move the files? Is useful when importing files from other file modules to make a comparison
+    $form['copy'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Copy the files instead of moving them'),
+      '#description' => t('Default behavior is to move the selected files. Check this options if you wish to copy the files instead of moving them. This could be useful for testing the asset module in comparision with the file handling module(s) you are currently using.'),
+    );
+    // Put the files into an array for the checkboxes and gather
+    // additional information like the filesizes. Make sure that
     // there's no 0th element, because a checkbox with a zero value is seen as
     // unchecked and won't be imported.
-    $fields = array('filesize', 'dimensions', 'title', 'body');
+    // $fields = array('filesize', 'dimensions', 'title', 'body');
+    $fields = array('filesize', 'title', 'body');
     foreach ($fields as $field) {
       $form['files'][$field][0] = NULL;
     }
     $filelist = array(0 => NULL);
-
     foreach ($files as $file) {
-      $info = image_get_info($file->filename);
+      $info = pathinfo($file->filename);
       if ($info && isset($info['extension'])) {
         $filelist[] = substr($file->filename, strlen($dirpath) + 1);
         $form['files']['filesize'][] = array(
           '#type' => 'item',
           '#value' => format_size(filesize($file->filename)),
         );
+        /*
         $form['files']['dimensions'][] = array(
           '#type' => 'item',
           '#value' => $info['width'] .'x'. $info['height'],
         );
+        */
         $form['files']['title'][] = array(
           '#type' => 'textfield',
           '#size' => 20,
@@ -115,11 +130,9 @@ function asset_import_form() {
     foreach ($fields as $field) {
       $form['files'][$field][0] = NULL;
     }
-
     // Put the titles into an array.
     $form['files']['title']['#tree'] = TRUE;
     $form['files']['body']['#tree'] = TRUE;
-
     // Store a copy of the list into a form value so we can compare it to what
     // they submit and not have to worry about files being added or removed from
     // the filesystem.
@@ -149,8 +162,11 @@ function asset_import_form() {
 
 function theme_asset_import_form($form) {
   $output = drupal_render($form['parent']);
+  $output.= drupal_render($form['subdirectory']);
+  $output.= drupal_render($form['copy']);
   if (isset($form['import_file']) && $form['import_file']['#type'] == 'checkboxes') {
-    $header = array(theme('table_select_header_cell'), t('Name'), t('Size'), t('Dimensions'), t('Caption'), t('Copyright'));
+    // $header = array(theme('table_select_header_cell'), t('Name'), t('Size'), t('Dimensions'), t('Caption'), t('Copyright'));
+    $header = array(theme('table_select_header_cell'), t('Name'), t('Size'), t('Caption'), t('Copyright'));
     $rows = array();
     foreach (element_children($form['import_file']) as $key) {
       $filename = $form['import_file'][$key]['#title'];
@@ -159,7 +175,7 @@ function theme_asset_import_form($form) {
         drupal_render($form['import_file'][$key]),
         $filename,
         drupal_render($form['files']['filesize'][$key]),
-        drupal_render($form['files']['dimensions'][$key]),
+        // drupal_render($form['files']['dimensions'][$key]),
         drupal_render($form['files']['title'][$key]),
         drupal_render($form['files']['body'][$key]),
       );
@@ -173,7 +189,16 @@ function asset_import_form_submit($form_id, $form_values) {
   $nodes = array(); // We will save the results in this array
   $op = isset($form_values['op']) ? $form_values['op'] : '';
   if ($op == t('Import')) {
+  	$method = $form_values['copy'] ? 'copy' : 'rename';
     $dirpath = variable_get('asset_import_path', '');
+    if($form_values['subdirectory']) {
+      $options = array();
+      $dirpath_new = file_create_path($form_values['parent'].'/'.$form_values['subdirectory']);
+      if(!asset_check_directory($dirpath_new, FILE_CREATE_DIRECTORY, 'folder', $options)){
+        form_set_error('folder', t('Error creating %dir.',array('%dir'=>$dir)));
+        return;
+      }
+    }
     if (file_check_directory($dirpath)) {
       $nodes = array();
       $files = array();
@@ -184,8 +209,13 @@ function asset_import_form_submit($form_id, $form_values) {
         }
         $origname = $form_values['file_list'][$index];
         $filename = file_check_location($dirpath .'/'. $origname, $dirpath);
-        $target = file_directory_path() . '/' . $form_values['parent'] . '/' . $origname;
-        if ($filename && rename($filename, $target)) {
+        if(!$form_values['subdirectory']) {
+          $target = file_directory_path() . '/' . $form_values['parent'] . '/' . $origname;
+        }
+        else {
+          $target = file_directory_path() . '/' . $form_values['parent'] . '/' . $form_values['subdirectory'] . '/' . $origname;        	
+        }
+        if ($filename && $method($filename, $target)) {
           $options = array(
             'title' => $form_values['title'][$index],
             'author' => $form_values['body'][$index],
@@ -198,7 +228,6 @@ function asset_import_form_submit($form_id, $form_values) {
           $nodes[] = t('%filename', array('%filename' => $origname));
         }
       }
-
       // report back on our progress
       if (!empty($nodes)) {
         drupal_set_message(t('Successfully imported: ') . theme('item_list', $nodes));
