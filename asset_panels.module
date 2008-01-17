@@ -16,9 +16,11 @@ function asset_panels_panels_content_types() {
  */
 function asset_panels_content_gallery($conf, $more_link = "") {
   $node = node_load($conf['nid']);
-  $lang = i18n_get_lang();
-  if($node->language!=$lang && isset($node->translation[$lang]->nid)) {
-    $node = node_load($node->translation[$lang]->nid);
+  if(function_exists(i18n_get_lang) {
+    $lang = i18n_get_lang();
+    if($node->language!=$lang && isset($node->translation[$lang]->nid)) {
+      $node = node_load($node->translation[$lang]->nid);
+    }
   }
   if (!node_access('view', $node)) {
     return;
