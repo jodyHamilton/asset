@@ -1,4 +1,10 @@
 <?php
+// $Id$
+
+/**
+* @file
+* Asset module install file
+*/
 
 /**
  * Implementation of hook_install()

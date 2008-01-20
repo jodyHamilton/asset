@@ -3,9 +3,8 @@
 
 /**
 * @file
-* short description...
-*
-* long description...
+* This file is included by asset_asset_type() and includes all the file and
+* directory specific functions
 */
 
 /**

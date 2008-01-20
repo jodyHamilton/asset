@@ -1,5 +1,8 @@
 // $Id$
 
+2008-01-20 - Asset v1
+ - newer cleaner version of asset begins!
+
 2007-12-18
  - cck support
  - panels support with the asset_panels module

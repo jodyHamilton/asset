@@ -1,3 +1,5 @@
+// $Id$
+
 /**
  * the following are jslint (http://www.jslint.com) options
  * the syntax is very specific, especially there is no space
@@ -6,7 +8,7 @@
  * the first allows common browser globals like window and document
  * the second says that Drupal and $ are valid global variables
  * 
- * Last successful jslint verification: 2007-12-08
+ * Last successful jslint verification: 2007-12-20
  */
 /*jslint browser: true */
 /*extern Drupal, $, tb_init, tb_position, tb_remove */
@@ -282,7 +284,7 @@ Drupal.assetWizard.tb_init = function(dom_chunk){
     function(){
       $("#asset-wizard form").ajaxSubmit(options);
     }
-  )
+  );
 
   // create the close button
   $('#asset-wizard').append(

@@ -1,5 +1,11 @@
 /* $Id$ */
 
+#TB_load{
+  height:32px;
+  width:32px;
+  margin: -16px 0 0 -16px; /* -height/2 0 0 -width/2 */
+}
+
 /* Main Layout
 ==============================*/
 #asset-wizard{
@@ -14,6 +20,10 @@
 	bottom: 0px;
 	left: 0px;
 	right: 0px;
+}
+* html #asset-wizard{
+	height:expression(this.parentElement.clientHeight);
+  width:expression(this.parentElement.clientWidth);
 }
 
 #asset-wizard h1{
@@ -49,10 +59,17 @@
 	width: 150px;
 	left: 5px; 
 }
+* html .wizard-sidebar{
+	height:expression(this.parentElement.clientHeight - 70);
+}
 
 .wizard-main{
 	left: 165px; 	
 	right: 5px;
+}
+* html .wizard-main{
+	height:expression(this.parentElement.clientHeight - 70);
+  width:expression(this.parentElement.clientWidth - 170);
 }
 
 /* Buttons

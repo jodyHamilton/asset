@@ -3,9 +3,7 @@
 
 /**
 * @file
-* short description...
-*
-* long description...
+* asset wizard module
 */
 
 /**
@@ -92,7 +90,7 @@ function asset_wizard_menu($may_cache){
             );
           }
           if(arg(3) == 'finish'){
-            $macro = arg(4);
+            $macro = urldecode(arg(4));
             $items[] = array(
               'path' => 'asset/wizard/'. $aid .'/finish',
               'title' => t('Asset Wizard - Finish'),
@@ -158,7 +156,7 @@ function theme_asset_wizard_textarea_link($element) {
   drupal_add_css($path .'/js/thickbox/thickbox.css');
 
   // provide an accurate loadingAnimation path
-  drupal_add_js('tb_pathToImage = "'.base_path() . $path .'/thickbox/loadingAnimation.gif";','inline','footer'); 
+  drupal_add_js('tb_pathToImage = "'.base_path() . $path .'/images/thickbox.loading.gif";','inline','footer'); 
 
   // jquery form plugin
   drupal_add_js($path .'/js/form/jquery.form.js');
@@ -434,7 +432,7 @@ function theme_asset_wizard_formats($asset, $formats){
  * Wizard Step 3: Display a preview
  */
 function theme_asset_wizard_preview($asset, $preview, $value){
-  $button = '<button value="'. $value .'" onclick="Drupal.assetWizard.insert(this.value);">Finish</button>';
+  $button = '<button value="'. $value .'" onclick="Drupal.assetWizard.insert(\''. $value .'\');">Finish</button>';
   $output .= '<div class="asset-wizard-preview">'. $preview .'</div>';
   $output .= theme('asset_wizard_form_buttons', $button);
 
@@ -484,22 +482,6 @@ function tbl($text, $path, $attributes = array(), $query = NULL, $fragment = NUL
   return l($text, $path, $attributes, $query, $fragment, $absolute,$html);
 }
 
-//function theme_asset_wizard_page($content) {
-//  $title = drupal_get_title();
-//  asset_wizard_set_breadcrumb();
-//  $breadcrumb = theme('breadcrumb', drupal_get_breadcrumb());
-//  $messages = theme('status_messages');
-//    
-//  print '<div id="asset-wizard">';
-//  print $breadcrumb;
-//  print '<div class="path clear-block">'. asset_wizard_get_path() .'</div>';
-//  print $messages;
-//  print $content;
-//  print '</div>';
-//  
-//  exit();
-//}  
-
 function theme_asset_wizard_page($content) {
   $title = drupal_get_title();
   asset_wizard_set_breadcrumb();
@@ -512,7 +494,7 @@ function theme_asset_wizard_page($content) {
   print <<<EOD
   <div id="asset-wizard">
   
-    <h1>Asset Wizard ({$_GET['q']})</h1>
+    <h1>Asset Wizard</h1>
     
     <div class="wizard-sidebar">
       $links

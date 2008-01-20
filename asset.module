@@ -423,13 +423,24 @@ function asset_form($asset, $form_values = NULL) {
   $form['#asset'] = $asset;
 
   // Add the buttons.
-//  $form['preview'] = array('#type' => 'button', '#value' => t('Preview'), '#weight' => 40);
-  $form['submit'] = array('#type' => 'submit', '#value' => t('Submit'), '#weight' => 45);
+  // Allow asset_wizard a chance to theme the buttons.
+  $form['buttons'] = array('#tree' => FALSE, '#theme' => 'asset_form_buttons');
+  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Submit'), '#weight' => 45);
   if ($asset->aid && asset_access('delete', $asset)) {
     $form['delete'] = array('#type' => 'button', '#value' => t('Delete'), '#weight' => 50);
   }
   $form['#base'] = 'asset_form';
   return $form;
+}
+
+/**
+ * Allow asset_wizard a chance to theme the buttons.
+ */
+function theme_asset_form_buttons($form){
+  if(arg(1) == 'wizard' && module_exists('asset_wizard')){
+    return theme('asset_wizard_form_buttons', $form);
+  }
+  return drupal_render($form);
 }
 
 /**
