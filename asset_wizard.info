@@ -1,0 +1,5 @@
+; $Id$
+name = Asset Wizard
+description = Wizard Interface for the asset module
+package = Asset
+version = "$Name$"

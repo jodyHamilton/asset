@@ -1,0 +1,624 @@
+<?php
+// $Id$
+
+/**
+* @file
+* short description...
+*
+* long description...
+*/
+
+/**
+ * Implementation of hook_perm().
+ */
+function asset_wizard_perm(){
+  return array('access asset wizard');
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function asset_wizard_menu($may_cache){
+  $items = array();
+  if($may_cache){
+    $items[] = array(
+      'path' => 'asset/wizard',
+      'title' => t('Asset Wizard'),
+      'type' => MENU_CALLBACK,
+      'callback' => 'asset_wizard_main',
+      'access' => user_access('access asset wizard'),
+    );
+    foreach (asset_get_types() as $type) {
+      $type_url_str = str_replace('_', '-', $type->type);
+      $items[] = array(
+        'path' => 'asset/wizard/add/'. $type_url_str,
+        'title' => drupal_ucfirst($type->name),
+        'access' => asset_access('create', $type->type),
+        'type' => MENU_CALLBACK,
+        'callback' => 'asset_wizard_add',
+        'callback arguments' => array($type),
+      );
+    }
+  }
+  else{
+    if(arg(0) == 'asset' && arg(1) == 'wizard'){
+      $items[] = array(
+        'path' => 'asset/wizard/browse',
+        'title' => t('Asset Wizard - Browse'),
+        'type' => MENU_CALLBACK,
+        'callback' => 'asset_wizard_browse',
+        'callback arguments' => array(),
+        'access' => user_access('access asset wizard'),
+      );
+      if(is_numeric(arg(2))){
+        $aid = arg(2);
+        $asset = asset_load($aid);
+        if(!$asset || $asset->type == 'directory'){
+          $items[] = array(
+            'path' => 'asset/wizard/'. $aid,
+            'title' => t('Asset Wizard - Browse'),
+            'type' => MENU_CALLBACK,
+            'callback' => 'asset_wizard_browse',
+            'callback arguments' => array($asset),
+            'access' => user_access('access asset wizard'),
+          );
+        }
+        else{
+          $items[] = array(
+            'path' => 'asset/wizard/'. $aid,
+            'title' => t('Asset Wizard - Select Format'),
+            'type' => MENU_CALLBACK,
+            'callback' => 'asset_wizard_formats',
+            'callback arguments' => array($asset),
+            'access' => user_access('access asset wizard'),
+          );
+          $format = arg(3);
+          if($format && $asset->formatters[$format]){
+            $attr = array();
+            if($macro = arg(4)){
+              $macros = asset_get_macros($macro);
+              $attr = $macros[$macro];              
+            }
+            else{
+              $attr = array('format' => $format);
+            }
+            $items[] = array(
+              'path' => 'asset/wizard/'. $aid .'/'. $format,
+              'title' => t('Asset Wizard - Options'),
+              'type' => MENU_CALLBACK,
+              'callback' => 'asset_wizard_format_options',
+              'callback arguments' => array($asset, $attr),
+              'access' => user_access('access asset wizard'),
+            );
+          }
+          if(arg(3) == 'finish'){
+            $macro = arg(4);
+            $items[] = array(
+              'path' => 'asset/wizard/'. $aid .'/finish',
+              'title' => t('Asset Wizard - Finish'),
+              'type' => MENU_CALLBACK,
+              'callback' => 'asset_wizard_preview',
+              'callback arguments' => array($asset, $macro),
+              'access' => user_access('access asset wizard'),
+            );
+          }            
+        }
+      }        
+    }
+  }
+  return $items;
+}
+
+/**
+ * Implementation of hook_elements
+ * This is where we add the link to textareas
+ */
+function asset_wizard_elements() {
+  $type['textarea'] = array ('#process' => array ('asset_wizard_textarea' => array()));
+  $type['textfield'] = array (
+    '#process' => array ('asset_wizard_textfield' => array()),
+    '#asset_return_type' => FALSE,
+  );
+  
+  return $type;
+}
+
+/**
+ * The #process callback function for the textareas
+ */
+function asset_wizard_textarea($element) {
+  if(_asset_wizard_element_match($element) && _asset_wizard_page_match()){
+    $output = theme('asset_wizard_textarea_link', $element);
+    $element['#suffix'] .= $output;
+  }
+  return $element;
+}
+
+/**
+ * The #process callback function for the textfield
+ */
+function asset_wizard_textfield($element) {
+  if($element['#asset_return_type'] == 'macro'){
+    return asset_wizard_textarea($element);
+  }
+  elseif($element['#asset_return_type'] == 'id'){
+    $output = theme('asset_wizard_textarea_link', $element);
+    $element['#field_suffix'] .= $output;
+  }
+  return $element;
+}
+
+/**
+ * Theme the textarea link
+ */
+function theme_asset_wizard_textarea_link($element) {
+  $path = drupal_get_path('module', 'asset_wizard');
+  // add thickbox stuff
+  drupal_add_js($path .'/js/thickbox/jquery.thickbox.js');
+  drupal_add_css($path .'/js/thickbox/thickbox.css');
+
+  // provide an accurate loadingAnimation path
+  drupal_add_js('tb_pathToImage = "'.base_path() . $path .'/thickbox/loadingAnimation.gif";','inline','footer'); 
+
+  // jquery form plugin
+  drupal_add_js($path .'/js/form/jquery.form.js');
+
+  // asset wizard stuff
+  drupal_add_css($path .'/asset_wizard.css');
+  drupal_add_js($path .'/js/asset_wizard.js');
+
+  asset_wizard_js_settings();
+
+  if($element['#asset_return_type']){
+    $params = 'return='.$element['#asset_return_type'];
+  }
+
+  $link = tbl('Asset Wizard', 'asset/wizard', array('id'=>'asset-wizard-'. $element['#id'], 'class'=>'asset-wizard-start', 'title'=>'Asset Wizard'), $params);
+
+  return $link;
+}
+
+/**
+ * always ignore certain textareas based on element attributes (mainly #id)
+ */
+function _asset_wizard_element_match($element){
+  $ignore = array(
+    'edit-log',
+  );
+  if(in_array($element['#id'], $ignore)){
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Should we show the insert asset link, determined by admin setting 
+ * Borrowed from tinymce.module
+ *
+ * @return
+ *   TRUE if can render, FALSE if not allowed.
+ */
+function _asset_wizard_page_match() {
+  $page_match = FALSE;
+  $access_option = variable_get('asset_wizard_access_option',1);
+  $access_pages = variable_get('asset_wizard_access_pages',"node/add/*\nnode/*/edit");
+
+  if ($access_pages) {
+    // If the PHP option wasn't selected
+    if ($access_option < 2) {
+      $path = drupal_get_path_alias($_GET['q']);
+      $regexp = '/^('. preg_replace(array('/(\r\n?|\n)/', '/\\\\\*/', '/(^|\|)\\\\<front\\\\>($|\|)/'), array('|', '.*', '\1'. preg_quote(variable_get('site_frontpage', 'node'), '/') .'\2'), preg_quote($access_pages, '/')) .')$/';
+      $page_match = !($access_option xor preg_match($regexp, $path));
+    }
+    else {
+      $page_match = drupal_eval($access_pages);
+    }
+  }
+  // No pages were specified to block so show on all
+  else {
+    $page_match = TRUE;
+  }
+
+  return $page_match;
+}
+
+function asset_wizard_main(){
+  $items = array();
+  $items[] = tbl(t('Browse'), 'asset/wizard/browse') .'<br/>'. t('Choose from a list of existing assets.');
+  foreach (asset_get_types() as $type) {
+    if(asset_access('create', $type->type)){
+      $type_url_str = str_replace('_', '-', $type->type);
+      $text = t('New !type', array('!type' => drupal_ucfirst($type->name)));
+      $items[] = tbl($text, 'asset/wizard/add/'. $type_url_str, array(), NULL, NULL, FALSE, TRUE)
+               . '<br />'. $type->description;
+    }
+  }
+  $content = theme('asset_wizard_main', $items);
+  return theme('asset_wizard_page', $content);  
+}
+
+/**
+ * Step 1: Display a browsable list of assets
+ */
+function asset_wizard_browse($asset = NULL){
+  if(!$asset){
+    $asset = asset_load(0);
+  }     
+  $items = array();
+  if($asset->aid){
+    $parent = asset_load($asset->pid);
+    $parent->link_title = '..';
+    $items[] = $parent;
+  }
+  $result = db_query('SELECT * FROM {asset} WHERE pid=%d', $asset->aid);
+  while($row = db_fetch_object($result)){
+    //$items[$row->aid] = $row->title;
+    $items[] = asset_load($row->aid);
+  }
+  $content = theme('asset_wizard_browse', $items);
+  return theme('asset_wizard_page', $content);     
+}
+
+/**
+ * Step 2: Display a list of available formats for a given asset
+ */
+function asset_wizard_formats($asset){
+  // at this point we need to check if we should continue ($_GET['return']=='macro')
+  // or simply return the id
+  if($_GET['return'] == 'id'){
+    return drupal_goto('asset/wizard/'. $asset->aid .'/finish/'. $asset->aid);    
+  }
+  $content = theme('asset_wizard_formats', $asset, $asset->formatters);
+  return theme('asset_wizard_page', $content);  
+}
+
+/**
+ * Step 3: Display the options form
+ */
+function asset_wizard_format_options($asset, $attr){
+  $content = '<h3>'. $$attr['format'] .'</h3>';
+  $content .= drupal_get_form('asset_wizard_format_options_form', $asset, $attr);
+  return theme('asset_wizard_page', $content);  
+}
+
+/**
+ * Form Builder for Step 3
+ */
+function asset_wizard_format_options_form($asset, $attr){
+  $format = $asset->formatters[$attr['format']];
+  $options = module_invoke($format->module, 'asset_formatter', 'form', $asset, $attr);
+  if(!$options){
+    $macro = asset_build_macro(array('aid' => $asset->aid, 'format' => $format->format));
+    drupal_goto('asset/wizard/'. $asset->aid .'/finish/'. $macro);
+  }
+  
+  $form = array();
+  $form['options'] = $options;
+  $form['options']['#tree'] = TRUE;
+  $form['options']['aid'] = array('#type' => 'value', '#value' => $asset->aid);
+  $form['options']['format'] = array('#type' => 'value', '#value' => $format->format);
+  
+  $form['buttons'] = array('#tree' => FALSE, '#theme' => 'asset_wizard_form_buttons');
+  $form['buttons'][] = array('#type' => 'submit', '#value' => t('Preview'));
+  
+  $form['#type'] = 'form';
+  if($_GET['return']){
+    $form['#action'] = url($_GET['q'], 'return='. $_GET['return']);
+  }
+   
+  return $form;
+} 
+
+/**
+ * Sumbit handler for Step 3
+ */
+function asset_wizard_format_options_form_submit($form_id, $form_values){
+  $aid = $form_values['options']['aid'];
+  $macro = asset_build_macro($form_values['options']);
+  return 'asset/wizard/'. $aid .'/finish/'. urlencode($macro);
+}
+
+/**
+ * Step 4: Display a preview of the formatted asset
+ */
+function asset_wizard_preview($asset, $macro){
+  if(is_numeric($macro)){
+    $preview = asset_view($asset);
+  }
+  else{
+    $macros = asset_get_macros($macro);
+    $format = $macros[$macro];        
+    $preview = asset_render_macro($format);
+  }
+  $content = theme('asset_wizard_preview', $asset, $preview, $macro);
+  return theme('asset_wizard_page', $content);  
+}
+
+function asset_wizard_add($type){
+  $output = asset_add($type->type);
+  return theme('asset_wizard_page', $output);
+}
+
+/**
+ * Set breadcrumb based on asset heirarchy
+ */
+function asset_wizard_set_breadcrumb(){
+  $breadcrumb[] = tbl(t('Step 1: Start'), 'asset/wizard');
+  if(arg(2) && !is_numeric(arg(2))){
+    $breadcrumb[] = tbl(t('Step 2: Selection'), 'asset/wizard/browse');
+  }
+  elseif(is_numeric(arg(2))){
+    $asset = asset_load(arg(2));
+    if($asset->type == 'directory'){
+      $breadcrumb[] = tbl(t('Step 2: Selection'), 'asset/wizard/'. $asset->aid);
+    }
+    else{
+      $breadcrumb[] = tbl(t('Step 2: Selection'), 'asset/wizard/'. $asset->pid);
+      $breadcrumb[] = tbl(t('Step 3: Formatting'), 'asset/wizard/'.$asset->aid);
+    }    
+  }
+  drupal_set_breadcrumb($breadcrumb);    
+}
+
+function asset_wizard_get_path(){
+  $asset = is_numeric(arg(2)) ? asset_load(arg(2), TRUE) : NULL;
+  $breadcrumb = array();
+//  if(in_array(arg(3), array_keys($asset->formatters))){
+//    $breadcrumb[] = tbl(_asset_wizard_truncate($asset->formatters[arg(3)]['name'], 30), 'asset/wizard/'. $asset->aid .'/'. arg(3));
+//  }
+  if($asset->aid){
+    $breadcrumb[] = tbl(_asset_wizard_truncate($asset->title, 30), 'asset/wizard/'. $asset->aid);
+  }
+  while($pid = $asset->pid){
+    $asset = asset_load($pid);
+    $breadcrumb[] = tbl(_asset_wizard_truncate($asset->title, 20), 'asset/wizard/'. $asset->aid);
+  }
+  $breadcrumb[] = tbl(t('Assets'), 'asset/wizard/browse');
+  return join(' / ', array_reverse($breadcrumb));
+}
+
+function _asset_wizard_truncate($text, $max_chars){
+  if(strlen($text) > $max_chars){
+    $text = substr($text, 0, $max_chars);
+    $last_word = strrchr($text, ' ');
+    if($last_word == ' '){
+      $text = substr($text, 0, strlen($text)-1) .'...';
+    }
+    else{
+      $text = preg_replace('/'. preg_quote($last_word, '/') .'$/', '...', $text);
+    }
+  }
+  return $text;  
+}
+
+/*******************************************************************************
+ * thickbox theming
+ ******************************************************************************/
+
+function theme_asset_wizard_main($items = array()){
+  return '<div class="asset-wizard-main">'. theme('item_list', $items) .'</div>';
+}
+ 
+/**
+ * Wizard Step 1: Display the icon list for browsing
+ */
+function theme_asset_wizard_browse($items = array()){
+  $size = 64;
+  $links = array();
+  foreach($items as $asset){
+    $icon = theme('asset_icon', $asset, $size); 
+    $links[] = tbl($icon, 'asset/wizard/'. $asset->aid, array(), NULL, NULL, FALSE, TRUE);
+  }
+  $output .= '<ul class="asset-wizard-browse clear-block">';
+  foreach($links as $link){
+    $output .= '<li>'. $link .'</li>';
+  }
+  $output .= '</ul>';
+  return $output;
+}
+
+/**
+ * Wizard Step 2: Display the list of available formats
+ */
+function theme_asset_wizard_formats($asset, $formats){
+  $items = array();
+  foreach($formats as $format){
+    $items[] = tbl($format->name, 'asset/wizard/'. $asset->aid .'/'. $format->format)
+             . '<br/>' . $format->description;
+  }
+  $output .= theme('item_list', $items);
+  return $output;  
+}
+
+/**
+ * Wizard Step 3: Display a preview
+ */
+function theme_asset_wizard_preview($asset, $preview, $value){
+  $button = '<button value="'. $value .'" onclick="Drupal.assetWizard.insert(this.value);">Finish</button>';
+  $output .= '<div class="asset-wizard-preview">'. $preview .'</div>';
+  $output .= theme('asset_wizard_form_buttons', $button);
+
+  return $output;  
+}
+
+function theme_asset_wizard_form_buttons($form){
+  $output = (is_array($form)) ? drupal_render($form) : $form;
+  return '<div class="wizard-buttons">'. $output .'</div>';
+}
+
+function asset_wizard_js_settings(){
+  static $run = FALSE;
+  
+  if($run){
+    return;
+  }
+  $settings = array(
+    'height' => 400,
+    'width' => 560, 
+    'url' => url('asset/wizard'),
+    'title' => t('Asset Wizard'),    
+    'assetUrl' => url('asset'),
+  );
+  
+  drupal_add_js(array('assetWizard' => $settings), 'setting');
+  $run = TRUE;
+}
+
+/**
+ * Wrapper for l() function to add thickbox class and query params
+ */
+function tbl($text, $path, $attributes = array(), $query = NULL, $fragment = NULL, $absolute = FALSE, $html = FALSE) {
+  if (isset($attributes['class'])) {
+    $attributes['class'] .= ' thickbox';
+  }
+  else {
+    $attributes['class'] = 'thickbox';
+  }
+  if (!isset($attributes['title'])) {
+    $attributes['title'] = t('Asset Wizard');
+  }
+  if($_GET['return']){
+    $query .= ($query ? '&' :'') . 'return='. $_GET['return'];
+  }
+  $query .= '&height=400&width=560&modal=true';
+  return l($text, $path, $attributes, $query, $fragment, $absolute,$html);
+}
+
+//function theme_asset_wizard_page($content) {
+//  $title = drupal_get_title();
+//  asset_wizard_set_breadcrumb();
+//  $breadcrumb = theme('breadcrumb', drupal_get_breadcrumb());
+//  $messages = theme('status_messages');
+//    
+//  print '<div id="asset-wizard">';
+//  print $breadcrumb;
+//  print '<div class="path clear-block">'. asset_wizard_get_path() .'</div>';
+//  print $messages;
+//  print $content;
+//  print '</div>';
+//  
+//  exit();
+//}  
+
+function theme_asset_wizard_page($content) {
+  $title = drupal_get_title();
+  asset_wizard_set_breadcrumb();
+  $breadcrumb = theme('breadcrumb', drupal_get_breadcrumb());
+  $messages = theme('status_messages');
+  $help = theme('help');
+  $links = theme('asset_wizard_links');
+  $selected = theme('asset_wizard_selected');
+  
+  print <<<EOD
+  <div id="asset-wizard">
+  
+    <h1>Asset Wizard ({$_GET['q']})</h1>
+    
+    <div class="wizard-sidebar">
+      $links
+      $selected
+    </div>
+    
+    <div class="wizard-main">
+      <h2>$title</h2>
+      <div class="wizard-content">
+        $messages
+        $help
+        $content
+      </div>      
+    </div>
+    
+  </div>
+
+EOD;
+
+  exit();
+}  
+
+function theme_asset_wizard_selected(){
+  if(is_numeric(arg(2))){
+    $asset = asset_load(arg(2));
+    $output = '<div class="wizard-selected"><h2>Selected Asset</h2>'
+            . '<div class="content">'
+            . theme('asset_icon', $asset)
+            . '</div></div>';
+    return $output;
+  }
+}
+
+function theme_asset_wizard_links(){
+  // figure out the step we are on
+  $step = 0;
+  if(arg(2) && !is_numeric(arg(2))){
+    $step = 1;
+  }
+  elseif(arg(2)){
+    $asset = asset_load(arg(2));
+    if($asset->type == 'directory'){
+      $step = 1;
+    }
+    else{
+      if(arg(3) == 'finish'){
+        $step = 4;
+      }
+      elseif(arg(3)){
+        $step = 3;
+      }
+      else{
+        $step = 2;
+      }
+    }
+  }
+  
+  // build the links/spans based on what step we're on
+  $links = array();
+  $aid = is_numeric(arg(2)) ? arg(2) : 0;
+  
+  if($_GET['return'] == 'id'){
+    $steps = array(
+      'asset/wizard' => t('Start'),
+      'asset/wizard/browse' => t('Select an Asset'),
+      'asset/wizard/'. $aid .'/finish/'. arg(4) => t('Preview'),
+    );
+  }
+  else{
+    $steps = array(
+      'asset/wizard' => t('Start'),
+      'asset/wizard/browse' => t('Select an Asset'),
+      'asset/wizard/'. $aid => t('Select a Format'),
+      'asset/wizard/'. $aid .'/'. arg(3) => t('Formatting Options'),
+      'asset/wizard/'. $aid .'/finish/'. arg(4) => t('Preview'),
+    );
+  }
+
+  $i = 0;
+  foreach($steps as $path => $text){
+    if($step == $i){
+      $links[] = '<span class="active">'. $text .'</span>';
+    }
+    elseif($step > $i){
+      $links[] = tbl($text, $path);
+    }
+    else{
+      $links[] = '<span>'. $text .'</span>';
+    }
+    $i++;
+  }
+  
+  return '<ul><li>'. join('</li><li>', $links) .'</li></ul>';  
+}
+
+function asset_wizard_help($section) {
+  $aid = arg(2);
+  
+  switch ($section) {
+    case 'asset/wizard':
+      return '<p>'. t('The asset wizard allows you to create and select digital assets to use in the context of this site.  To get started, select a method for choosing the appropriate asset.') .'</p>';
+    case 'asset/wizard/'. $aid .'/finish':
+      return '<p>'. t('Here is the preview of your formatted asset.  You can click any of the links in the sidebar to make changes, or click Finish to insert this into the document.') .'</p>';
+    case 'asset/wizard/browse':
+      return '<p>'. t('Select the asset you wish to use.') .'</p>';
+    case 'asset/wizard/'. $aid:
+      return '<p>'. t('Select from the list of available formats.') .'</p>';
+  }
+}
