@@ -2,13 +2,23 @@
 // $Id$
 
 /**
-* @file
-* short description...
-*
-* long description...
-*/
+ * @file
+ * Digital asset management for Drupal.
+ *
+ * This module aims to provide a single, common interface for managing and using
+ * all manner of digital assets within Drupal.
+ */
 
+/**
+ * @addtogroup asset
+ * @{
+ */
 
+/**
+ * TODO: put this function call somewhere!  I've tried it in asset_menu(FALSE),
+ * but since the loaded files contain module hooks, this breaks if the hooks
+ * aren't available very early.  So for now, here it is.
+ */
 asset_load_modules();
 
 /**
@@ -1075,3 +1085,7 @@ function theme_asset_icon($asset, $size = 64){
   return '<div class="icon">' . asset_icon($asset, $size) . '</div>'
        . '<div class="caption">'. ($asset->link_title ? $asset->link_title : $asset->title) .'</div>';
 }
+
+/**
+ * @} End of "addtogroup asset".
+ */

@@ -2,9 +2,14 @@
 // $Id$
 
 /**
-* @file
-* asset wizard module
-*/
+ * @file
+ * Wizard-style interface for Asset.
+ */
+
+/**
+ * @addtogroup asset
+ * @{
+ */
 
 /**
  * Implementation of hook_perm().
@@ -604,3 +609,7 @@ function asset_wizard_help($section) {
       return '<p>'. t('Select from the list of available formats.') .'</p>';
   }
 }
+
+/**
+ * @} End of "addtogroup asset".
+ */

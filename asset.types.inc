@@ -8,6 +8,11 @@
 */
 
 /**
+ * @addtogroup asset
+ * @{
+ */
+
+/**
  * Implementation of hook_asset_type('load') for file asset type
  */
 function asset_file_load($asset){
@@ -293,3 +298,6 @@ if(!function_exists('mime_content_type ')) {
   }
 }
 
+/**
+ * @} End of "addtogroup asset".
+ */
