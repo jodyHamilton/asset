@@ -32,9 +32,9 @@ function asset_embed_invoke(){
  * @param $all
  *   Should all providers be returned or just the enabled ones.
  * @return
- * 	 The array of availabe providers
+ *   The array of availabe providers
  */
-function asset_embed_list_providers($all = FALSE){
+function asset_embed_load_providers($all = FALSE){
   static $providers = NULL;
   
   if($providers){
@@ -56,11 +56,16 @@ function asset_embed_list_providers($all = FALSE){
 }
 
 function asset_embed_extract_id($provider, $text){
-  return asset_embed_invoke($provider, 'extract_id', $text);
+  $info = asset_embed_invoke($provider, 'extract_id', $text);
+  if(!$info){
+    return FALSE;
+  }
+  $info['provider'] = $provider;
+  return $info;
 }
 
 function asset_embed_asset_settings(){
-  $providers = asset_embed_list_providers(TRUE);
+  $providers = asset_embed_load_providers(TRUE);
   if(is_array($providers)){
     foreach($providers as $provider => $name){
       $form[$provider] = array(
@@ -85,154 +90,88 @@ function asset_embed_asset_settings(){
   return system_settings_form($form);
 }
 
-function asset_embed_asset_type($op = 'info', $delta=0, $form_values=array()){
+function asset_embed_asset_type($op = 'info', $asset = NULL){
+  asset_embed_load_providers();
   switch($op){
     case 'info':
       return array(
         'embed' => array(
-          'value' => t('Embed'),
-          'title' => t('Embed content from another site.'),
-          'src' => drupal_get_path('module','asset').'/lullacons/movie-option-add.png',
+          'name' => t('Embed'),
+          'module' => 'asset_embed',
+          'description' => t('Embed content from 3rd party sites like YouTube.'),
         ),
       );
     case 'form':
-      switch($delta){
-        case 'embed': 
-          $form['provider'] = array(
-            '#type' => 'select',
-            '#title' => t('Provider'),
-            '#options' => asset_embed_list_providers(),
-            '#weight' => -2,
-          );
-          $form['embed'] = array(
-            '#type' => 'textarea',
-            '#title' => t('Embed Code'),
-            '#rows' => 3,
-            '#weight' => -1,
-          );
-          break;
-      }
+      $form['provider'] = array(
+        '#type' => 'select',
+        '#title' => t('Provider'),
+        '#options' => asset_embed_load_providers(),
+        '#default_value' => $asset->provider,
+      );
+      $form['embed'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Embed Code'),
+        '#rows' => 3,
+        '#default_value' => $asset->embed,
+      );
       return $form;
     case 'validate':
-      // return a valid asset aid
-      switch($delta){
-        case 'embed':
-          if($data = asset_embed_extract_id($form_values['provider'], $form_values['embed'])){
-            $path = $form_values['parent'].'/' . $data['id'] . '.' . $form_values['provider'];
-            $asset->filepath = $path;
-            $asset->type = 'embed';
-            $asset->embed_data = $data;
-            $asset = asset_save($asset, $form_values);
-            return $asset->aid;
-          }else{
-            form_set_error('embed','Error extracting video ID.</em>');
-          }
-          break;
+      if(!asset_embed_extract_id($asset->provider, $asset->embed)){
+        form_set_error('embed','Error extracting video ID.</em>');
       }
       break;
-    case 'submit':
-      // must return a valid asset aid
-      switch($delta){
-      }
+    case 'insert':
+      $data = asset_embed_extract_id($asset->provider, $asset->embed);
+      db_query('INSERT INTO {asset_embed} (aid, data) VALUES (%d, "%s")', $asset->aid, serialize($data));
       break;
+    case 'update':
+      $data = asset_embed_extract_id($asset->provider, $asset->embed);
+      db_query('UPDATE {asset_embed} SET data="%s" WHERE aid=%d', serialize($data), $asset->aid);
+      break;
+    case 'load':
+      $data = unserialize(db_result(db_query('SELECT data FROM {asset_embed} WHERE aid=%d',$asset->aid)));
+      return array('embed' => $data);
+    case 'view':
+      return asset_render($asset, 'fullsize');
+    case 'icon':
+    case 'img':
+      return asset_embed_invoke($asset->embed['provider'], 'thumbnail_src', $asset);
   }
       
 }
 
 function asset_embed_asset_formatter($op='info',$asset=null,$attr=array()){
-  $providers = asset_embed_list_providers();
+  $providers = asset_embed_load_providers();
   switch($op){          
     case 'info':
-      $formats['fullsize'] = array(
-        'name' => 'Full-Size Embed',
-        'types' => array('embed' => array('*')),
-        'description' => t('Display the full-size version of the embedded content.'),
-      );
-      $formats['thumbnail'] = array(
-        'name' => 'Thumbnail Embed',
-        'types' => array('embed' => array('*')),
-        'description' => t('Display a thumbnail preview image of the embedded content.'),
-      );
-      return $formats;
-    case 'init':
-      break;      
-    case 'options':
-      switch($attr['format']){
-        case 'thumbnail':
-          $form['height'] = array (
-            '#type' => 'textfield',
-            '#title' => t('Height'),
-            '#size' => '10',
-            '#default_value' => '120',
-          );
-          $form['width'] = array (
-            '#type' => 'textfield',
-            '#title' => t('Width'),
-            '#size' => '10',
-            '#default_value' => '160',
-          );
-          break;
-        case 'fullsize':
-          $form['height'] = array (
-            '#type' => 'textfield',
-            '#title' => t('Height'),
-            '#size' => '10',
-            '#default_value' => '335',            
-          );
-          $form['width'] = array (
-            '#type' => 'textfield',
-            '#title' => t('Width'),
-            '#size' => '10',
-            '#default_value' => '425',            
-          );
-        break;
+      if($asset->type == 'embed'){
+        $formats['fullsize'] = array(
+          'name' => 'Full-Size Embed',
+          'description' => t('Display the full-size version of the embedded content.'),
+          'module' => 'asset_embed',
+        );
+        $formats['thumbnail'] = array(
+          'name' => 'Thumbnail Embed',
+          'description' => t('Display a thumbnail preview image of the embedded content.'),
+          'module' => 'asset_embed',
+        );
+        return $formats;
       }
-      $form = array_merge($form, (array)asset_embed_invoke($asset->embed['provider'], 'formatter_options', $asset, $attr['format']));
-      return $form;
-    case 'preview':
-      if(function_exists('theme_asset_embed_'.$asset->embed['provider'].'_thumbnail')){
-        return theme('asset_embed_'.$asset->embed['provider'].'_thumbnail', $asset);
-      }
-      return theme('asset_embed_thumbnail',$asset);
+      break;
     case 'img':
       return asset_embed_invoke($asset->embed['provider'], 'thumbnail_src', $asset, $attr);
       break;
-    case 'details':
-      break;
     case 'render':
-      switch($attr['format']){
-        case 'thumbnail':
-          if(function_exists('theme_asset_embed_'.$asset->embed['provider'].'_thumbnail')){
-            return theme('asset_embed_'.$asset->embed['provider'].'_thumbnail', $asset);
-          }
-          return theme('asset_embed_thumbnail',$asset);
-          break;
-        case 'fullsize':
-        default:
-          
-          if(function_exists('theme_asset_embed_'.$asset->embed['provider'].'_fullsize')){
-            return theme('asset_embed_'.$asset->embed['provider'].'_fullsize', $asset, $attr);
-          }
-          return theme('asset_embed_fullsize',$asset,$attr);
-          break;
-      }      
+      $function = 'asset_embed_'. $asset->embed['provider'] .'_'. $attr['format'];
+      return theme($function, $asset, $attr);
       break;
-  }
-}
-
-function asset_embed_assetapi($op='list',$asset=null){
-  switch($op){
-    case 'load':
-      if($asset->type == 'embed'){        
-        $fields['embed'] = unserialize(db_result(db_query('SELECT data FROM {asset_embed} WHERE aid=%d',$asset->aid)));
-        $fields['embed']['provider'] = $asset->extension;
+    case 'form':
+    default:
+      $function = 'asset_embed_'. $asset->embed['provider'] .'_'. $op;
+      if(function_exists($function)){
+        return call_user_func($function, $asset, $attr);
       }
-      return $fields;
-    case 'insert':
-      if($asset->type == 'embed'){
-        db_query("INSERT INTO {asset_embed} (aid, data) VALUES (%d, '%s')", $asset->aid, serialize($asset->embed_data));
-      }
-      break;
+      break;      
   }
 }
 

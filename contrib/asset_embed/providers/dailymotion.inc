@@ -46,13 +46,15 @@ function theme_asset_embed_dailymotion_thumbnail($asset, $attr = array()){
 
 function theme_asset_embed_dailymotion_fullsize($asset, $attr = array()){
   $id = $asset->embed['id'];
+  $width = $attr['width'] ? $attr['width'] : 425; 
+  $height = $attr['height'] ? $attr['height'] : 335; 
 
-  return '<object width="'.$attr['width'].'" height="'.$attr['height'].'">'
+  return '<object width="'. $width .'" height="'. $height .'">'
        . '<param name="movie" value="http://www.dailymotion.com/swf/'.$id.'"></param>'
        . '<param name="allowfullscreen" value="false"></param>'
        . '<param name="wmode" value="transparent"></param>'
        . '<embed src="http://www.dailymotion.com/swf/'.$id.'" type="application/x-shockwave-flash" '
-       . 'wmode="transparent" width="'.$attr['width'].'" height="'.$attr['height'].'" allowfullscreen="false">'
+       . 'wmode="transparent" width="'. $width .'" height="'. $height .'" allowfullscreen="false">'
        . '</embed></object>';
 }
 
