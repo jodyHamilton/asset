@@ -1,0 +1,5 @@
+; $Id$
+name = Asset Search Folders
+description = RSS based search folders.
+package = Asset
+version = "$Name$"

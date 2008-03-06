@@ -1,0 +1,6 @@
+; $Id$
+name = Asset Embedded Media
+description = Use 3rd-party embedded media as assets.
+dependencies = asset emfield
+package = Asset
+version = "$Name$"

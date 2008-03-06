@@ -1,0 +1,39 @@
+<?php
+// $Id$
+
+/**
+* @file
+* asset_emfield module install file
+*/
+
+/**
+ * Implementation of hook_install()
+ */
+function asset_emfield_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      // this definition taken from the emfield cck field definition
+      db_query("CREATE TABLE {asset_emfield} (
+        aid int unsigned NOT NULL default 0,
+        embed longtext NOT NULL default '',
+        value varchar(255) NOT NULL default '',
+        provider varchar(255) NOT NULL default '',
+        data longtext NOT NULL default '',
+        PRIMARY KEY  (aid)
+      ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;");
+      break;
+      
+    case 'pgsql':
+      //TODO: postgresql 
+      break;
+  }
+  drupal_set_message(t('Asset Embedded Media tables have been configured.'));
+}
+
+/**
+ * Implementation of hook_install()
+ */
+function asset_emfield_uninstall() {
+  db_query('DROP TABLE {asset_emfield}');
+}
