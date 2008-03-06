@@ -1,4 +1,0 @@
-name = Asset YouTube
-description = Use youtube videos as drupal assets.
-dependencies = asset
-package = Asset

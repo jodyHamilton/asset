@@ -1,6 +1,0 @@
-; $Id$
-name = Asset Embed
-description = "Generic asset handler for &lt;embed&gt;-ed content"
-package = Asset
-dependencies = asset
-version = "$Name$"

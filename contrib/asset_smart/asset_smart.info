@@ -1,5 +1,0 @@
-; $Id$
-name = Asset Smart Folders
-description = RSS based smart folders.
-package = Asset
-version = "$Name$"
