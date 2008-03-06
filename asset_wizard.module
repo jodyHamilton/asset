@@ -45,14 +45,24 @@ function asset_wizard_menu($may_cache){
   }
   else{
     if(arg(0) == 'asset' && arg(1) == 'wizard'){
-      $items[] = array(
-        'path' => 'asset/wizard/browse',
-        'title' => t('Asset Wizard - Browse'),
-        'type' => MENU_CALLBACK,
-        'callback' => 'asset_wizard_browse',
-        'callback arguments' => array(),
-        'access' => user_access('access asset wizard'),
-      );
+//      $items[] = array(
+//        'path' => 'asset/wizard/browse',
+//        'title' => t('Asset Wizard - Browse'),
+//        'type' => MENU_CALLBACK,
+//        'callback' => 'asset_wizard_browse',
+//        'callback arguments' => array(),
+//        'access' => user_access('access asset wizard'),
+//      );
+      foreach(asset_wizard_methods() as $key => $method){
+        $items[] = array(
+          'path' => 'asset/wizard/method/'. $key,
+          'title' => t('Asset Wizard') .' - '. $method['name'],
+          'type' => MENU_CALLBACK,
+          'callback' => $method['callback'],
+          'access' => user_access('access asset wizard'),
+        );
+      }
+      
       if(is_numeric(arg(2))){
         $aid = arg(2);
         $asset = asset_load($aid);
@@ -108,6 +118,16 @@ function asset_wizard_menu($may_cache){
         }
       }        
     }
+    elseif(arg(0) == 'assetfield' && is_numeric(arg(1))){
+      $asset = asset_load(arg(1));
+      $items[] = array(
+        'path' => 'assetfield/'. $asset->aid,
+        'type' => MENU_CALLBACK,
+        'callback' => 'assetfield_js_callback',
+        'callback arguments' => array($asset),
+        'access' => user_access('access asset wizard'),
+      );
+    }
   }
   return $items;
 }
@@ -121,10 +141,69 @@ function asset_wizard_elements() {
   $type['textfield'] = array (
     '#process' => array ('asset_wizard_textfield' => array()),
     '#asset_return_type' => FALSE,
+    '#asset_config' => 'id',
+  );
+  
+  $type['assetfield'] = array(
+  	'#input' => TRUE, 
+		'#size' => 10,
   );
   
   return $type;
 }
+
+/**
+ * Format an assetfield.
+ *
+ * @param $element
+ *   An associative array containing the properties of the element.
+ *   Properties used:  title, value, description, size, maxlength, required, attributes autocomplete_path
+ * @return
+ *   A themed HTML string representing the assetfield.
+ */
+function theme_assetfield($element) {
+  $class = array('form-asset');
+  $output = '';
+
+  _form_set_class($element, $class);
+
+  if($element['#value']){
+    $asset = asset_load($element['#value']);
+    $preview = '<span class="icon">' . asset_icon($asset, 64) . '</span>';
+    $title = $asset->title;
+  }
+  else{  
+    $preview = '<span class="icon">'. theme('image', drupal_get_path('module', 'asset_Wizard') .'/icons/missing.png', NULL, NULL, array('width' => 64), FALSE). '</span>';
+    $title = '';
+  }
+  
+  $output .= '<div class="assetfield-icon">'. theme('asset_wizard_textarea_link', $element, $preview) .'</div>';
+  $output .= '<div class="assetfield-detail">';
+  $output .= '<div class="assetfield-title">'. $title .'</div>';
+  $output .= '<input type="text" maxlength="10" size="10" name="'. $element['#name'] .'" id="'. $element['#id'] .'" value="'. check_plain($element['#value']) .'"'. drupal_attributes($element['#attributes']) .' />';
+  $output .= '</div>';
+  
+  $output = '<div class="assetfield-container clear-block">'. $output .'</div>';
+  
+  return theme('form_element', $element, $output);
+}
+
+function assetfield_js_callback($asset){
+  $data = array(
+    'title' => $asset->title,
+  );
+  
+  $icon = asset_type_invoke($asset, 'icon');
+  if(!$icon){
+    $icon = drupal_get_path('module', 'asset') . '/icons/file.png';
+  }
+  
+  $data['icon'] = base_path() . $icon;
+  
+  print drupal_to_js($data);
+  exit();
+}
+
 
 /**
  * The #process callback function for the textareas
@@ -140,28 +219,52 @@ function asset_wizard_textarea($element) {
 /**
  * The #process callback function for the textfield
  */
-function asset_wizard_textfield($element) {
-  if($element['#asset_return_type'] == 'macro'){
+function asset_wizard_textfield2($element) {
+  $config = asset_wizard_get_config($element['#asset_config']);
+  if($config['return type'] == 'macro'){
     return asset_wizard_textarea($element);
   }
-  elseif($element['#asset_return_type'] == 'id'){
-    $output = theme('asset_wizard_textarea_link', $element);
-    $element['#field_suffix'] .= $output;
+  elseif($config['return type'] == 'id'){
+//    $output = theme('asset_wizard_textarea_link', $element);
+//    $element['#field_suffix'] .= $output;
+
+    $preview = theme('asset_wizard_textfield_preview', $element);
+    $element['#field_prefix'] .= '<div class="clear-block"><div class="asset-textfield-preview">'. $preview .'</div>';
+    $element['#field_suffix'] .= '</div>';
   }
   return $element;
+}
+
+function theme_asset_wizard_textfield_preview($element){
+  if($element['#value']){
+    $asset = asset_load($element['#value']);
+    $text = theme('asset_icon', $asset);
+    $text = '<span class="icon">' . asset_icon($asset, 100) . '</span><br/>'
+          . '<span class="caption">'. ($asset->link_title ? $asset->link_title : $asset->title) .'</span>'; 
+  }
+  else{
+    $path = drupal_get_path('module', 'asset_wizard') .'/icons/select.png';
+    $alt = t('Click to start');
+    $icon = theme('image', $path, $alt, $alt);
+    
+    $text = '<div class="icon-empty">'. $icon .'</div>'
+          . '<div class="caption">'. t('Click to start') .'</div>';
+  }
+  
+  return theme('asset_wizard_textarea_link', $element, $text);    
 }
 
 /**
  * Theme the textarea link
  */
-function theme_asset_wizard_textarea_link($element) {
+function theme_asset_wizard_textarea_link($element, $text = NULL) {
   $path = drupal_get_path('module', 'asset_wizard');
   // add thickbox stuff
   drupal_add_js($path .'/js/thickbox/jquery.thickbox.js');
   drupal_add_css($path .'/js/thickbox/thickbox.css');
 
   // provide an accurate loadingAnimation path
-  drupal_add_js('tb_pathToImage = "'.base_path() . $path .'/images/thickbox.loading.gif";','inline','footer'); 
+  drupal_add_js('tb_pathToImage = "'.base_path() . $path .'/js/thickbox/loadingAnimation.gif";','inline','footer'); 
 
   // jquery form plugin
   drupal_add_js($path .'/js/form/jquery.form.js');
@@ -174,9 +277,11 @@ function theme_asset_wizard_textarea_link($element) {
 
   if($element['#asset_return_type']){
     $params = 'return='.$element['#asset_return_type'];
+    $params .= '&config='. ($element['#asset_config'] ? $element['#asset_config'] : 'macro');
   }
 
-  $link = tbl('Asset Wizard', 'asset/wizard', array('id'=>'asset-wizard-'. $element['#id'], 'class'=>'asset-wizard-start', 'title'=>'Asset Wizard'), $params);
+  $text = $text ? $text : t('Asset Wizard');
+  $link = tbl($text, 'asset/wizard', array('id'=>'asset-wizard-'. $element['#id'], 'class'=>'asset-wizard-start', 'title'=>'Asset Wizard'), $params, NULL, FALSE, TRUE);
 
   return $link;
 }
@@ -225,17 +330,87 @@ function _asset_wizard_page_match() {
   return $page_match;
 }
 
+function asset_wizard_methods(){
+  static $methods;
+  
+  if(!isset($methods)){
+    $methods['browse'] = array(
+      'name' => t('Browse'),
+      'callback' => 'asset_wizard_browse',
+      'description' => t('Choose from a list of existing assets.'),
+    );
+    $methods = $methods + module_invoke_all('asset_wizard', 'info');
+  }
+
+  return $methods;
+}
+  
+/**
+ * Load the current asset wizard config array, passed in throught $_GET['config']
+ * Options for config are 'macro' (default), 'id', or the name of a cck field
+ */
+function asset_wizard_get_config($cfg_name = NULL){
+  static $configs = array();
+  
+  $cfg_name = $cfg_name ? $cfg_name : ($_GET['config'] ? $_GET['config'] : 'default');
+
+  $config = array();
+  
+  if(!isset($config[$cfg_name])){
+    // build an array of asset cck fields
+    $asset_fields = array();
+    if(module_exists('content')){
+      $fields = content_fields();
+      foreach($fields as $name => $field){
+        if($field['type'] == 'asset'){
+          $asset_fields[$name] = $field;
+        }
+      }
+    }
+
+    // asset field config
+    if($asset_fields[$cfg_name]){
+      $config = $asset_fields[$cfg_name];
+      $config['return type'] = 'id';
+    }
+    // id type config
+    elseif($cfg_name == 'id'){
+      $config = array(
+        'return type' => 'id',
+      );
+    }
+    // everything else, including 'default', gets the default config
+    else{
+      $config = array(
+        'return type' => 'macro',
+      );
+    }
+    
+    $configs[$cfg_name] = $config;
+  }
+  
+  return $configs[$cfg_name];
+}
+
 function asset_wizard_main(){
+  $config = asset_wizard_get_config();
+  
   $items = array();
-  $items[] = tbl(t('Browse'), 'asset/wizard/browse') .'<br/>'. t('Choose from a list of existing assets.');
+  foreach(asset_wizard_methods() as $key => $method){
+    $items[] = tbl($method['name'], 'asset/wizard/method/'. $key) .'<br/>'. $method['description'];
+  }
+  $create = array();
   foreach (asset_get_types() as $type) {
-    if(asset_access('create', $type->type)){
+    if(!$config['allowed_types'] || 
+      ($config['allowed_types'][$type->type] && asset_access('create', $type->type))){
       $type_url_str = str_replace('_', '-', $type->type);
       $text = t('New !type', array('!type' => drupal_ucfirst($type->name)));
-      $items[] = tbl($text, 'asset/wizard/add/'. $type_url_str, array(), NULL, NULL, FALSE, TRUE)
+      $create[] = tbl($text, 'asset/wizard/add/'. $type_url_str, array(), NULL, NULL, FALSE, TRUE)
                . '<br />'. $type->description;
     }
   }
+  $items[] = array('data' => '<h3>'. t('Create...') .'</h3>', 'children' => $create);
+  
   $content = theme('asset_wizard_main', $items);
   return theme('asset_wizard_page', $content);  
 }
@@ -244,6 +419,8 @@ function asset_wizard_main(){
  * Step 1: Display a browsable list of assets
  */
 function asset_wizard_browse($asset = NULL){
+  $config = asset_wizard_get_config();
+  
   if(!$asset){
     $asset = asset_load(0);
   }     
@@ -253,7 +430,22 @@ function asset_wizard_browse($asset = NULL){
     $parent->link_title = '..';
     $items[] = $parent;
   }
-  $result = db_query('SELECT * FROM {asset} WHERE pid=%d', $asset->aid);
+  $types = array();
+  $query = 'SELECT aid FROM {asset} WHERE pid=%d';
+  $args[] = $asset->aid;
+  
+  if($config['allowed_types']){
+    foreach($config['allowed_types'] as $type){
+      if($type){
+        $types[] = $type;
+      }
+    }
+    if($types){
+      $query .= ' AND type IN ("%s")';
+      $args[] = implode('","', $types);
+    }
+  }
+  $result = db_query($query, $args);
   while($row = db_fetch_object($result)){
     //$items[$row->aid] = $row->title;
     $items[] = asset_load($row->aid);
@@ -461,6 +653,7 @@ function asset_wizard_js_settings(){
     'url' => url('asset/wizard'),
     'title' => t('Asset Wizard'),    
     'assetUrl' => url('asset'),
+    'noIcon' => base_path() . drupal_get_path('module', 'asset_Wizard') .'/icons/missing.png',
   );
   
   drupal_add_js(array('assetWizard' => $settings), 'setting');
@@ -482,6 +675,9 @@ function tbl($text, $path, $attributes = array(), $query = NULL, $fragment = NUL
   }
   if($_GET['return']){
     $query .= ($query ? '&' :'') . 'return='. $_GET['return'];
+    if($_GET['config']){
+      $query .= '&config='. $_GET['config'];
+    }
   }
   $query .= '&height=400&width=560&modal=true';
   return l($text, $path, $attributes, $query, $fragment, $absolute,$html);

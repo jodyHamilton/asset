@@ -23,49 +23,49 @@ function imagecache_asset_formatter($op='info',$asset=null,$attr=array()){
     case 'info':
       $presets = _imagecache_get_presets();
       foreach($presets as $id=>$name){
-        if(variable_get('asset_imagecache_preset_'.$id, 1)){
-          $formats[$name] = array(
-            'name' => $name . ' (imagecache)',
-            'types' => array('local' => array('jpg','gif','png')),
-            'description' => _imagecache_asset_description($id),
-          );
+        $formats[$name] = array(
+          'name' => $name . ' (imagecache)',
+          'description' => _imagecache_asset_description($id),
+          'module' => 'imagecache',
+        );
+      }
+      return $formats;
+    case 'load':
+      if($asset->type=='file' && strpos($asset->file['filemime'], 'image/') === 0){
+        $presets = _imagecache_get_presets();
+        foreach($presets as $id=>$name){
+          $formats[] = $name;
         }
       }
       return $formats;
-    case 'options':
-      $path = file_create_path('imagecache/'.$attr['format'].'/'.$asset->filepath);
-      if(!file_exists($path)){
-        // this is the easiest albeit indirect way i can see to generate the image
-        $result = drupal_http_request(url(file_create_url($path)));
-      }
-      $size = image_get_info(file_create_path('imagecache/'.$attr['format'].'/'.$asset->filepath));
-      $form['width'] = array('#type' => 'hidden', '#value' => $size['width']);        
-      $form['height'] = array('#type' => 'hidden', '#value' => $size['height']);
-              
-      $form['_width'] = array(
-        '#type' => 'item',
-        '#title' => t('Width, preset by imagecache'),
-        '#value' => $size['width'] . 'px',
-      );
-      $form['_height'] = array(
-        '#type' => 'item',
-        '#title' => t('Height, preset by imagecache'),
-        '#value' => $size['height'] . 'px',
-      );   
-      return $form;
-      break;
-    case 'preview':
-      return theme('imagecache', $attr['format'], $asset->filepath, $asset->title, $asset->title);
     case 'img':
-      $path = file_directory_path() .'/imagecache/'. $attr['format'] .'/'. $asset->filepath;
+      $path = file_directory_path() .'/imagecache/'. $attr['format'] .'/'. $asset->file['filepath'];
       return $path;
     case 'render':
-      return theme('imagecache',$attr['format'],$asset->filepath);
+      $title = $attr['title'] ? $attr['title'] : $asset->title;
+      $alt = $attr['alt'] ? $attr['alt'] : $asset->title;
+      return theme('imagecache', $attr['format'], $asset->file['filepath'], $alt, $title);
+    case 'form':
+      $form['alt'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Alt Text'),
+        '#default_value' => $attr['alt'] ? $attr['alt'] : $asset->title,
+        '#description' => t('Alt attribute for the image'),
+      );
+      $form['title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Title'),
+        '#default_value' => $attr['title'] ? $attr['title'] : $asset->title,
+        '#description' => t('Title attribute for the image'),
+      );
+      $form['wysiwyg'] = array('#type' => 'hidden', '#value' => urlencode(file_create_url(file_directory_path() .'/imagecache/'. $attr['format'] .'/'. $asset->file['filepath']))); 
+      return $form;
   }
 }
 
 function _imagecache_asset_description($preset_id){
   $actions = _imagecache_actions_get_by_presetid($preset_id);
+  $items = array();
   foreach($actions as $action){
     switch($action['data']['function']){
       case 'scale':
@@ -89,23 +89,4 @@ function _imagecache_asset_description($preset_id){
     }
   }
   return join($items, '  Then, ');
-}
-
-function _asset_imagecache_get_size($name,$path){
-  $preset = _imagecache_preset_load_by_name($name);
-  $actions = _imagecache_actions_get_by_presetid($preset);
-  $action = array_pop($actions);
-  $rule = $action['data'];
-  
-  if(!$rule['height'] || !$rule['width']){
-    $info = image_get_info(file_create_path($path));
-    if(!$rule['height']){
-      $aspect = $rule['width'] / $info['width'];
-      $rule['height'] = $info['height'] * $aspect; 
-    }else if(!$rule['width']){
-      $aspect = $rule['height'] / $info['height'];
-      $rule['width'] = $info['width'] * $aspect; 
-    }
-  }
-  return $rule;
 }

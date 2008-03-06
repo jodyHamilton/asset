@@ -21,6 +21,9 @@
  * @{
  */
 
+define('ASSET_PRIVATE', 0);
+define('ASSET_PUBLIC', 1);
+
 /**
  * TODO: put this function call somewhere!  I've tried it in asset_menu(FALSE),
  * but since the loaded files contain module hooks, this breaks if the hooks
@@ -317,6 +320,12 @@ function asset_load($param = array(), $reset = NULL) {
       }
     }
 
+    // load the permissions
+    $result = db_query('SELECT * FROM {asset_role} WHERE aid=%d', $asset->aid);
+    while ($role = db_fetch_array($result)) {
+      $asset->roles[$role['rid']] = $role['status'] ? $role['rid'] : 0;
+    }
+    
     // get formatters
     $asset->formatters = asset_get_formatters($asset);
   
@@ -427,6 +436,39 @@ function asset_form($asset, $form_values = NULL) {
   if ($extra = asset_type_invoke($asset, 'form')) {
     $form = array_merge_recursive($form, $extra);
   }
+  
+  $form['credit'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Credit'),
+    '#default_value' => $asset->credit ? $asset->credit : '',
+    '#description' => t('The credit or license of this asset.')
+  );
+  
+  $form['description'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Description'),
+    '#default_value' => $asset->description ? $asset->description : '',
+    '#description' => t('A short description of this module. May be used differently by different formatters.'),
+    '#rows' => 3,
+  );
+  
+  $form['permissions']['status'] = array(
+    '#type' => 'radios',
+    '#title' => t('Permissions'),
+    '#description' => t('Select the permissions for this asset.  Selecting Public will allow anyone with asset permissions to use this asset.  By selecting Private, you can restrict which roles, if any, can access this asset.  If you select Private and do not select any roles, you will be the only user with access to this asset.'),
+    '#required' => true,
+    '#default_value' => isset($asset->status) ? $asset->status : ASSET_PUBLIC,
+    '#options' => array(
+      ASSET_PUBLIC => t('Public'),
+      ASSET_PRIVATE => t('Private'),
+    ),
+  );
+  $form['permissions']['roles'] = array(
+    '#type' => 'checkboxes',
+    '#options' => user_roles(0, 'browse assets'),
+    '#default_value' => isset($asset->roles) ? $asset->roles : array(),
+  );
+  
   if (!isset($form['title']['#weight'])) {
     $form['title']['#weight'] = -5;
   }
@@ -568,11 +610,11 @@ function asset_view($asset){
 /**
  * Central asset rendering function.
  * 
- * @param 
- * 	  $asset The asset to be rendered
- * @param
- *    $format    Can be either a full array of formatting options (like that
- * returned from asset_get_macros() or a string specifying the formatter to use
+ * @param $asset 
+ *   The asset to be rendered
+ * @param $format    
+ *   Can be either a full array of formatting options (like that returned from 
+ *   asset_get_macros() or a string specifying the formatter to use
  */
 function asset_render($asset, $format = NULL){
   if(is_array($format)){
@@ -587,6 +629,9 @@ function asset_render($asset, $format = NULL){
     $output = module_invoke($format->module, 'asset_formatter', 'render', $asset, $attr);
     $attr['display'] = $attr['display'] ? $attr['display'] : $format->display;
     return theme('asset', $output, $attr);
+  }
+  else{
+    return 'n/a';
   }
 }
 
@@ -691,7 +736,8 @@ function asset_delete($aid) {
   if (asset_access('delete', $asset)) {
     db_query('DELETE FROM {asset} WHERE aid = %d', $asset->aid);
     db_query('DELETE FROM {asset_node} WHERE aid = %d', $asset->aid);
-
+    db_query('DELETE FROM {asset_role} WHERE aid = %d', $asset->aid);
+    
     // Get the asset-specific bits.
     asset_type_invoke($asset, 'delete');
 
@@ -717,14 +763,28 @@ function asset_get_types(){
   return $types;
 }
 
-function asset_get_formatters($asset){
-  $formatters = array();
-  $info_array = module_invoke_all('asset_formatter', 'info', $asset);
-  foreach ($info_array as $format => $info) {
-    $info['format'] = $format;
-    $info['display'] = ($info['display'] == 'inline') ? 'inline' : 'block';
-    $formatters[$format] = (object) $info;
+function asset_get_formatters($asset = NULL){
+  static $formatters;
+  
+  if(!isset($formatters)){
+    $formatters = array();
+    $info_array = module_invoke_all('asset_formatter', 'info');
+    foreach ($info_array as $format => $info) {
+      $info['format'] = $format;
+      $info['display'] = ($info['display'] == 'inline') ? 'inline' : 'block';
+      $formatters[$format] = (object) $info;
+    }
   }
+  
+  if($asset){
+    $asset_formatters = array();
+    $formats = module_invoke_all('asset_formatter', 'load', $asset);
+    foreach($formats as $format){
+      $asset_formatters[$format] = $formatters[$format];
+    }
+    return $asset_formatters;
+  }
+  
   return $formatters;  
 }
 
@@ -768,6 +828,8 @@ function asset_save(&$asset) {
     'created' => $asset->created,
     'changed' => $asset->changed,
     'pid' => $asset->pid, 
+    'credit' => $asset->credit,
+    'description' => $asset->description,
   );
   $asset_table_types = array(
     'aid' => '%d',
@@ -778,6 +840,8 @@ function asset_save(&$asset) {
     'created' => '%d',
     'changed' => '%d',
     'pid' => '%d',
+    'credit' => "'%s'",
+    'description' => "'%s'",
   );
 
   //Generate the asset table query
@@ -792,10 +856,18 @@ function asset_save(&$asset) {
     $asset_table_values[] = $asset->aid;
     $query = 'UPDATE {asset} SET '. implode(', ', $arr) .' WHERE aid = %d';
   }
-
-  // Insert the asset into the database:
+ 
+  // save the asset into the database:
   db_query($query, $asset_table_values);
 
+  // save the asset permissions
+  db_query('DELETE FROM {asset_role} WHERE aid=%d', $asset->aid);
+  if ($asset->status == ASSET_PRIVATE && is_array($asset->roles)) {
+    foreach ($asset->roles as $rid => $status) {
+      db_query('INSERT INTO {asset_role} (aid, rid, status) VALUES (%d, %d, %d)', array($asset->aid, $rid, ($status ? ASSET_PUBLIC : ASSET_PRIVATE)));
+    }
+  }
+  
   // Call the asset specific callback (if any):
   if ($asset->is_new) {
     asset_type_invoke($asset, 'insert');
@@ -878,18 +950,24 @@ function asset_asset_type($op = 'info', &$asset = NULL){
 function asset_asset_formatter($op='info',$asset=null,$attr=array()){
   switch($op){
     case 'info':
-      if($asset->type=='file'){
-        $formats['link'] = array(
+      return array(
+        'link' => array(
           'name' => t('Link'),
           'description' => t('A simple link to the file.'),
           'module' => 'asset',
-        );
+        ),
+        'image' => array(
+          'name' => t('Image'),
+          'description' => t('Standard image embedding'),
+          'module' => 'asset',
+        ),
+      );
+    case 'load':
+      $formats = array();
+      if($asset->type=='file'){
+        $formats[] = 'link';
         if(strpos($asset->file['filemime'], 'image/') === 0){
-          $formats['image'] = array(
-            'name' => t('Image'),
-            'description' => t('Standard image embedding.'),
-            'module' => 'asset',
-          );
+          $formats[] = 'image';
         }
       }
       return $formats;

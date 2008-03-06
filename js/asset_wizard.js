@@ -26,7 +26,9 @@ Drupal.assetWizard = {
   // optional callback on insertion of asset wizard value
   onInsert: null,
   // optional callback on close of wizard
-  onClose:  null
+  onClose:  null,
+  // history array
+  history: []
 };
 
 /**
@@ -38,6 +40,13 @@ Drupal.assetWizard.initialize = function(){
 		function(){
 			var id = this.id.replace('asset-wizard-', '#');
 			Drupal.assetWizard.input = $(id)[0];
+      
+      $preview = $(id).parent().find('.asset-textfield-preview a');
+      
+      if($preview.size()){
+        Drupal.assetWizard.preview = $preview;
+        Drupal.assetWizard.afterInsert = Drupal.assetWizard.textfieldPreview;
+      }
 		}
 	);
 	
@@ -53,6 +62,9 @@ Drupal.assetWizard.initialize = function(){
 					clearInterval(Drupal.assetWizard.textareaInterval);
 				}
 			);
+      // we could make this a hidden input in the form code, but just hiding it here
+      // allows non-javascript users at least a little functionality.
+      $(id).filter('.form-text').hide();
 		}
 	);
 };
@@ -186,9 +198,12 @@ Drupal.assetWizard.insert = function(assetValue){
   
   // allow for an afterInsert callback
   if(wizard.afterInsert && typeof(wizard.afterInsert) == 'function'){
-    wizard.afterInsert();
+    wizard.afterInsert(assetValue);
     wizard.afterInsert = null;
   }
+  
+  // fire 'notify' event
+  $.event.trigger('assetWizardInsert', [this, assetValue]);
   
   // Close the dialog
   wizard.close();
@@ -219,37 +234,16 @@ Drupal.assetWizard.textareaUpdate = function(textarea, value){
   }
 };
 
+Drupal.assetWizard.textfieldPreview = function(aid){
+//  Drupal.assetWizard.preview.load(Drupal.settings.assetWizard.assetUrl + '/' + aid + '/icon/ajax');
+  Drupal.assetWizard.preview = null;
+};
+
 /**
  * Close the wizard.  Called when the cancel button is clicked and after insert
  */
 Drupal.assetWizard.close = function(){
   tb_remove();
-};
-
-/**
- * getArgs() by Jim K - From Orielly JSB pp 244
- *
- * This function parses comma separated name=value 
- * argument pairs from the query string of the URL. 
- * It stores the name=value pairs in 
- * properties of an object and then returns that object
- */
-Drupal.assetWizard.getArgs = function() {
-  var args = {};
-
-  var query = window.location.search.substring(1); // Get Query String
-  var pairs = query.split("&"); // Split query at the ampersand
-  
-  for(var i = 0; i < pairs.length; i++) { // Begin loop through the querystring
-    var pos = pairs[i].indexOf('='); // Look for "name=value"
-    if (pos == -1){
-      continue; // if not found, skip to next
-    }
-    var argname = pairs[i].substring(0,pos); // Extract the name
-    var value = pairs[i].substring(pos+1); // Extract the value
-    args[argname] = unescape(value); // Store as a property
-  }
-  return args; // Return the Object
 };
 
 function insertToEditor(value){
@@ -259,11 +253,29 @@ function insertToEditor(value){
 $(document).ready(Drupal.assetWizard.initialize);
 
 /**
+ * ajax form submit callbacks
+ */
+Drupal.assetWizard.beforeSubmit = function(formData, jqForm, options){
+//	console.log($.param(formData));
+  $('.wizard-content').addClass('wizard-loading');		
+};
+
+// on form submit inside thickbox
+Drupal.assetWizard.formSubmit = function(data){
+	$('#TB_ajaxContent').html(data);
+	// copied from line 226 of jquery.thickbox.js
+  tb_position();
+  $("#TB_load").remove();
+  tb_init("#TB_ajaxContent a.thickbox");
+  $("#TB_window").css({display:"block"});	
+  $('.wizard-content').removeClass('wizard-loading');		
+};
+
+/**
  * I need to know when tb get's re-inited so I can also run some of my own init code.
  * I am hijacking the tb_init function, running my own code and then running the 
  * original tb_init.
  */
-
 // duplicate original tb_init
 Drupal.assetWizard.tb_init_original = tb_init;
 
@@ -285,6 +297,18 @@ Drupal.assetWizard.tb_init = function(dom_chunk){
       $("#asset-wizard form").ajaxSubmit(options);
     }
   );
+  // also make sure to hook up original form submit enter key submits
+	$("#TB_window form").ajaxForm(options);
+  // add a back button
+  
+  if (Drupal.assetWizard.history.length > 0) {
+    $('<a>Back</a>').attr(
+      {
+        'src': Drupal.assetWizard.history.pop,
+        'class': 'wizard-back'
+      }
+    ).prependTo($('.wizard-buttons')[0]);
+  }
 
   // create the close button
   $('#asset-wizard').append(
@@ -301,22 +325,20 @@ Drupal.assetWizard.tb_init = function(dom_chunk){
     )    
   );
   
+  $('#asset-wizard .help').each(
+    function(){
+      $(this).wrap('<div class="help-wrapper"></div>');
+      
+    }
+  );
+  
+  $(dom_chunk).click(
+    function(){
+      Drupal.assetWizard.history.push(this.href);  
+    }
+  );
 	Drupal.assetWizard.tb_init_original(dom_chunk);	
 };
 
 // overwrite tb_init with new function
 tb_init = Drupal.assetWizard.tb_init;
-
-Drupal.assetWizard.beforeSubmit = function(formData, jqForm, options){
-//	console.log($.param(formData));		
-};
-
-// on form submit inside thickbox
-Drupal.assetWizard.formSubmit = function(data){
-	$('#TB_ajaxContent').html(data);
-	// copied from line 226 of jquery.thickbox.js
-  tb_position();
-  $("#TB_load").remove();
-  tb_init("#TB_ajaxContent a.thickbox");
-  $("#TB_window").css({display:"block"});	
-};

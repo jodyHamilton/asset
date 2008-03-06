@@ -1,8 +1,7 @@
 <?php
-/* $Id$ */
 
 /**
- * Implementation of cck hook_field_info().
+ * Implementation of hook_field_info().
  */
 function asset_field_info() {
   return array(
@@ -11,399 +10,315 @@ function asset_field_info() {
 }
 
 /**
- * Implementation of cck hook_field_settings().
+ * Implementation of hook_field_settings().
  */
 function asset_field_settings($op, $field) {
   switch ($op) {
+    case 'form':
+      
+      $type_options = array();
+      $types = asset_get_types();
+      foreach($types as $key => $type){
+        $type_options[$key] = $type->name;
+      }
+      $form['allowed_types'] = array(
+        '#type' => 'checkboxes',
+        '#title' => t('Allowed asset types'),
+        '#description' => t('Limit the selectable assets to only assets of the selected type(s).'),
+        '#options' => $type_options,
+        '#default_value' => $field['allowed_types'], 
+      );
+      $form['allowed_extensions'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Allowed file extensions'),
+        '#description' => t('Filter the available file type assets by this comma separated list of file extensions.  This only applies to File assets.  Ex: jpg,gif,png'),
+        '#default_value' => $field['allowed_extensions'],
+      );
+      
+      $options = array();
+      $formatters = asset_get_formatters();
+      foreach($formatters as $key => $formatter){
+        $options[$key] = $formatter->name;
+      }
+      $form['valid_formatters'] = array(
+        '#type' => 'select',
+        '#title' => t('Valid formatters'),
+        '#description' => t('Limit the selectable assets to only assets that support these formatters.  Leave empty to allow all assets.'),
+        '#options' => $options,
+        '#multiple' => TRUE,
+        '#size' => min(count($options), 10),
+        '#default_value' => $field['valid_formatters'],
+      );
+      return $form;
+
+    case 'save':
+      return array('allowed_types', 'allowed_extensions', 'valid_formatters');
+
     case 'database columns':
       return array(
-        'aid' => array(
-          'type' => 'int',
-          'length' => 10,
-          'unsigned' => TRUE,
-          'not null' => TRUE,
-          'default' => 0,
-        ),
-        'options' => array(
-          'type' => 'longtext',
-          'not null' => TRUE,
-          'default' => "''",
-        ),
-        'caption' => array(
-          'type' => 'longtext',
-          'not null' => TRUE,
-          'default' => "''",
-        ),
-        'copyright' => array(
-          'type' => 'longtext',
-          'not null' => TRUE,
-          'default' => "''",
-        ),
+        'aid' => array('type' => 'int', 'length' => '10', 'not null' => TRUE, 'default' => 0),
       );
+
+    case 'filters':
+      return array();
+      break;
   }
 }
 
 /**
- * Implementation of cck hook_field_formatter_info()
+ * Implementation of hook_field().
+ */
+function asset_field($op, &$node, $field, &$items, $teaser, $page) {
+  switch ($op) {
+    case 'validate':
+      if($field['allowed_extensions']){
+        $allowed_extensions = array_map('trim', explode(',', $field['allowed_extensions']));
+      }
+      
+      foreach($items as $delta => $item){
+        $error_field = $field['field_name'] .']['. $delta .'][aid';
+        if(!$item['aid']){
+          continue;
+        }
+        $asset = asset_load($item['aid']);
+        
+        // make sure selected asset is allowed type
+        if(is_array($field['allowed_types']) && !$field['allowed_types'][$asset->type]){
+          form_set_error($error_field, t('The selected asset type is not allowed.'));
+        }
+        
+        // make sure selected asset is allowed extension
+        if($asset->type == 'file' && $allowed_extensions){
+          $info = pathinfo($asset->file['filename']);
+          if(!in_array($info['extension'], $allowed_extensions)){
+            form_set_error($error_field, t('The selected asset is not one of the allowed extensions.'));
+          }
+        }
+        
+        // make sure asset supports one of the valid formatters
+        if($field['valid_formatters']){
+          $valid = FALSE;
+          foreach($field['valid_formatters'] as $format){
+            if($asset->formatters[$format]){
+              $valid = TRUE;
+              break;
+            }
+          }
+          if(!$valid){
+            form_set_error($error_field, t('Asset does not support the specified formatters.'));
+          }
+        }
+      }
+      
+      break;
+
+    case 'view':
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_field_formatter_info().
  */
 function asset_field_formatter_info() {
-  return array(
+  $formatters = array(
     'default' => array(
-      'label' => 'Default',
+      'label' => t('Default'),
+      'field types' => array('asset'),
+    ),
+    'icon' => array(
+      'label' => t('Asset Icon'),
       'field types' => array('asset'),
     ),
   );
+
+  $asset_formatters = asset_get_formatters();
+  foreach($asset_formatters as $key => $formatter){
+    $formatters[$key] = array(
+      'label' => $formatter->name,
+    	'field types' => array('asset'),
+    );  
+  }
+  
+  return $formatters;
 }
 
 /**
- * Prepare an individual item for viewing in a browser.
+ * Implementation of hook_field_formatter().
+ *
  */
 function asset_field_formatter($field, $item, $formatter, $node) {
-  if(!empty($item['aid'])) {
-    return asset_lightbox(array($item));
+  $asset = asset_load($item['aid']);
+  if($asset->aid){
+    switch($formatter){
+      case 'default':
+        return asset_view($asset);
+      case 'icon':
+        return asset_icon($asset);
+      default:
+        return asset_render($asset, array('format' => $formatter));
+    }
   }
 }
 
 /**
- * Declare information about a widget.
+ * Implementation of hook_widget_info().
  */
 function asset_widget_info() {
   return array(
     'asset' => array(
-      'label' => 'Asset',
+      'label' => t('Asset Wizard'),
+      'field types' => array('asset'),
+    ),
+    'directory' => array(
+      'label' => t('Asset Directory List'),
       'field types' => array('asset'),
     ),
   );
 }
 
 /**
- * Handle the parameters for a widget.
+ * Implementation of hook_widget_settings().
  */
 function asset_widget_settings($op, $widget) {
   switch ($op) {
-    case 'callbacks':
-      return array(
-        'default value' => CONTENT_CALLBACK_NONE,
-      );
-  }
-}
-
-/**
- * Define the behavior of a widget.
- */
-function asset_widget($op, &$node, $field, &$items) {
-  switch ($op) {
-    case 'prepare form values':
-      foreach ($items as $delta => $item) {
-        // convert the field into a filter string
-        if (isset($item['aid'])) {
-          // $items[$delta]['value'] = '[asset|aid='. $item['aid'] .'|'. $item['options'] .']';
-          $items[$delta]['value'] = $item['options'];
-        }
-      }
-      if ($_POST[$field['field_name']]) {
-        $items = $_POST[$field['field_name']];
-        foreach($items as $key => $item) {
-          $a = asset_load(array('aid' => $item['aid']));
-          $items[$key]['value'] = $a->filename;
-        }
-      }
-      break;
-
     case 'form':
-      // Start creating the form
-      $field_name = $field['field_name'];
-      $form = array($field_name => array('#tree' => TRUE));
-      // If the field has multiple values
-      if ($field['multiple']) {
-        // Currently the fieldset is disabled because the asset javascript doesn't like it > name collision
-        drupal_add_js(drupal_get_path('module', 'asset') .'/asset_more.js');
-        $delta = 0;
-        // Render link fields for all the entered values
-        foreach ($items as $data) {
-          if (is_array($data) && $data['aid']) {
-            _asset_widget_form($form[$field['field_name']][$delta], $field, $data, $delta);
-            $delta++;
-          }
-        }
-        // Render one additional new asset field
-        foreach (range($delta, $delta) as $delta) {
-          _asset_widget_form($form[$field['field_name']][$delta], $field, array(), $delta);
-        }
-        // Create a wrapper for additional fields
-        $form[$field['field_name']]['wrapper'] = array(
-          '#type' => 'markup',
-          '#value' => '<div id="' . str_replace('_', '-', $field['field_name']) . '-wrapper" class="clear-block"></div>',
-        );
-        // Add 'More' Javascript Callback
-        $form[$field['field_name']]['more-url'] = array(
-          '#type' => 'hidden',
-          '#value' => url('asset/widget/js/' . $field['type_name'] . '/' . $field['field_name'], NULL, NULL, TRUE),
-          '#attributes' => array('class' => 'more-links'),
-          '#id' => str_replace('_', '-', $field['field_name']) . '-more-url',
-        );
-        // Add Current Field Count
-        $form[$field['field_name']]['count'] = array(
-          '#type' => 'hidden',
-          '#value' => $delta,
-          '#id' => str_replace('_', '-', $field['field_name']) . '-count',
-        );
-        // Add More Button
-        $form[$field['field_name']]['more'] = array(
-          '#type' => 'button',
-          '#value' => t('More Assets'),
-          '#name' => 'more',
-          '#id' => str_replace('_', '-', $field['field_name']) . '-more',
-        );
-      }
-      else {
-        module_invoke('i18n', 'language_rtl') ? $rtl = "right" : $rtl = "left";
-        // Show the one and only value field
-        $form[$field_name][0]['value'] = array(
-          '#type' => 'textfield',
-          '#title' => t($field['widget']['label']),
-          //'#description' => t($field['widget']['description']),
-          '#default_value' => $items[0]['value'],
-        );
-        // Set the aid (hidden)
-        $form[$field_name][0]['aid'] = array(
-          '#type' => 'hidden',
-          '#default_value' => $items[0]['aid'],
-        );
-        // Set the preview
-        if(!empty($items[0]['value']) || (isset($_POST[$field_name][0]['aid']) && is_numeric($_POST[$field_name][0]['aid']))) {
-          // When in preview mode, $items[0]['value'] is not set, so we need to get the $_POST data
-          !empty($items[0]['value']) ? $aid = $items[0]['aid'] : $aid = filter_xss($_POST[$field_name][0]['aid']);
-          $is_image = array('jpg', 'jpeg', 'png', 'gif', 'tif', 'tiff', 'bmp');
-          $a = asset_load(array('aid' => $aid));
-          // Preview the image
-          if(in_array($a->extension, $is_image)) {
-            if(variable_get('asset_imagecache', 0)) {
-              $presets = _imagecache_get_presets();
-              $preset = $presets[variable_get('asset_imagecache', 0)];
-              $preview = theme('imagecache', $preset, str_replace("//","/", $a->filepath));
-            }
-            else {
-              $asset = array(                'aid' => $aid,                'format' => 'image',                'formatter' => 'asset',                'width' => '120',                'height' => '80',              );
-              $preview = asset_render_macro($asset);
-            }
-            $form[$field_name][0]['preview'] = array(
-              '#prefix' => '<div id="preview_' . $field_name . '_0" style="float:'.$rtl.'">',
-              '#suffix' => '</div>',
-              '#value' => $preview,
-            );
-          }
-          // Try to auto-detect the format
-          else {
-            $form[$field_name][0]['preview'] = array(
-              '#prefix' => '<div id="preview_' . $field_name . '_0" style="float:'.$rtl.'">',
-              '#suffix' => '</div>',
-              '#value' => asset_preview($aid),
-            );	
-          }
-        }
-        else {
-          $form[$field_name][0]['preview'] = array(
-            '#value' => '<div id="preview_' . $field_name . '_0" style="float:'.$rtl.'"></div>',
-          );
-        }
-        // Set the caption
-        $form[$field_name][0]['caption'] = array(
-          '#type' => 'textfield',
-          '#maxlength' => '256',
-          '#default_value' => $items[0]['caption'],
-          '#description' => 'Enter the caption for this asset',
-          '#prefix' => '<div style="margin-'.$rtl.':130px"><table style="width:400px;margin-top:-15px;border-collapse:inherit"><tr><td style="padding:0px;margin:0px;text-align:center;padding-top:16px;width:10px" valign="top">'.l('<img src="/' . drupal_get_path('module', 'asset') . '/lullacons/doc-option-add.png" alt="' . t("Insert asset") . '" title="' . t("Insert asset") . '"/>', 'asset/wizard/textfield', array(
-    'class'=>'asset-textfield-link',
-    'id'=>'asset-link-' . $field_name . '-0-value',
-    'onclick'=>"window.open(this.href, 'asset_textfield_link', 'width=600,height=400,scrollbars=yes,status=yes,resizable=yes,toolbar=no,menubar=no'); return false",
-    ), 'textfield=' . $field_name . '[0][value]&aidfield=' . $field_name . '[0][aid]&delta=0', NULL, FALSE, TRUE).'</td><td>',
-          '#suffix' => '</td></tr></table></div>',
-
-        );
-        // Set the copyright
-        $form[$field_name][0]['copyright'] = array(
-          '#type' => 'textfield',
-          '#maxlength' => '256',
-          '#default_value' => $items[0]['copyright'],
-          '#description' => 'Enter the copyright for this asset',
-          '#prefix' => '<div style="margin-'.$rtl.':130px"><table style="width:400px;margin-top:-30px;border-collapse:inherit"><tr><td style="padding:0px;margin:0px;text-align:center;padding-top:16px;width:10px" valign="top">'.l('<img src="/' . drupal_get_path('module', 'asset') . '/lullacons/doc-option-remove.png" alt="' . t("Delete asset") . '" title="' . t("Delete asset") . '"/>', '', array('onclick' => "
-    document.getElementById('edit-" . str_replace("_","-",$field_name) . "-0-value').value='';
-    document.getElementById('edit-" . str_replace("_","-",$field_name) . "-0-aid').value='';
-    document.getElementById('edit-" . str_replace("_","-",$field_name) . "-0-caption').value='';
-    document.getElementById('edit-" . str_replace("_","-",$field_name) . "-0-copyright').value='';
-    document.getElementById('preview_" . $field_name . "_0').innerHTML='';
-    return false;"), NULL, NULL, FALSE, TRUE).'</td><td>',
-          '#suffix' => '</td></tr></table></div>',
-        );
-      }
-      if(isset($field['widget']['description']) && !empty($field['widget']['description'])) {
-        $form[$field_name][0]['description'] = array(
-          '#value' => '<div class="description">' . $field['widget']['description'] . '</div>',
+      $form = array();
+      if($widget['type'] == 'directory'){
+        $form['parent'] = array(
+          '#type' => 'select',
+          '#title' => t('Parent Directory'),
+          '#options' => asset_directory_options(), 
+          '#default_value' => $widget['parent'],
         );
       }
       return $form;
 
+    case 'validate':
+      break;
+
+    case 'save':
+      if($widget['type'] == 'directory'){
+        return array('parent');
+      }
+      return array();
+  }
+}
+
+
+/**
+ * Implementation of hook_widget().
+ */
+function asset_widget($op, &$node, $field, &$items) {
+  switch ($op) {
+    case 'form':
+      $form = array();      
+      $return_type = 'id';
+      $key = 'aid';
+      
+      drupal_add_js(drupal_get_path('module', 'asset_wizard') .'/js/asset_wizard_cck.js');
+      
+      $form[$field['field_name']] = array(
+        '#tree' => TRUE,
+        '#type' => 'fieldset',
+        '#title' => $field['widget']['label'],
+        '#description' => $field['widget']['description'],
+        '#weight' => $field['widget']['weight'],
+        '#attributes' => array('class' => $field['multiple'] ? 'asset-field-multiple' : 'asset-field'),
+      );
+
+      // Directory List Widget
+      if($field['widget']['type'] == 'directory') {
+        $directory_options = asset_directory_options();
+        // Multiple Directory List Widget
+        if ($field['multiple']) {
+          $delta = 0;
+          foreach ($items as $data) {
+            if ($data['aid']) {
+              $form[$field['field_name']][$delta]['aid'] = array(
+                '#type' => 'select',
+                '#default_value' => $data['aid'],
+                '#options' => $directory_options,
+              );
+              $delta++;
+            }
+          }
+          foreach (range($delta, $delta + 10) as $delta) {
+            $form[$field['field_name']][$delta]['aid'] = array(
+              '#type' => 'select',
+              '#default_value' => NULL,
+              '#options' => $directory_options,
+            );
+          }
+        }
+        // Single Directory List Widget
+        else {
+          $delta = 0;
+          $data = $items[$delta];
+          $form[$field['field_name']][$delta]['aid'] = array(
+            '#type' => 'select',
+            '#default_value' => $data['aid'],
+            '#options' => $directory_options,
+          );
+        }
+      }
+      // Asset Wizard Widget
+      else{
+        // Multiple Asset Wizard Widget
+        if ($field['multiple']) {
+          $delta = 0;
+          foreach ($items as $data) {
+            if ($data['aid']) {
+              $form[$field['field_name']][$delta]['aid'] = array(
+                '#type' => 'assetfield',
+                '#maxlength' => 255,
+                '#default_value' => $data['aid'],
+                '#asset_return_type' => $return_type,
+                '#asset_config' => $field['field_name'],
+              );
+              $delta++;
+            }
+          }
+          foreach (range($delta, $delta + 10) as $delta) {
+            $form[$field['field_name']][$delta]['aid'] = array(
+              '#type' => 'assetfield',
+              '#maxlength' => 255,
+              '#default_value' => NULL,
+              '#asset_return_type' => $return_type,
+              '#asset_config' => $field['field_name'],
+            );
+          }
+        }
+        // Single Asset Wizard Widget
+        else {
+          $delta = 0;
+          $data = $items[$delta];
+          $form[$field['field_name']][$delta]['aid'] = array(
+            '#type' => 'assetfield',
+            '#default_value' => $data['aid'],
+            '#attributes' => array('class' => 'asset-cck-'. $return_type),
+            '#asset_return_type' => $return_type,
+            '#asset_config' => $field['field_name'],
+          );
+        }
+      }
+      return $form;
+
+    case 'validate':
+      if ($field['required']) {
+        if (!count($items)) {
+          form_set_error($field['field_name'], $field['widget']['label'] .' is required.');
+        }
+      }
+      return;  
+
     case 'process form values':
+      // Don't save empty fields except the first value
       foreach ($items as $delta => $item) {
-      	if(empty($item['aid']) || !is_numeric($item['aid'])) {
-      	  unset($items[$delta]);
-      	}
-      	else {
-      	  if(!empty($item['value'])) {
-            $items[$delta]['options'] = $item['value'];
-      	  }
-      	  else {
-            $a = asset_load(array('aid' => $item['aid']));
-            $items[$delta]['options'] = $a->filename;
-      	  }
-      	  $items[$delta]['aid'] = $item['aid'];
-      	  $items[$delta]['caption'] = $item['caption'] ? $item['caption'] : '';
-      	  $items[$delta]['copyright'] = $item['copyright'] ? $item['copyright'] : '';
-      	}
-      	/*
-        if ($item['value'] == '' && $delta > 0) {
-          // Don't save empty fields except the first value
+        if ($item['aid'] == '' && $delta > 0) {
           unset($items[$delta]);
         }
-        else {
-          // convert the filter string into the database fields
-          $value = substr($item['value'], 1, strlen($item['value']) - 2);
-          $asset = explode('|', $value);
-          array_shift($asset); // eat "asset"
-          $aid = explode('=', array_shift($asset), 2);
-          $items[$delta]['aid'] = $aid[1];
-          $items[$delta]['options'] = implode('|', $asset);
-        }
-        */
       }
       break;
-  }
-}
-
-function asset_widget_js($type_name, $field_name) {
-  $field = content_fields($field_name, $type_name);
-  $type = content_types($type);
-  $delta = $_POST[$field_name]['count'];
-  $form = array();
-  $node_field = array();
-  
-  _asset_widget_form($form, $field, $node_field, $delta);
-  
-  // Assign parents matching the original form
-  foreach (element_children($form) as $key) {
-    $form[$key]['#parents'] = array($field_name, $delta, $key);
-  }
-  
-  // Add names, ids, and other form properties
-  foreach (module_implements('form_alter') as $module) {
-    $function = $module .'_form_alter';
-    $function('asset_widget_js', $form);
-  }
-  $form = form_builder('asset_widget_js', $form);
-  
-  $output = drupal_render($form);
-  
-  print drupal_to_js(array('status' => TRUE, 'data' => $output));
-  exit;
-}
-
-function _asset_widget_form(&$form_item, $field, $node_field, $delta = 0) {
-  module_invoke('i18n', 'language_rtl') ? $rtl = "right" : $rtl = "left";
-  $field_name = $field['field_name'];
-  $item_count = $delta + 1;
-  $form_item = array(
-    '#tree' => TRUE,
-  );
-  // Set the title
-  $form_item['value'] = array(
-    '#type' => 'textfield',
-    '#title' => t($field['widget']['label']) . " " . $item_count,
-    '#attributes' => array('disabled' => 'disabled'),
-    '#default_value' => $node_field['value'],
-  );
-  // Set the aid (hidden)
-  $form_item['aid'] = array(
-    '#type' => 'hidden',
-    '#default_value' => $node_field['aid'],
-  );
-  if(!empty($node_field['aid'])) {
-    $aid = $node_field['aid'];
-    // Set the preview
-    $is_image = array('jpg', 'jpeg', 'png', 'gif', 'tif', 'tiff', 'bmp');
-    $a = asset_load(array('aid' => $aid));
-    // Preview the image
-    if(in_array($a->extension, $is_image)) {
-      if(variable_get('asset_imagecache', 0)) {
-        $presets = _imagecache_get_presets();
-        $preset = $presets[variable_get('asset_imagecache', 0)];
-        $preview = theme('imagecache', $preset, str_replace("//","/", $a->filepath));
-      }
-      else {
-        $asset = array(          'aid' => $aid,          'format' => 'image',          'formatter' => 'asset',          'width' => '120',          'height' => '80',        );
-        $preview = asset_render_macro($asset);
-      }
-      $form_item['preview'] = array(
-        '#prefix' => '<div id="preview_' . $field_name . '_' . $delta . '" style="float:' . $rtl . '">',
-        '#suffix' => '</div>',
-        '#value' => $preview,
-      );
-    }
-    // Try to auto-detect the format
-    else {
-      if(asset_preview($aid)) {
-        $form_item['preview'] = array(
-          '#prefix' => '<div id="preview_' . $field_name . '_' . $delta . '" style="float:' . $rtl . '">',
-          '#suffix' => '</div>',
-          '#value' => asset_preview($aid),
-        );
-      } 
-      else {
-      	// Display a placeholder for assets that don't have a preview: .mov, .doc, ...
-        $form_item['preview'] = array(
-          '#type' => 'markup', 
-          '#value' => '<div id="preview_' . $field_name . '_' . $delta . '" style="float:' . $rtl . '"></div>',
-        );	
-      }
-    }
-  }
-  else {
-    $form_item['preview'] = array(
-      '#type' => 'markup', 
-      '#value' => '<div id="preview_' . $field_name . '_' . $delta . '" style="float:'.$rtl.'"></div>',
-    );
-  }  
-  // Set the caption
-  $form_item['caption'] = array(
-    '#type' => 'textfield',
-    '#maxlength' => '256',
-    '#default_value' => $node_field['caption'],
-    '#description' => 'Enter the caption for this asset',
-    '#prefix' => '<div style="margin-'.$rtl.':130px"><table style="width:400px;margin-top:-15px;border-collapse:inherit"><tr><td style="padding:0px;margin:0px;text-align:center;padding-top:16px;width:10px" valign="top">'.l('<img src="/' . drupal_get_path('module', 'asset') . '/lullacons/doc-option-add.png" alt="' . t("Insert asset") . '" title="' . t("Insert asset") . '"/>', 'asset/wizard/textfield', array(
-    'class'=>'asset-textfield-link',
-    'id'=>'asset-link-' . $field_name . '-' . $delta . '-value',
-    'onclick'=>"window.open(this.href, 'asset_textfield_link', 'width=600,height=400,scrollbars=yes,status=yes,resizable=yes,toolbar=no,menubar=no'); return false",
-    ), 'textfield=' . $field_name . '[' . $delta . '][value]&aidfield=' . $field_name . '[' . $delta . '][aid]&delta=' . $delta, NULL, FALSE, TRUE).'</td><td>',
-    '#suffix' => '</td></tr></table></div>',
-  );
-  // Set the copyright
-  $form_item['copyright'] = array(
-    '#type' => 'textfield',
-    '#maxlength' => '256',
-    '#default_value' => $node_field['copyright'],
-    '#description' => 'Enter the copyright for this asset',
-    '#prefix' => '<div style="margin-'.$rtl.':130px"><table style="width:400px;margin-top:-30px;border-collapse:inherit"><tr><td style="padding:0px;margin:0px;text-align:center;padding-top:16px;width:10px" valign="top">'.l('<img src="/' . drupal_get_path('module', 'asset') . '/lullacons/doc-option-remove.png" alt="' . t("Delete asset") . '" title="' . t("Delete asset") . '"/>', '', array('onclick' => "
-    document.getElementById('edit-" . str_replace("_","-",$field_name) . "-" . $delta . "-value').value='';
-    document.getElementById('edit-" . str_replace("_","-",$field_name) . "-" . $delta . "-aid').value='';
-    document.getElementById('edit-" . str_replace("_","-",$field_name) . "-" . $delta . "-caption').value='';
-    document.getElementById('edit-" . str_replace("_","-",$field_name) . "-" . $delta . "-copyright').value='';
-    document.getElementById('preview_" . $field_name . "_" . $delta . "').innerHTML='';
-    return false;"), NULL, NULL, FALSE, TRUE).'</td><td>',
-    '#suffix' => '</td></tr></table></div>',
-  );
-  if($delta==0 && isset($field['widget']['description']) && !empty($field['widget']['description'])) {
-    $form_item['description'] = array(
-      '#value' => '<div class="description">' . $field['widget']['description'] . '</div>',
-    );
   }
 }

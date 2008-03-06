@@ -170,6 +170,13 @@
 	border-bottom: 1px solid #d4d4d4;	
 }
 
+.wizard-loading{
+  background: url(js/thickbox/loadingAnimation.gif) no-repeat center center;
+}
+.wizard-loading *{
+  display: none;
+}
+
 .wizard-content{
 	overflow: auto;
 	position: absolute;
@@ -199,6 +206,9 @@
 	padding: 0;
 	margin: .5em 0;
 }
+#asset-wizard .item-list ul ul{
+  margin-left: 2em;
+}
 #asset-wizard .item-list li{
 	padding: 0;
 	margin: 0 0 1em;
@@ -206,6 +216,9 @@
 }
 #asset-wizard .item-list li a{
 	font-size: 14px;
+}
+#asset-wizard .item-list li li a{
+	font-size: 12px;
 }
 
 
@@ -254,3 +267,72 @@
 	margin: 1em auto;
 }
 
+.asset-textfield-preview{
+  line-height: 1.1em;
+  padding: .5em;
+  float: left;
+  width: 80px;
+  height: 80px;
+}
+.asset-textfield-preview .asset-wizard-start{
+  text-decoration: none;
+  text-align: center;
+}
+.asset-textfield-preview .asset-wizard-start:hover{
+  text-decoration: none;
+}
+.asset-textfield-preview .caption{
+  height: 1.1em;
+  overflow: hidden;
+}
+
+/**
+ * assetfield
+ */
+html.js input.form-asset{
+  display: none;
+}
+div.assetfield-container {
+  border: 1px solid #e5e5e5;
+  padding: 5px;
+  margin-bottom: 10px;
+  width: 100px;
+}
+div.assetfield-icon{
+  height: 64px;
+  overflow: hidden;
+}
+div.assetfield-icon,
+div.assetfield-title{
+  text-align: center;
+  line-height: 1.1em;
+}
+
+optgroup option{
+  padding-left: 20px;
+}
+
+.asset-field-multiple .add{
+  padding: 3px 0px 3px 20px;
+  background: url(icons/silk/add.png) no-repeat left center;
+  cursor: pointer;
+}
+.asset-field-multiple .remove{
+  padding: 3px 0px 3px 20px;
+  background: url(icons/silk/cross.png) no-repeat left center;
+  cursor: pointer;
+}
+.asset-field-multiple .edit{
+  padding: 3px 0px 3px 20px;
+  background: url(icons/silk/pencil.png) no-repeat left center;
+  cursor: pointer;
+}
+
+.asset-field-multiple .ops span{
+  display: block;
+  line-height: 1em;  
+}
+.asset-field-multiple .form-item{
+  float: left;
+  margin-right: 1em;
+}

@@ -55,6 +55,7 @@ function asset_file_form($asset){
     '#type' => 'file', 
     '#title' => t('Attach new file'),
     '#description' => $overwrite ? $overwrite : NULL,
+    '#size' => 25,
   );
   
   if($options = _asset_file_localfile_options()){
