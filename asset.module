@@ -1,1176 +1,439 @@
 <?php
 // $Id$
 
-/**
- * @defgroup asset Digital Asset management
- *
- * This module aims to provide a single, common interface for managing and 
- * using all manner of digital assets within Drupal.  This is done by providing 
- * several hooks that can be implemented by other contrib modules to implement 
- * Methods for creating new assets, and Formatters for formatting existing 
- * assets.  
- */
-
-/**
- * @file
- * Main module.
- */
- 
-/**
- * @addtogroup asset
- * @{
- */
-
 define('ASSET_PRIVATE', 0);
 define('ASSET_PUBLIC', 1);
 
-/**
- * TODO: put this function call somewhere!  I've tried it in asset_menu(FALSE),
- * but since the loaded files contain module hooks, this breaks if the hooks
- * aren't available very early.  So for now, here it is.
- */
-asset_load_modules();
+$__asset_path = drupal_get_path('module', 'asset');
+require_once($__asset_path . '/inc/asset.routines.inc');
+require_once($__asset_path . '/inc/asset.api.inc');
+require_once($__asset_path . '/inc/asset.node.inc');
 
-/**
- * Implementation of hook_menu().
- */
-function asset_menu($may_cache){
-  $items = array();
-  if($may_cache){
-    $items[] = array(
-      'path' => 'asset',
-      'title' => t('Assets'),
-      'callback' => 'asset_page_default',
-      'access' => user_access('browse assets'),
-      'type' => MENU_MODIFIABLE_BY_ADMIN,
-    );
-    $items[] = array(
-      'path' => 'asset/add',
-      'title' => t('Create assets'),
-      'callback' => 'asset_add',
-      'access' => user_access('access content'),
-      'type' => MENU_ITEM_GROUPING,
-      'weight' => 1
-    );
-    foreach (asset_get_types() as $type) {
-      $type_url_str = str_replace('_', '-', $type->type);
-      $items[] = array(
-        'path' => 'asset/add/'. $type_url_str,
-        'title' => drupal_ucfirst($type->name),
-        'access' => asset_access('create', $type->type),
-      );
-    }
-    $items[] = array(
-      'path' => 'admin/settings/asset',
-      'title' => t('Assets'),
-      'callback' => 'asset_admin_overview',
-      'access' => user_access('administer assets'),
-    );
-    $items[] = array(
-      'path' => 'admin/settings/asset/file',
-      'title' => t('Files'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('asset_admin_file_settings'),
-      'access' => user_access('administer assets'),
-    );
-  }
-  else{
-    if (arg(0) == 'asset' && is_numeric(arg(1))) {
-      $asset = asset_load(arg(1));
-      if ($asset->aid) {
-        $items[] = array('path' => 'asset/'. arg(1), 'title' => t('View'),
-          'callback' => 'asset_page_view',
-          'callback arguments' => array($asset),
-          'access' => asset_access('view', $asset),
-          'type' => MENU_CALLBACK);
-        $items[] = array('path' => 'asset/'. arg(1) .'/view', 'title' => t('View'),
-          'type' => MENU_DEFAULT_LOCAL_TASK,
-          'weight' => -10);
-        $items[] = array('path' => 'asset/'. arg(1) .'/edit', 'title' => t('Edit'),
-          'callback' => 'asset_page_edit',
-          'callback arguments' => array($asset),
-          'access' => asset_access('update', $asset),
-          'weight' => 1,
-          'type' => MENU_LOCAL_TASK);
-        $items[] = array('path' => 'asset/'. arg(1) .'/delete', 'title' => t('Delete'),
-          'callback' => 'drupal_get_form',
-          'callback arguments' => array('asset_delete_confirm', $asset),
-          'access' => asset_access('delete', $asset),
-          'weight' => 2,
-          'type' => MENU_LOCAL_TASK);
-        $items[] = array('path' => 'asset/'. arg(1) .'/format', 'title' => t('Formats'),
-          'callback' => 'asset_page_format',
-          'callback arguments' => array($asset),
-          'access' => asset_access('view', $asset),
-          'weight' => 1,
-          'type' => MENU_LOCAL_TASK);
-        $items[] = array('path' => 'asset/'. arg(1) .'/img',
-          'callback' => 'asset_img_src',
-          'callback arguments' => array($asset, arg(3)),
-          'access' => asset_access('view', $asset),
-          'type' => MENU_CALLBACK);
-        $items[] = array('path' => 'asset/'. arg(1) .'/icon/ajax',
-          'callback' => 'asset_icon_ajax',
-          'callback arguments' => array($asset),
-          'access' => asset_access('view', $asset),
-          'type' => MENU_CALLBACK);
-        if(module_exists('devel')){
-          $items[] = array('path' => 'asset/'. arg(1) .'/load',
-            'title' => t('Dev load'),
-            'callback' => 'devel_print_object',
-            'callback arguments' => array($asset),
-            'access' => user_access('access devel information'),
-            'type' => MENU_LOCAL_TASK,
-          );
-        }
-          
-      }
-    }
-    drupal_add_css(drupal_get_path('module', 'asset') .'/asset.css');    
-  }
-  return $items;
-} 
+_asset_include();
 
-/** 
- * Load all our module 'on behalfs'.
- */
-function asset_load_modules(){
-  $path = drupal_get_path('module', 'asset') . '/modules';
-  $files = drupal_system_listing('asset_.*\.inc$', $path, 'name', 0);
-  
-  foreach($files as $file) {
-    // The filename format is very specific. It must be asset_MODULENAME.inc
-    $module = substr_replace($file->name, '', 0, 6);
-    if (module_exists($module)) {
-      require_once("./$file->filename");
-    }
-  }
+function asset_init() {
+	module_invoke_all('asset_formatter', 'init');
+	drupal_add_css(drupal_get_path('module', 'asset') . '/misc/asset.css');
 }
 
 /**
- * Menu Callback for admin/settings/asset
+ * Implementation of hook_menu()
  */
-function asset_admin_overview(){
-  foreach (asset_get_types() as $type) {
-    $items[] = '<strong>'. $type->name .':</strong> '. $type->description;
-  }
-  $output .= theme('item_list', $items, t('Available asset types'));
+function asset_menu() {
+	$items = array();
+	$w = 0;
 
-  $items = array();
-  foreach (module_implements('asset_formatter') as $module) {
-    $items[] = $module;
-  }
-  $output .= theme('item_list', $items, t('Available formatters'));
-  
-  return $output;
-}
+	// administer menu items
+	$items['admin/settings/asset'] = array(
+		'title' => t('Asset'),
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('asset_admin_settings'),
+		'access arguments' => array('administer assets'),
+		'type' => MENU_NORMAL_ITEM,
+		'file' => 'inc/asset.admin.inc',
+	);
+	$items['admin/settings/asset/settings'] = array(
+		'title' => t('Settings'),
+		'access arguments' => array('administer assets'),
+		'type' => MENU_DEFAULT_LOCAL_TASK,
+		'weight' => $w++,
+		'file' => 'inc/asset.admin.inc',
+	);
+	$items['admin/settings/asset/defaults'] = array(
+		'title' => t('Formatter Defaults'),
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('asset_admin_formatter_defaults'),
+		'access arguments' => array('administer assets'),
+		'type' => MENU_LOCAL_TASK,
+		'weight' => $w++,
+		'file' => 'inc/asset.admin.inc',
+	);
+	foreach (module_implements('asset_settings') as $module) {
+		$items['admin/settings/asset/' . $module] = array(
+			'title' => $module,
+			'page callback' => 'drupal_get_form',
+			'page arguments' => array($module . '_asset_settings'),
+			'access arguments' => array('administer assets'),
+			'type' => MENU_LOCAL_TASK,
+			'weight' => $w++,
+			'file' => 'inc/asset.admin.inc',
+		);
+	}
 
-/**
- * Menu Callback for admin/settings/asset/file
- */
-function asset_admin_file_settings(){
-  $form = array();
+	// commin menu items
+	$items['asset/widget/js'] = array(
+		'page callback' => 'asset_widget_js',
+		'access arguments' => array('access content'),
+		'type' => MENU_CALLBACK,
+	);
+	$items['asset/wizard'] = array(
+		'title' => t('Asset Wizard'),
+		'page callback' => 'asset_wizard',
+		'access callback' => call_user_func(create_function('', "return (user_access('create assets') || user_access('administer assets'));")),
+		'type' => MENU_CALLBACK,
+	);
+	$items['asset/js/preview'] = array(
+		'page callback' => 'asset_js_preview',
+		'access callback' => call_user_func(create_function('', "return (user_access('create assets') || user_access('administer assets'));")),
+		'type' => MENU_CALLBACK,
+	);
+	$items['asset/img'] = array(
+		'page callback' => 'asset_img_preview',
+		'access arguments' => array('administer assets'),
+		'type' => MENU_CALLBACK,
+	);
 
-  $form['asset_file_directory_path'] = array(
-    '#type' => 'textfield',
-    '#title' => t('File system path'),
-    '#default_value' => variable_get('asset_file_directory_path', ''),
-    '#maxlength' => 255,
-    '#description' => t('An optional sub-directory to store file upload assets. Leave blank to use the default files directory.'),
-    '#after_build' => array('_asset_file_check_directory'),
-    '#field_prefix' => file_directory_path() .'/',
-  );
-  
-  $form['asset_ftp_dir'] = array(
-    '#type' => 'textfield',
-    '#title' => t('FTP upload path'),
-    '#default_value' => variable_get('asset_ftp_dir', ''),
-    '#maxlength' => 255,
-    '#description' => t('Optionally specify a directory where users can upload files directly to the server, rather than uploading through the form. Leave blank to not use this feature.'),
-  );
-  
-  $thumbnail_options = array('default' => t('Default'));
-  if(module_exists('imagecache')){
-    $presets = _imagecache_get_presets();
-    foreach($presets as $id=>$name){
-      $thumbnail_options[$name] = 'imagecache: '. $name;
-    }    
-  }
-  $form['asset_file_image_icon'] = array(
-    '#type' => 'radios',
-    '#title' => t('Icon format for image files'),
-    '#default_value' => variable_get('asset_file_image_icon', 'default'),
-    '#options' => $thumbnail_options,
-    '#description' => t('Select a format for displaying thumbnail icons of images.  If you have the imagecache module enabled, you will be able to choose an imagecache preset as your thumbnail format.'), 
-  );
-  
-  return system_settings_form($form);
-}
-
-/**
- * #after_build handler for asset_file_directory_path form element. Checks the
- * existence of the directory specified in $form_element.
- *
- * @param $form_element
- *   The form element containing the name of the directory to check.
- */
-function _asset_file_check_directory($form_element) {
-  $dir = file_directory_path() .'/'. $form_element['#value'];
-  file_check_directory($dir, FILE_CREATE_DIRECTORY, $form_element['#parents'][0]);
-  return $form_element;
+	return $items;
 }
 
 /**
  * Implementation of hook_perm().
  */
-function asset_perm(){
-  foreach(asset_get_types() as $type){
-    $perms[] = 'create '. $type->name .' assets';
-    $perms[] = 'edit '. $type->name .' assets';
-  }
-  // this is used to see the individual asset/# pages
-  $perms[] = 'browse assets';
-  
-  // complete access to assets
-  $perms[] = 'administer assets';
-
-  return $perms;
+function asset_perm() {
+	$perms = array('create assets', 'administer assets');
+	foreach (module_implements('asset_type') as $module) {
+		foreach (module_invoke($module, 'asset_type', 'info') as $delta => $type) {
+			$perms[] = 'create ' . $delta . ' assets';
+		}
+	}
+	return $perms;
 }
 
 /**
- * One-stop asset access control
- */ 
-function asset_access($op, $asset = NULL) {
-  global $user;
-
-  // Convert the asset to an object if necessary:
-  if ($op != 'create') {
-    $asset = (object)$asset;
-  }
-
-  if (user_access('administer assets')) {
-    return TRUE;
-  }
-
-  $types = asset_get_types();
-  switch($op){
-    case 'create':
-      $type = $types[$asset];
-      return user_access('create '. $type->name .' assets');
-    case 'view':
-      return user_access('browse assets');
-    case 'update':
-    case 'delete':
-      $type = $types[$asset->type];
-      return user_access('edit '. $type->name .' assets');
-  }
-
-  return FALSE;
-}
- 
-/**
- * Load an asset from the database
- * 
- * @ingroup asset_crud
- */ 
-function asset_load($param = array(), $reset = NULL) {
-  static $assets = array();
-
-  if ($reset) {
-    $assets = array();
-  }
-
-  $arguments = array();
-  if (is_numeric($param)) {
-    if (isset ($assets[$param])) {
-      return is_object($assets[$param]) ? drupal_clone($assets[$param]) : $assets[$param];
-    }
-    if ($param == 0){
-      $assets[$param] = asset_load_root();
-      return $assets[$param];
-    }
-    $cond = 'a.aid = %d';
-    $arguments[] = $param;
-  }
-  elseif (is_array($param)) {
-    // Turn the conditions into a query.
-    foreach ($param as $key => $value) {
-      $cond[] = 'a.' . db_escape_string($key) . " = '%s'";
-      $arguments[] = $value;
-    }
-    $cond = implode(' AND ', $cond);
-  }
-
-  // Retrieve the asset.
-  $asset = db_fetch_object(db_query('SELECT a.* FROM {asset} a WHERE ' . $cond, $arguments));
-  if(!$asset){
-    return false;
-  }
-
-  if ($asset->aid) {
-    if ($extra = asset_type_invoke($asset, 'load')) {
-      foreach ($extra as $key => $value) {
-        $asset->$key = $value;
-      }
-    }
-
-    if ($extra = module_invoke_all('assetapi', 'load', $asset)) {
-      foreach ($extra as $key => $value) {
-        $asset->$key = $value;
-      }
-    }
-
-    // load the permissions
-    $result = db_query('SELECT * FROM {asset_role} WHERE aid=%d', $asset->aid);
-    while ($role = db_fetch_array($result)) {
-      $asset->roles[$role['rid']] = $role['status'] ? $role['rid'] : 0;
-    }
-    
-    // get formatters
-    $asset->formatters = asset_get_formatters($asset);
-  
-    $assets[$asset->aid] = is_object($asset) ? drupal_clone($asset) : $asset;
-  }
-
-  return $asset;
-}
-
-/**
- * Return a special-case pseudo-asset for asset->aid == 0. This is used in
- * several places to designate the root of the Asset tree.
+ * Implementation of hook_theme().
  */
-function asset_load_root(){
-  $asset = new stdClass();
-  $asset->aid = 0;
-  $asset->pid = 0;
-  $asset->type = 'directory';
-  $asset->title = t('Assets');
-  return $asset;
-} 
-
-/**
- * Present an asset submission form or a set of links to such forms.
- */ 
-function asset_add($type = NULL){
-  global $user;
-
-  $types = asset_get_types();
-  $type = isset($type) ? str_replace('-', '_', $type) : NULL;
-  // If a asset type has been specified, validate its existence.
-  if (isset($types[$type]) && asset_access('create', $type)) {
-    // Initialize settings:
-    $asset = array('uid' => $user->uid, 'type' => $type);
-
-    drupal_set_title(t('Submit @name', array('@name' => $types[$type]->name)));
-    $output = drupal_get_form($type .'_asset_form', $asset);
-  }
-  else {
-    // If no (valid) asset type has been provided, display a asset type overview.
-    foreach ($types as $type) {
-      $type_url_str = str_replace('_', '-', $type->type);
-      $title = t('Add a new @s.', array('@s' => $type->name));
-      $out = '<dt>'. l(drupal_ucfirst($type->name), "asset/add/$type_url_str", array('title' => $title)) .'</dt>';
-      $out .= '<dd>'. filter_xss_admin($type->description) .'</dd>';
-      $item[$type->type] = $out;
-    }
-
-    if (isset($item)) {
-      uksort($item, 'strnatcasecmp');
-      $output = t('Choose the appropriate item from the list:') .'<dl>'. implode('', $item) .'</dl>';
-    }
-    else {
-      $output = t('No asset types available.');
-    }
-  }
-
-  return $output;
+function asset_theme() {
+	return array(
+		'asset' => array(
+			'arguments' => array('content' => NULL, 'attributes' => NULL),
+			'file' => 'inc/asset.themes.inc',),
+		'asset_wizard_theme_form' => array(
+			'arguments' => array('form' => NULL),
+			'file' => 'inc/asset.themes.inc',),
+		'asset_admin_formatter_defaults' => array(
+			'arguments' => array('form' => NULL),
+			'file' => 'inc/asset.themes.inc',),
+		'asset_render_default' => array(
+			'arguments' => array('asset' => NULL),
+			'file' => 'inc/asset.themes.inc',),
+		'asset_textarea_link' => array(
+			'arguments' => array('element' => NULL),
+			'file' => 'inc/asset.themes.inc',),
+		'asset_popup' => array(
+			'arguments' => array('content' => NULL),
+			'file' => 'inc/asset_wizard.themes.inc',),
+		'asset_wizard_form' => array(
+			'arguments' => array('form' => NULL, 'main_class' => NULL),
+			'file' => 'inc/asset_wizard.themes.inc',),
+		'asset_wizard_selection_form' => array(
+			'arguments' => array('form' => NULL),
+			'file' => 'inc/asset_wizard.themes.inc',),
+		'asset_image_button' => array(
+			'arguments' => array('element' => NULL),
+			'file' => 'inc/asset_wizard.themes.inc',),
+		'asset_upload_permissions' => array(
+			'arguments' => array('element' => NULL),
+			'file' => 'inc/asset_wizard.themes.inc',),
+		'asset_formatter_default' => array(
+			'arguments' => array('element' => NULL),
+			'file' => 'inc/asset.themes.inc',),
+	);
 }
 
 /**
- * Implementation of hook_forms(). All asset forms share the same form handler
+ * Integrate asset with lightbox
  */
-function asset_forms() {
-  foreach (array_keys(asset_get_types()) as $type) {
-    $forms[$type .'_asset_form']['callback'] = 'asset_form';
-  }
-  return $forms;
+function asset_lightbox($assets, $preview = FALSE, $teaser = FALSE) {
+	if (!$preview && file_exists(path_to_theme() . "/lightbox/lightbox.js")) {
+		// Do not include Lightbox integration in preview mode: it breaks the jQuery fieldsets
+		drupal_add_js(path_to_theme() . "/lightbox/prototype.js");
+		drupal_add_js(path_to_theme() . "/lightbox/scriptaculous.js?load=effects");
+		drupal_add_js(path_to_theme() . "/lightbox/lightbox.js");
+		drupal_add_css(path_to_theme() . "/lightbox/lightbox.css");
+	}
+	$output     = "";
+	$is_image   = array('jpg', 'jpeg', 'png', 'gif', 'tif', 'tiff', 'bmp');
+	$is_audio   = array('mp3', 'wma', 'wav', 'ogg', 'm4a', 'aac');
+	$count      = 1;
+	$total      = 3;
+	$imgpresent = 1;
+	$imgcount   = 0;
+	$imgdisplay = 0;
+	$firstimg   = "";
+	foreach ($assets as $asset) {
+		$a = asset_load(array('aid' => $asset['aid']));
+		if (in_array($a->extension, $is_image)) {
+			// If it's an image and imagecache configuration has been done, display the imagecached version
+			$imagecache = asset_get_default_formatter('local', $a->extension, $teaser);
+			if (function_exists('theme_imagecache') && substr($imagecache, 0, 11) =="imagecache:") {
+				list($imagecache, $preset) = split(":", $imagecache);
+				$img  = theme('imagecache', $preset, $a->filepath, $asset['caption'], $asset['caption']);
+			} else {
+				$img  = theme('image', $a->filepath, $asset['caption'], $asset['caption']);
+			}
+			$link  ='<a href="'. file_create_url($a->filepath) .'" rel="lightbox[gallery]" title="'. str_replace("\"", "'", $asset['caption']);
+			$link .= $asset['copyright'] ? '<br/>&#169; '. str_replace("\"", "'", $asset['copyright']) .'"' : '"';
+			// We only want to display $total thumbnails, but we need the html for the lightbox gallery
+			if ($count > $total) {
+				$link .=" style='display:none'";
+			} else {
+				$imgdisplay++;
+			}
+			if (empty($firstimg)) $firstimg = $link .">";
+			$link .=">". $img ."</a>";
+			$output .= $link;
+			if ($count <= $total) {
+				$output .= $asset['caption'] ? "<p>". $asset['caption'] ."</p>" : "";
+				$output .= $asset['copyright'] ? "<p class='attribution'>&#169; ". $asset['copyright'] ."</p>" : "";
+				$output .="<br/>";
+			}
+			$imgcount++;
+		} else {
+			// Not an image so automatically asset_preview() it
+			$output .= asset_preview($asset['aid']);
+			$output .= $asset['caption'] ? "<p>". $asset['caption'] ."</p>" : "";
+			$output .= $asset['copyright'] ? "<p class='attribution'>&#169; ". $asset['copyright'] ."</p>" : "";
+			if (in_array($a->extension, $is_audio)) {
+				$output .='<p><a href="'. file_create_url($a->filepath) .'">'. t("Download this audio file") .'</a></p>';
+			}
+		}
+		$count++;
+	}
+	if (!empty($imgcount) && $imgcount > $imgdisplay) {
+		$firstimg = str_replace("style='display:none'", "", $firstimg);
+		$output .= t('<br/><div class="view-all-images">'. $firstimg .'%mycount </a></div>', array('%mycount' => format_plural($imgcount, 'View the image', 'View all @count images')));
+	}
+	return $output;
 }
-
-/**
- * Generate the asset add/edit form array.
- */
-function asset_form($asset, $form_values = NULL) {
-  global $user;
-
-  $asset = (object)$asset;
-
-  // Set the id of the top-level form tag
-  $form['#id'] = 'asset-form';
-
-  /**
-   * Basic asset information. These elements are just values so they are not
-   * even sent to the client.
-   */
-  foreach (array('aid', 'uid', 'created', 'type') as $key) {
-    $form[$key] = array('#type' => 'value', '#value' => $asset->$key);
-  }
-
-  // Changed must be sent to the client, for later overwrite error checking.
-  $form['changed'] = array('#type' => 'hidden', '#default_value' => $asset->changed);
-
-  $form['title'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Title'),
-    '#default_value' => check_plain($asset->title),
-    '#required' => TRUE,
-  );
-  
-  $form['pid'] = array(
-    '#type' => 'select',
-    '#title' => t('Directory'),
-    '#default_value' => $asset->pid ? $asset->pid : 0,
-    '#required' => TRUE,
-    '#options' => asset_directory_options(),
-  );
-  
-  if ($extra = asset_type_invoke($asset, 'form')) {
-    $form = array_merge_recursive($form, $extra);
-  }
-  
-  $form['credit'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Credit'),
-    '#default_value' => $asset->credit ? $asset->credit : '',
-    '#description' => t('The credit or license of this asset.')
-  );
-  
-  $form['description'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Description'),
-    '#default_value' => $asset->description ? $asset->description : '',
-    '#description' => t('A short description of this module. May be used differently by different formatters.'),
-    '#rows' => 3,
-  );
-  
-  $form['permissions']['status'] = array(
-    '#type' => 'radios',
-    '#title' => t('Permissions'),
-    '#description' => t('Select the permissions for this asset.  Selecting Public will allow anyone with asset permissions to use this asset.  By selecting Private, you can restrict which roles, if any, can access this asset.  If you select Private and do not select any roles, you will be the only user with access to this asset.'),
-    '#required' => true,
-    '#default_value' => isset($asset->status) ? $asset->status : ASSET_PUBLIC,
-    '#options' => array(
-      ASSET_PUBLIC => t('Public'),
-      ASSET_PRIVATE => t('Private'),
-    ),
-  );
-  $form['permissions']['roles'] = array(
-    '#type' => 'checkboxes',
-    '#options' => user_roles(0, 'browse assets'),
-    '#default_value' => isset($asset->roles) ? $asset->roles : array(),
-  );
-  
-  if (!isset($form['title']['#weight'])) {
-    $form['title']['#weight'] = -5;
-  }
-
-  // If this is a new asset, fill in the default values.
-  if (!isset($asset->aid)) {
-    global $user;
-    $asset->uid = $user->uid;
-  }
-
-  $form['#asset'] = $asset;
-
-  // Add the buttons.
-  // Allow asset_wizard a chance to theme the buttons.
-  $form['buttons'] = array('#tree' => FALSE, '#theme' => 'asset_form_buttons');
-  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Submit'), '#weight' => 45);
-  if ($asset->aid && asset_access('delete', $asset)) {
-    $form['delete'] = array('#type' => 'button', '#value' => t('Delete'), '#weight' => 50);
-  }
-  $form['#base'] = 'asset_form';
-  return $form;
-}
-
-/**
- * Allow asset_wizard a chance to theme the buttons.
- */
-function theme_asset_form_buttons($form){
-  if(arg(1) == 'wizard' && module_exists('asset_wizard')){
-    return theme('asset_wizard_form_buttons', $form);
-  }
-  return drupal_render($form);
-}
-
-/**
- * Return an array of options for the Directory select form element
- */
-function _asset_directory_options(){
-  $options = $parents = $dirs = array();
-  $options[0] = '<none>';
-  $result = db_query('SELECT aid, pid FROM {asset} WHERE type="directory" ORDER BY pid');
-  while($row = db_fetch_object($result)){
-    $dirs[$row->aid] = asset_load($row->aid);
-    $parents[$row->aid] = $row->pid;
-    $children[$row->pid][] = $row->aid;
-  }
-  foreach($dirs as $dir){
-    $prefix = '-';
-    $pid = $dir->aid;
-    while($pid = $parents[$pid]){
-      $prefix .= '-';
-    }
-    $options[$dir->aid] = $prefix . $dir->title;
-  }
-  return $options;
-}
-
-function asset_directory_options(){
-  $options = $children = array();
-  $options[0] = '<none>';
-  $result = db_query('SELECT aid, pid, title FROM {asset} WHERE type="directory" ORDER BY title');
-  
-  while($asset = db_fetch_object($result)){
-    $list = isset($children[$asset->pid]) ? $children[$asset->pid] : array();
-    $list[] = $asset;
-    $children[$asset->pid] = $list;
-  }
-  
-  $options += asset_directory_options_recurse(0, $children);
-  return $options;    
-}
-
-function asset_directory_options_recurse($pid, $children, $prefix = '-'){
-  $options = array();
-  if(isset($children[$pid])){
-    foreach($children[$pid] as $dir){
-      if($tree = asset_directory_options_recurse($dir->aid, $children, $prefix .'-')){
-        $options[$dir->aid] = $prefix .' '. $dir->title;
-        $options += $tree;        
-      }
-      else{
-        $options[$dir->aid] = $prefix .' '. $dir->title;
-      }
-    }
-  }
-  return $options;
-}
-
-/**
- * Form validation for asset_form
- */
-function asset_form_validate($form_id, $form_values, $form){
-  // Convert the asset to an object, if necessary.
-  $asset = (object)$form_values;
-
-  asset_type_invoke($asset, 'validate');
-}
-
-/**
- * Form submit for asset_form
- */
-function asset_form_submit($form_id, $form_values) {
-  global $user;
-
-  // Convert the asset to an object, if necessary.
-  $asset = (object)$form_values;
-
-  asset_save($asset);
-  
-  asset_type_invoke($asset, 'submit');
-  
-  if(arg(1) == 'wizard'){
-    $query = $_GET['return'] ? 'return='. $_GET['return'] : 'return=macro';
-    return array('asset/wizard/'. $asset->aid, $query);
-  }
-  
-  return 'asset/'. $asset->aid;
-}
-  
-/**
- * Menu callback for path==asset
- */  
-function asset_page_default(){
-  $asset = asset_load(0);
-  return asset_view($asset);
-}
-
-/**
- * Menu callback for asset/#/view
- */
-function asset_view($asset){
-  drupal_set_title($asset->title);
-  $output = asset_type_invoke($asset, 'view');
-  
-  module_invoke_all('assetapi', 'view', $asset);
-  
-  return $output;
-}
-
-/**
- * Central asset rendering function.
- * 
- * @param $asset 
- *   The asset to be rendered
- * @param $format    
- *   Can be either a full array of formatting options (like that returned from 
- *   asset_get_macros() or a string specifying the formatter to use
- */
-function asset_render($asset, $format = NULL){
-  if(is_array($format)){
-    $attr = $format;
-    $format = $attr['format'];
-  }
-  else{
-    $attr = array('format' => $format);
-  }
-  if(in_array($format, array_keys($asset->formatters))){
-    $format = $asset->formatters[$format];
-    $output = module_invoke($format->module, 'asset_formatter', 'render', $asset, $attr);
-    $attr['display'] = $attr['display'] ? $attr['display'] : $format->display;
-    return theme('asset', $output, $attr);
-  }
-  else{
-    return 'n/a';
-  }
-}
-
-function asset_icon($asset, $size = 64){
-  $icon = asset_type_invoke($asset, 'icon');
-  if(!$icon){
-    $icon = drupal_get_path('module', 'asset') . '/icons/file.png';
-  }
-  if((is_file($icon) && (list($width, $height, $type, $image_attributes) = @getimagesize($icon)))){
-    $height = min($size, $height);
-    $width = min($size, $width);
-  }
-  else{
-    $height = $width = $size;
-  }
-  return theme('image', $icon, $asset->title, $asset->title, array('width' => $width, 'height' => $height), FALSE);
-}
-
-function asset_icon_ajax($asset, $size = 64){
-  $output = theme('asset_icon', $asset, $size);
-  print $output;
-  exit();
-}
-
-/**
- * Menu callback; view available formatters.
- */
-function asset_page_format($asset, $format = NULL){
-  if(in_array($format, array_keys($asset->formatters))){
-    $format = $asset->formatters[$format];
-    $attr = array('format'=>$format->format);
-    return module_invoke($format->module, 'asset_formatter', 'render', $asset, $attr);
-  }
-  else{
-    $items = array();
-    foreach($asset->formatters as $format){
-      $items[] = l($format->name, 'asset/'. $asset->aid .'/format/'. $format->format)
-               . '<br/>' . $format->description;
-    }
-    return theme('item_list', $items);
-  }
-}
- 
-/**
- * Menu callback; view a single asset.
- */
-function asset_page_view($asset){
-  asset_set_breadcrumb($asset);
-   
-  return asset_view($asset);
-}
-
-/**
- * Menu callback; presents the asset editing form, or redirects to delete
- * confirmation.
- */
-function asset_page_edit($asset){
-  if ($_POST['op'] == t('Delete')) {
-    // Note: we redirect from asset/nid/edit to asset/nid/delete to make the tabs disappear.
-    if ($_REQUEST['destination']) {
-      $destination = drupal_get_destination();
-      unset($_REQUEST['destination']);
-    }
-    drupal_goto('asset/'. $asset->aid .'/delete', $destination);
-  }
-
-  drupal_set_title(check_plain($asset->title));
-  return drupal_get_form($asset->type .'_asset_form', $asset);
-}
-
-/**
- * Menu callback -- ask for confirmation of asset deletion
- */
-function asset_delete_confirm($asset){
- $form['aid'] = array('#type' => 'value', '#value' => $asset->aid);
-
- return confirm_form($form,
-   t('Are you sure you want to delete %title?', array('%title' => $asset->title)),
-   isset($_GET['destination']) ? $_GET['destination'] : 'asset/'. $asset->aid,
-   t('This action cannot be undone.'),
-   t('Delete'), t('Cancel'));
-}
-
-/**
- * Execute asset deletion
- */
-function asset_delete_confirm_submit($form_id, $form_values) {
-  if ($form_values['confirm']) {
-    asset_delete($form_values['aid']);
-  }
-
-  return 'asset';
-}
-
-/**
- * Delete an asset.
- */
-function asset_delete($aid) {
-
-  $asset = asset_load($aid);
-
-  if (asset_access('delete', $asset)) {
-    db_query('DELETE FROM {asset} WHERE aid = %d', $asset->aid);
-    db_query('DELETE FROM {asset_node} WHERE aid = %d', $asset->aid);
-    db_query('DELETE FROM {asset_role} WHERE aid = %d', $asset->aid);
-    
-    // Get the asset-specific bits.
-    asset_type_invoke($asset, 'delete');
-
-    // Clear the cache so an anonymous poster can see the asset being deleted.
-    cache_clear_all();
-
-    drupal_set_message(t('%title has been deleted.', array('%title' => $asset->title)));
-    watchdog('asset', t('@type: deleted %title.', array('@type' => t($asset->type), '%title' => $asset->title)));
-  }
-}
-
-/**
- * Builds a list of available asset types, and returns all of part of this list
- * in the specified format.
- */
-function asset_get_types(){
-  $types = array();
-  $info_array = module_invoke_all('asset_type', 'info');
-  foreach ($info_array as $type => $info) {
-    $info['type'] = $type;
-    $types[$type] = (object) $info;
-  }
-  return $types;
-}
-
-function asset_get_formatters($asset = NULL){
-  static $formatters;
-  
-  if(!isset($formatters)){
-    $formatters = array();
-    $info_array = module_invoke_all('asset_formatter', 'info');
-    foreach ($info_array as $format => $info) {
-      $info['format'] = $format;
-      $info['display'] = ($info['display'] == 'inline') ? 'inline' : 'block';
-      $formatters[$format] = (object) $info;
-    }
-  }
-  
-  if($asset){
-    $asset_formatters = array();
-    $formats = module_invoke_all('asset_formatter', 'load', $asset);
-    foreach($formats as $format){
-      $asset_formatters[$format] = $formatters[$format];
-    }
-    return $asset_formatters;
-  }
-  
-  return $formatters;  
-}
-
-/**
- * Save an asset object into the database.
- */
-function asset_save(&$asset) {
-  global $user;
-
-  $asset->is_new = FALSE;
-
-  // Apply filters to some default asset fields:
-  if (empty($asset->aid)) {
-    // Insert a new asset.
-    $asset->is_new = TRUE;
-
-    $asset->aid = db_next_id('{asset}_aid');
-  }
-  else {
-    // We need to ensure that all asset fields are filled.
-    $asset_current = asset_load($asset->aid);
-    foreach ($asset as $field => $data) {
-      $asset_current->$field = $data;
-    }
-    $asset = $asset_current;
-  }
-
-  // Set some required fields:
-  if (empty($asset->created)) {
-    $asset->created = time();
-  }
-  // The changed timestamp is always updated for bookkeeping purposes (revisions, searching, ...)
-  $asset->changed = time();
-
-  $asset_table_values = array(
-    'aid' => $asset->aid,
-    'title' => $asset->title, 
-    'type' => $asset->type, 
-    'uid' => $asset->uid,
-    'status' => $asset->status, 
-    'created' => $asset->created,
-    'changed' => $asset->changed,
-    'pid' => $asset->pid, 
-    'credit' => $asset->credit,
-    'description' => $asset->description,
-  );
-  $asset_table_types = array(
-    'aid' => '%d',
-    'title' => "'%s'", 
-    'type' => "'%s'", 
-    'uid' => '%d',
-    'status' => '%d', 
-    'created' => '%d',
-    'changed' => '%d',
-    'pid' => '%d',
-    'credit' => "'%s'",
-    'description' => "'%s'",
-  );
-
-  //Generate the asset table query
-  if ($asset->is_new) {
-    $query = 'INSERT INTO {asset} ('. implode(', ', array_keys($asset_table_types)) .') VALUES ('. implode(', ', $asset_table_types) .')';
-  }
-  else {
-    $arr = array();
-    foreach ($asset_table_types as $key => $value) {
-      $arr[] = $key .' = '. $value;
-    }
-    $asset_table_values[] = $asset->aid;
-    $query = 'UPDATE {asset} SET '. implode(', ', $arr) .' WHERE aid = %d';
-  }
- 
-  // save the asset into the database:
-  db_query($query, $asset_table_values);
-
-  // save the asset permissions
-  db_query('DELETE FROM {asset_role} WHERE aid=%d', $asset->aid);
-  if ($asset->status == ASSET_PRIVATE && is_array($asset->roles)) {
-    foreach ($asset->roles as $rid => $status) {
-      db_query('INSERT INTO {asset_role} (aid, rid, status) VALUES (%d, %d, %d)', array($asset->aid, $rid, ($status ? ASSET_PUBLIC : ASSET_PRIVATE)));
-    }
-  }
-  
-  // Call the asset specific callback (if any):
-  if ($asset->is_new) {
-    asset_type_invoke($asset, 'insert');
-    module_invoke_all('assetapi', 'insert', $asset);
-  }
-  else {
-    asset_type_invoke($asset, 'update');
-    module_invoke_all('assetapi', 'update', $asset);
-  }
-
-  // Clear the cache so an anonymous poster can see the asset being added or updated.
-  cache_clear_all();
-  
-  return asset_load($asset->aid);
-}
-
-/**
- * Callback function for an image preview of an asset
- */
-function asset_img_src($asset, $format = NULL){
-  $path = asset_type_invoke($asset, 'img', NULL);
-  if($path){
-    return drupal_goto($path);
-  }
-  else{
-    return drupal_not_found();
-  }
-}
-
-/**
- * Invoke the module specific asset_type hook
- */
-function asset_type_invoke(&$asset, $op){
-  static $types;
-  if(!isset($types)){
-    $types = asset_get_types();
-  }
-  $module = $types[$asset->type]->module;
-  return module_invoke($module, 'asset_type', $op, $asset);  
-}
-
-/**
- * Implementation of hook_asset_type().
- */
-function asset_asset_type($op = 'info', &$asset = NULL){
-  static $loaded = FALSE;
-  if(!$loaded){
-    include_once(drupal_get_path('module','asset') .'/asset.types.inc');
-    $loaded = TRUE;
-  }
-  switch($op){
-    case 'info':
-      return array(
-        'directory' => array(
-          'name' => t('Directory'),
-          'module' => 'asset',
-          'description' => t('Create a new directory to hold assets.'),
-          'icon' => drupal_get_path('module', 'asset') .'/icons/folder.add.png',
-        ),
-        'file' => array(
-          'name' => t('File'),
-          'module' => 'asset',
-          'description' => t('Upload a file to the server.'),
-          'icon' => drupal_get_path('module', 'asset') .'/icons/file.add.png',
-        ),
-      ); 
-      break;
-    default:
-      $function = 'asset_'. $asset->type .'_'. $op;
-      if(function_exists($function)){
-        return $function($asset);
-      }
-      break;
-  }
-}
-
-/**
- * Implementation of hook_asset_type().
- */
-function asset_asset_formatter($op='info',$asset=null,$attr=array()){
-  switch($op){
-    case 'info':
-      return array(
-        'link' => array(
-          'name' => t('Link'),
-          'description' => t('A simple link to the file.'),
-          'module' => 'asset',
-        ),
-        'image' => array(
-          'name' => t('Image'),
-          'description' => t('Standard image embedding'),
-          'module' => 'asset',
-        ),
-      );
-    case 'load':
-      $formats = array();
-      if($asset->type=='file'){
-        $formats[] = 'link';
-        if(strpos($asset->file['filemime'], 'image/') === 0){
-          $formats[] = 'image';
-        }
-      }
-      return $formats;
-    case 'img':
-      $path = $asset->file['filepath'];
-      return $path;
-    case 'render':
-      if($attr['format'] == 'image'){
-        $title = $attr['title'] ? $attr['title'] : $asset->title;
-        $alt = $attr['alt'] ? $attr['alt'] : $asset->title;
-        $getsize = ($attr['height'] || $attr['width']) ? FALSE : TRUE;
-        $attributes = $getsize ? array() : array('height' => $attr['height'], 'width' => $attr['width']);
-        return theme('image', $asset->file['filepath'], $alt, $title, $attributes, $getsize);
-      }
-      else{
-        $text = $attr['text'] ? $attr['text'] : $asset->title;
-        $link_attr = array();
-        if($attr['title']){
-          $link_attr['title'] = check_plain($attr['title']);
-        }
-        return l($text, $asset->file['filepath'], $link_attr);
-      }
-    case 'form':
-      if($attr['format'] == 'image'){
-        $form['alt'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Alt Text'),
-          '#default_value' => $attr['alt'] ? $attr['alt'] : $asset->title,
-          '#description' => t('Alt attribute for the image'),
-        );
-        $form['title'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Title'),
-          '#default_value' => $attr['title'] ? $attr['title'] : $asset->title,
-          '#description' => t('Title attribute for the image'),
-        ); 
-        list($width, $height, $type, $image_attributes) = @getimagesize($asset->file['filepath']); 
-        $form['width'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Height'),
-          '#default_value' => $attr['width'] ? $attr['width'] : $width,
-          '#size' => 5,
-          '#field_suffix' => 'px', 
-        ); 
-        $form['height'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Height'),
-          '#default_value' => $attr['height'] ? $attr['height'] : $height, 
-          '#size' => 5,
-          '#field_suffix' => 'px', 
-        ); 
-        $form['align'] = array(
-          '#type' => 'select',
-          '#title' => t('Alignment'),
-          '#default_value' => $attr['align'] ? $attr['align'] : 'none',
-          '#options' => array(
-            'none' => t('None'),
-            'left' => t('Left'),
-            'right' => t('Right'),
-          ),
-        );
-      }
-      else{
-        $form['text'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Link Text'),
-          '#default_value' => $attr['text'] ? $attr['text'] : $asset->title,
-          '#description' => t('The text to display in the link.'),
-        ); 
-        $form['title'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Title'),
-          '#default_value' => $attr['title'] ? $attr['title'] : '',
-          '#description' => t('Title attribute for the link.  In most browsers this will be displayed in the hover tooltip.'),
-        ); 
-      }
-      return $form;
-  }
-}
-
-function asset_set_breadcrumb($asset){
-  $breadcrumb = array();
-  while($pid = $asset->pid){
-    $asset = asset_load($pid);
-    $breadcrumb[] = l($asset->title, 'asset/'. $asset->aid);
-  }
-  $breadcrumb[] = l(t('Assets'), 'asset');
-  drupal_set_breadcrumb(array_reverse($breadcrumb));  
-}
-
-/**
- * Implementation of hook_filter().
- */
-function asset_filter($op, $delta = 0, $format = -1, $text = '') {
-  switch ($op) {
-    case 'list' :
-      return array (0 => t('Inline file assets'));
-
-    case 'description' :
-      return t('Add formatted file assets to your posts.');
-
-    case 'process' :
-      foreach (asset_get_macros($text) as $unexpanded_macro => $macro) {
-        $expanded_macro = asset_render_macro($macro);
-        $text = str_replace($unexpanded_macro, $expanded_macro, $text);
-      }
-      return $text;
-    default :
-      return $text;
-  }
-}
-
-/**
- * Implementation of hook_filter_tips().
- */
-function asset_filter_tips($delta, $format, $long = false) {
-  if ($long) {
-    return t('Inline assets are allowed.  Use the Insert Assets link or the WYSIWYG editor button to insert the proper format.');
-  }
-  else {
-    return t('Inline assets are allowed.');
-  }
-} 
 
 /**
  * Return all macros as an array.
  */
 function asset_get_macros($text) {
-  $m = array ();
-  preg_match_all('/ \[ ( [^\[\]]+ )* \] /x', $text, $matches);
-  $tag_match = (array) array_unique($matches[1]); // Don't process duplicates.
-
-  foreach ($tag_match as $macro) {
-    $current_macro = '[' . $macro . ']';
-    $param = array_map('trim', explode('|', $macro));
-    $func_name = array_shift($param); // The first macro param is assumed to be the function name.
-    //$num_params = count($param); // Get the number of parameters
-    if ($func_name == 'asset') {
-      $vars = array ();
-      foreach ($param as $p) {
-        $pos = strpos($p, '=');
-        $varname = substr($p, 0, $pos);
-        $varvalue = substr($p, $pos +1);
-        $vars[$varname] = $varvalue;
-      }
-      // the full unaltered filter string is the key for the array of filter attributes
-      $m[$current_macro] = $vars;
-    }
-  }
-  return $m;
+	$m = array();
+	preg_match_all('/ \[ ( [^\[\]]+ )* \] /x', $text, $matches);
+	$tag_match = (array)array_unique($matches[1]); // Don't process duplicates.
+	foreach ($tag_match as $macro) {
+		$current_macro = '['. $macro .']';
+		$param = array_map('trim', explode('|', $macro));
+		$func_name = array_shift($param); // The first macro param is assumed to be the function name.
+		//$num_params = count($param); // Get the number of parameters
+		if ($func_name == 'asset') {
+			$vars = array();
+			foreach ($param as $p) {
+				$pos = strpos($p, '=');
+				$varname = substr($p, 0, $pos);
+				$varvalue = substr($p, $pos +1);
+				$vars[$varname] = $varvalue;
+			}
+			// the full unaltered filter string is the key for the array of filter attributes
+			$m[$current_macro] = $vars;
+		}
+	}
+	return $m;
 }
 
-/** 
+/**
  * build html from atrributes array.
- * 
+ *
  * @param $attr
  *   Array of attributes parsed from filter macro.
  */
-function asset_render_macro($attr = array ()) {
-  // sanity check
-  if(!$attr['aid']){
-    return;
-  }  
-  $asset = asset_load($attr['aid'], TRUE);
-  if ($attr['format'] && $asset->formatters[$attr['format']]) {
-    return asset_render($asset, $attr);
-  } else {
-    return asset_type_invoke($asset, 'view');        
-  }
+function asset_render_macro($attr = array()) {
+	$asset = asset_load($attr['aid']);
+	$asset->title = $attr['title'] ? $attr['title'] : $asset->title;
+	if ($attr['formatter']) {
+		$content = module_invoke($attr['formatter'], 'asset_formatter', 'render', $asset, $attr);
+		return theme('asset', $content, $attr);
+	} else {
+		return theme('asset_render_default', $asset);
+	}
 }
 
 /**
  * Build a macro from the specified attributes.
  */
-function asset_build_macro($attr = array ()) {
-  $macro = '[asset';
-  foreach ($attr as $k => $v) {
-    $macro .= '|' . $k . '=' . $v;
-  }
-  $macro .= ']';
-  return $macro;
+function asset_build_macro($attr = array()) {
+	$macro = '[asset';
+	if (!empty($attr)) 
+	foreach ($attr as $k => $v) {
+		$macro .='|'. $k .'='. $v;
+	}
+	$macro .=']';
+	return $macro;
 }
 
 /**
- * Theme function to wrap a rendered asset in common markup.
+ * Utility function to retrieve a list of all available formatters.
+ *
+ * @return array
+ *     returns an array keyed by filetype(extension) with elements as arrays of format information.
  */
-function theme_asset($content, $attr = array()){
-  $tag = ($attr['display'] == 'inline') ? 'span' : 'div';
-  $align = $attr['align'] ? $attr['align'] : 'none';
-  
-  return "<$tag class=\"asset asset-align-$align\">$content</$tag>";
+function asset_get_formatters($reset = false) {
+	static $formatters;
+	
+	if (empty($formatters) || $reset) {
+		$cache = cache_get('asset_formatters');
+	
+		if ($reset || empty($cache) || empty($cache->data)) {
+	
+			$formatters = array();
+			foreach (module_implements('asset_formatter') as $module) {
+				$list = module_invoke($module, 'asset_formatter', 'info');
+				foreach ((array)$list as $key => $data) {
+					$data['module'] = $module;
+					$data['format'] = $key;
+					foreach ($data['types'] as $type => $exts) {
+						foreach ($exts as $ext) {
+							$formatters[$type][$ext][] = $data;
+							
+						}
+					}
+				}
+			}
+			cache_set('asset_formatters', $formatters);
+	
+		}else $formatters=$cache->data;
+	} 
+	return $formatters;
 }
 
 /**
- * Theme an individual icon for browsing. Allows a link_title property to be
- * added to the asset object to override the display title.  This is used to
- * display .. as the link title for the parent directory.
+ * Menu callback to load the asset popup window.
  */
-function theme_asset_icon($asset, $size = 64){
-  return '<div class="icon">' . asset_icon($asset, $size) . '</div>'
-       . '<div class="caption">'. ($asset->link_title ? $asset->link_title : $asset->title) .'</div>';
+function asset_wizard() {
+	// all wizard related functionality first comes through this function so load the wizard inc
+	require_once(drupal_get_path('module', 'asset') . '/inc/asset_wizard.inc');
+	drupal_add_js(drupal_get_path('module', 'asset') . '/misc/asset.js');
+	drupal_add_css(drupal_get_path('module', 'asset') . '/misc/asset_wizard.css');
+
+	$theme = variable_get('asset_wizard_theme', drupal_get_path('module', 'asset') . '/misc/themes/default/asset_wizard.css');
+	drupal_add_css($theme);
+	switch (arg(2)) {
+		case 'textarea' :
+			drupal_add_js(drupal_get_path('module', 'asset') . '/misc/asset_textarea.js');
+			break;
+		case 'textfield' :
+			drupal_add_js(drupal_get_path('module', 'asset') . '/misc/asset_textfield.js');
+			break;
+		case 'tinymce' :
+			drupal_add_js(drupal_get_path('module', 'asset') . '/misc/tinymce/jscripts/tiny_mce/tiny_mce_popup.js');
+			drupal_add_js(drupal_get_path('module', 'asset') . '/misc/tinymce/asset_tinymce.js');
+			break;
+	}
+	$output = drupal_get_form('asset_wizard_form');
+	
+	ob_end_clean();
+	print theme('asset_popup', $output);
+	exit;
+}
+
+
+/**
+ * The #process callback function for the textareas
+ */
+function asset_textarea($element) {
+	if (_asset_page_match()) {
+		$output = theme('asset_textarea_link', $element);
+		$element['#suffix'] .= $output;
+
+		if (module_exists('tinymce')) {
+			drupal_add_js(drupal_get_path('module', 'asset') . '/misc/tinymce/asset_tinymce_helper.js');
+		}
+	}
+	return $element;
 }
 
 /**
- * @} End of "addtogroup asset".
+ * Should we show the insert access link, determined by admin setting
+ * Borrowed from tinymce.module
+ *
+ * @return
+ *   TRUE if can render, FALSE if not allowed.
  */
+function _asset_page_match() {
+	$page_match = FALSE;
+	if (!user_access('create assets') && !user_access('administer assets')) return $page_match;
+	$access_option = variable_get('asset_access_option', 1);
+	$access_pages = variable_get('asset_access_pages', "node/add/*\nnode/*/edit");
+	if ($access_pages) {
+		// If the PHP option wasn't selected
+		if ($access_option < 2) {
+			$path = drupal_get_path_alias($_GET['q']);
+			$regexp = '/^('. preg_replace(array('/(\r\n?|\n)/', '/\\\\\*/', '/(^|\|)\\\\<front\\\\>($|\|)/'), array('|', '.*', '\1'. preg_quote(variable_get('site_frontpage', 'node'), '/') .'\2'), preg_quote($access_pages, '/')) .')$/';
+			$page_match = !($access_option xor preg_match($regexp, $path));
+		}
+		else {
+			$page_match = drupal_eval($access_pages);
+		}
+	} else {
+		// No pages were specified to block so show on all
+		$page_match = TRUE;
+	}
+	return $page_match;
+}
+
+/**
+ * Menu Callback from javascript to print an assets preview
+ */
+function asset_js_preview($aid, $show_details=true, $return=false) {
+	if (!isset($aid)) exit;
+	$asset = asset_load($aid);
+	$formatters = asset_get_formatters();
+	if (isset($formatters[$asset->type][$asset->extension][0])) {
+		$format = $formatters[$asset->type][$asset->extension][0];
+	} elseif (isset($formatters[$asset->type]['*'][0])) {
+		$format = $formatters[$asset->type]['*'][0];
+	} else {
+		$format = $formatters['*']['*'][0];
+	}
+	
+	$output .= asset_preview($asset->aid);
+	if ($show_details) {
+		$details[t('File Size')] = format_size($asset->filesize);
+		if(!empty($asset->author)) $details[t('Author')] = $asset->author;
+		$details = array_merge($details, (array) module_invoke($format['module'], 'asset_formatter', 'details', $asset, $format));
+		foreach ($details as $label => $value) {
+			$output .= '<div><strong>'. check_plain($label) .'</strong>: '. check_plain($value) .'</div>';
+		}
+	}
+	if ($return) {
+		return $output;
+	}
+	print $output;
+	exit;
+}
+
+/**
+ * Build a preview of an asset based on module and format options.  If no module
+ * and format info is given then the default teaser formatter is used.
+ */
+function asset_preview($aid, $module = NULL, $format = NULL) {
+	$asset = asset_load($aid);
+	
+	if (empty($module) || empty($format)) {
+		$formatter = asset_get_default_formatter($asset->type, $asset->extension, TRUE);
+		list($module, $format) = explode(':', $formatter);
+	
+	}
+	
+	$output = module_invoke($module, 'asset_formatter', 'preview', $asset, array('format' => $format));
+	return $output;
+}
+
+/**
+ * Callback function to output an image for preview of an asset.
+ */
+function asset_img_preview($aid, $module = NULL, $format = NULL) {
+	$asset = asset_load($aid);
+	if (!$module || !$format) {
+		$formatter = asset_get_default_formatter($asset->type, $asset->extension, TRUE);
+		list($module, $format) = explode(':', $formatter);
+	}
+	$src = module_invoke($module, 'asset_formatter', 'img', $asset, array('format' => $format));
+	// We're not useing drupal_goto because filenames will have the language code prepended
+	// return drupal_goto($src);
+	$src = (substr($src, 0, 5) != "http:") ? base_path() . $src : $src;
+	return header('location: '. $src);
+}
+?>

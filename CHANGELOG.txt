@@ -1,7 +1,30 @@
 // $Id$
 
-2008-01-20 - Asset v1
- - newer cleaner version of asset begins!
+2008-09-09
+ - Integration with imagecache2
+ - Integration with lightbox2
+ - Better browser compatibility for asset wizard
+
+2008-07-24
+ - Integration with the media_mover module
+ - More usability improvements to the asset wizard
+ - #202656 migration path from imagefield, image, IMCE, .
+ - #227811 Auto-create 'images' and 'images/import' folders?
+ - #228110 asset_nodeapi submit does not contain node ID	
+ - #242389 Formatter defaults for teasers are not working
+ - #255986 public folders can not be accessed by users
+ - #273373 asset_import only importing images
+
+2008-05-20
+ - #246828: PostgreSQL support by pounard
+ - #255937: "Delete Asset" does not remove Asset from CCK node
+
+2008-04-25
+ - Improved user interface, especially differences between CCK asset wizard and textarea/TinyMCE asset wizard
+ - #227027: Internet Explorer javascript error
+ - #230990: Asset Wizard creates 2 rows on first directory creation
+ - #235051: Insert Assets link always shows, regardless of permissionss
+ - #251860: Files don't get deleted on server
 
 2007-12-18
  - cck support
@@ -13,6 +36,7 @@
  - add asset_import module
  - improved imagecache support
  - improved TinyMCE support
+ - lightbox support
 
 2007-06-28
  - #155368: mp3 player admin page fixes
