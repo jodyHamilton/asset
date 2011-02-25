@@ -1,4 +1,3 @@
-// $Id$ 
 
 /**
  * the following are jslint (http://www.jslint.com) options

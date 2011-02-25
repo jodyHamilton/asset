@@ -1,4 +1,3 @@
-; $Id$
 name = Asset
 description = Digital Asset management.
 package = Asset

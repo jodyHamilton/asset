@@ -1,4 +1,3 @@
-// $Id$
 
 /**
  * Attaches add more fields behaviour to any form.

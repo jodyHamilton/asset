@@ -1,4 +1,3 @@
-; $Id$
 name = Asset Import
 description = Allows batches of images to be imported as assets from a directory on the server.
 package = Asset

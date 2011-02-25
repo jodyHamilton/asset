@@ -1,4 +1,3 @@
-// $Id$ 
 /* Import plugin specific language pack */
 tinyMCE.importPluginLanguagePack('drupalasset', 'en');
 

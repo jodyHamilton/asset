@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 define('ASSET_PRIVATE', 0);
 define('ASSET_PUBLIC', 1);

@@ -1,4 +1,3 @@
-// $Id$
 
 2008-09-09
  - Integration with imagecache2
