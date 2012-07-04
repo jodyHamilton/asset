@@ -1,0 +1,10 @@
+name = Image gallery asset
+description = Provides a sample image gallery asset
+core = 7.x
+package = Media assets
+dependencies[] = asset_image
+dependencies[] = asset
+dependencies[] = entityreference
+dependencies[] = references_dialog
+dependencies[] = views
+dependencies[] = lightbox2

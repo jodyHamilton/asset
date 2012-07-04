@@ -1,0 +1,13 @@
+name = Asset Video
+description = Provides a sample video asset
+core = 7.x
+package = Media assets
+version = 7.x-1.0-beta1
+project = asset_video
+dependencies[] = asset
+dependencies[] = field_sql_storage
+dependencies[] = text
+dependencies[] = emvideo_youtube
+dependencies[] = emvideo_dailymotion
+dependencies[] = emvideo_vimeo
+dependencies[] = emvideo_wattv

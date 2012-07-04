@@ -1,0 +1,5 @@
+core = "7.x"
+dependencies[] = "emvideo"
+description = "Provides an Embedded Video support for Vimeo"
+name = "Embedded Video Vimeo"
+package = "Embedded video"

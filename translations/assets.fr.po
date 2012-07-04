@@ -1,0 +1,425 @@
+# $Id$
+#
+# French translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  assets.module: n/a
+#  includes/assets.admin.inc: n/a
+#  assets.info: n/a
+#  views/assets.views_default.inc: n/a
+#  views/handlers/assets_views_handler_field_asset.inc: n/a
+#  views/handlers/assets_views_handler_field_asset_link.inc: n/a
+#  views/handlers/assets_views_handler_field_asset_link_delete.inc: n/a
+#  views/handlers/assets_views_handler_field_asset_link_edit.inc: n/a
+#  views/handlers/assets_views_handler_field_asset_link_insert.inc: n/a
+#  views/handlers/assets_views_plugin_row_asset_view.inc: n/a
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2012-04-20 11:00+0200\n"
+"PO-Revision-Date: 2012-04-20 12:10+0300\n"
+"Last-Translator: Sergey Buts <sbuts@adyax.com>\n"
+"Language-Team: French <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+#: assets.module:33
+msgid "Media Asset"
+msgstr ""
+
+#: assets.module:34
+msgid "Media Assets"
+msgstr ""
+
+#: assets.module:54
+msgid "Full size"
+msgstr ""
+
+#: assets.module:58
+msgid "Small"
+msgstr ""
+
+#: assets.module:62
+msgid "Tooltip"
+msgstr ""
+
+#: assets.module:79;769
+msgid "Asset type"
+msgstr ""
+
+#: assets.module:80
+msgid "Asset types"
+msgstr ""
+
+#: assets.module:190
+msgid "Administer asset types"
+msgstr ""
+
+#: assets.module:191
+msgid "Create, edit and delete types of assets"
+msgstr ""
+
+#: assets.module:194
+msgid "Administer assets"
+msgstr ""
+
+#: assets.module:195
+msgid "Create, edit and delete asset entities"
+msgstr ""
+
+#: assets.module:472
+msgid "Converts asset tags to markup"
+msgstr ""
+
+#: assets.module:473
+msgid "This filter will convert [[asset:...]] tags into markup"
+msgstr ""
+
+#: assets.module:478
+msgid "Removes asset tags from output"
+msgstr ""
+
+#: assets.module:479
+msgid "This filter will remove [[asset:...]] from output"
+msgstr ""
+
+#: assets.module:495;877
+#: includes/assets.admin.inc:101
+msgid "Title"
+msgstr "Titre"
+
+#: assets.module:496
+msgid "Asset module element"
+msgstr ""
+
+#: assets.module:576;333
+msgid "Media assets"
+msgstr ""
+
+#: assets.module:587
+#: assets.info:0
+msgid "Assets"
+msgstr ""
+
+#: assets.module:591
+msgid "Assets library"
+msgstr ""
+
+#: assets.module:746
+msgid "Date created"
+msgstr "Date de création"
+
+#: assets.module:748
+msgid "The date the asset was created."
+msgstr ""
+
+#: assets.module:754
+msgid "Date changed"
+msgstr "Date de modification"
+
+#: assets.module:757
+msgid "The date the asset was most recently updated."
+msgstr ""
+
+#: assets.module:760
+msgid "Author"
+msgstr "Auteur"
+
+#: assets.module:762
+msgid "The author of the asset."
+msgstr ""
+
+#: assets.module:770
+msgid "The type of the asset."
+msgstr ""
+
+#: assets.module:780
+msgid "Asset type ID"
+msgstr ""
+
+#: assets.module:781
+msgid "The unique ID of the asset type."
+msgstr ""
+
+#: assets.module:786
+#: includes/assets.admin.inc:13
+msgid "Name"
+msgstr "Nom"
+
+#: assets.module:787
+msgid "The name of the asset type."
+msgstr ""
+
+#: assets.module:793
+msgid "Machine name"
+msgstr "Nom système"
+
+#: assets.module:795
+msgid "The machine name of the asset type."
+msgstr ""
+
+#: assets.module:801
+#: includes/assets.admin.inc:31
+msgid "Description"
+msgstr "Description"
+
+#: assets.module:802
+msgid "The optional description of the asset type."
+msgstr ""
+
+#: assets.module:841
+msgid "Default"
+msgstr "Par défaut"
+
+#: assets.module:854
+msgid "Aid"
+msgstr ""
+
+#: assets.module:855
+msgid "The asset ID."
+msgstr ""
+
+#: assets.module:878
+msgid "The asset title."
+msgstr ""
+
+#: assets.module:896
+msgid "Edit link"
+msgstr "Modifier lien"
+
+#: assets.module:897
+msgid "Provide a simple link to edit the asset."
+msgstr ""
+
+#: assets.module:903
+msgid "Delete link"
+msgstr ""
+
+#: assets.module:904
+msgid "Provide a simple link to delete the asset."
+msgstr ""
+
+#: assets.module:910
+msgid "Insert button"
+msgstr ""
+
+#: assets.module:911
+msgid "Provide a button for assets library."
+msgstr ""
+
+#: assets.module:957
+msgid "Rendered asset"
+msgstr ""
+
+#: assets.module:958
+msgid "Renders an asset in a specific view mode."
+msgstr ""
+
+#: assets.module:979
+msgid "Wysiwyg modes"
+msgstr ""
+
+#: assets.module:993
+msgid "Use following view modes in the wysiwyg"
+msgstr ""
+
+#: assets.module:320
+msgid "Add "
+msgstr "Créer"
+
+#: assets.module:344
+msgid "Edit asset"
+msgstr "Modifier un  média"
+
+#: assets.module:353
+msgid "Override asset"
+msgstr "Supplanter les paramètres du média"
+
+#: assets.info:0
+msgid "Provides entity based media assets"
+msgstr ""
+
+#: assets.info:0
+msgid "France3 Regions"
+msgstr ""
+
+#: includes/assets.admin.inc:15
+msgid "The human-readable name of this asset type. This text will be displayed as part of the list on the <em>Add new asset</em> page. It is recommended that this name begin with a capital letter and contain only letters, numbers, and spaces. This name must be unique."
+msgstr ""
+
+#: includes/assets.admin.inc:28
+msgid "A unique machine-readable name for this asset type. It must only contain lowercase letters, numbers, and underscores."
+msgstr ""
+
+#: includes/assets.admin.inc:34
+msgid "Describe this asset type. The text will be displayed on the <em>Add new asset</em> page."
+msgstr ""
+
+#: includes/assets.admin.inc:38
+msgid "Explanation or submission guidelines"
+msgstr "Explication ou directives pour la contribution"
+
+#: includes/assets.admin.inc:40
+msgid "This text will be displayed at the top of the page when creating or editing asset of this type."
+msgstr ""
+
+#: includes/assets.admin.inc:49
+msgid "Button icon"
+msgstr ""
+
+#: includes/assets.admin.inc:54
+msgid "Weight"
+msgstr "Poids"
+
+#: includes/assets.admin.inc:63
+msgid "Save asset type"
+msgstr ""
+
+#: includes/assets.admin.inc:70
+msgid "Delete asset type"
+msgstr ""
+
+#: includes/assets.admin.inc:106
+msgid "Title of asset"
+msgstr "Titre du média"
+
+#: includes/assets.admin.inc:114
+msgid "Save"
+msgstr "Enregistrer"
+
+#: includes/assets.admin.inc:121
+msgid "Delete"
+msgstr "Supprimer"
+
+#: includes/assets.admin.inc:180
+msgid "Add @label"
+msgstr "Créer un @label"
+
+#: includes/assets.admin.inc:204
+msgid "Display mode"
+msgstr ""
+
+#: includes/assets.admin.inc:228
+msgid "Alignment"
+msgstr ""
+
+#: includes/assets.admin.inc:231
+msgid "None"
+msgstr "Aucun(e)"
+
+#: includes/assets.admin.inc:232
+msgid "Left"
+msgstr "Gauche"
+
+#: includes/assets.admin.inc:233
+msgid "Right"
+msgstr "Droit"
+
+#: includes/assets.admin.inc:320
+msgid "Override"
+msgstr "Supplanter"
+
+#: views/assets.views_default.inc:86
+msgid "Master"
+msgstr ""
+
+#: views/assets.views_default.inc:87
+msgid "Media assets library"
+msgstr ""
+
+#: views/assets.views_default.inc:88
+msgid "Apply"
+msgstr "Soumettre"
+
+#: views/assets.views_default.inc:89
+msgid "Reset"
+msgstr "Réinitialiser"
+
+#: views/assets.views_default.inc:90
+msgid "Sort by"
+msgstr ""
+
+#: views/assets.views_default.inc:91
+msgid "Asc"
+msgstr ""
+
+#: views/assets.views_default.inc:92
+msgid "Desc"
+msgstr ""
+
+#: views/assets.views_default.inc:93
+msgid "Items per page"
+msgstr ""
+
+#: views/assets.views_default.inc:94
+msgid "- All -"
+msgstr ""
+
+#: views/assets.views_default.inc:95
+msgid "Offset"
+msgstr ""
+
+#: views/assets.views_default.inc:96
+msgid "Titre"
+msgstr ""
+
+#: views/assets.views_default.inc:97
+msgid "Type"
+msgstr "Type"
+
+#: views/assets.views_default.inc:98
+msgid "Library"
+msgstr ""
+
+#: views/assets.views_default.inc:99
+msgid "more"
+msgstr ""
+
+#: views/handlers/assets_views_handler_field_asset.inc:37
+msgid "Link this field to the original piece of content"
+msgstr ""
+
+#: views/handlers/assets_views_handler_field_asset.inc:38
+msgid "Enable to override this field's links."
+msgstr ""
+
+#: views/handlers/assets_views_handler_field_asset.inc:44
+msgid "Show an asset tooltip preview"
+msgstr ""
+
+#: views/handlers/assets_views_handler_field_asset.inc:45
+msgid "Choose a desired view mode for a tooltip."
+msgstr ""
+
+#: views/handlers/assets_views_handler_field_asset.inc:49
+msgid "Disabled"
+msgstr "Désactivé"
+
+#: views/handlers/assets_views_handler_field_asset_link.inc:16
+msgid "Text to display"
+msgstr ""
+
+#: views/handlers/assets_views_handler_field_asset_link_delete.inc:21
+msgid "delete"
+msgstr "supprimer"
+
+#: views/handlers/assets_views_handler_field_asset_link_edit.inc:21
+msgid "edit"
+msgstr "modifier"
+
+#: views/handlers/assets_views_handler_field_asset_link_insert.inc:13
+#: views/handlers/assets_views_plugin_row_asset_view.inc:34
+msgid "Add to editor"
+msgstr "Ajouter"
+
+#: views/handlers/assets_views_plugin_row_asset_view.inc:23
+msgid "Render as an assets library item."
+msgstr ""
+
+#: views/handlers/assets_views_plugin_row_asset_view.inc:24
+msgid "Turn it on for the ckeditor library listings."
+msgstr ""
+

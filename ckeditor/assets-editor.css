@@ -1,0 +1,24 @@
+div.entity-asset.editor {
+  cursor: default;
+  background-color: #F6F6F2;
+  border-color: #F9F9F9;
+  padding: 8px;
+  clear: both;
+}
+.entity-asset.editor.asset-align-left {
+  margin: 0 8px 0 0;
+  float: left;
+}
+.entity-asset.editor.asset-align-right {
+  margin: 0 0 0 8px;
+  float: right;
+}
+.entity-asset.editor.selected {
+  box-shadow: inset 0 0 5px #0076B9;
+}
+.entity-asset.editor:hover {
+  box-shadow: inset 0 0 3px #0076B9; background-color: #F0F8FF;
+}
+.entity-asset.editor.selected:hover {
+  box-shadow: inset 0 0 5px #0076B9; background-color: #F0F8FF;
+}

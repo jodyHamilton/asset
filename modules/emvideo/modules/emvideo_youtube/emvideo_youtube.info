@@ -1,0 +1,5 @@
+core = "7.x"
+dependencies[] = "emvideo"
+description = "Provides an Embedded Video support for Youtube"
+name = "Embedded Video Youtube"
+package = "Embedded video"

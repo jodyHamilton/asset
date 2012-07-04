@@ -1,0 +1,6 @@
+core = "7.x"
+dependencies[] = "node"
+dependencies[] = "text"
+description = "Provides an Embedded Video field"
+name = "Embedded Video core module"
+package = "Embedded video"
