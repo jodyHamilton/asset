@@ -468,22 +468,18 @@ function asset_ckeditor_plugin() {
  */
 function asset_preprocess_page(&$variables) {
   if (isset($_GET['render']) && $_GET['render'] == 'popup') {
-     ///
     module_invoke_all('suppress');
     foreach (element_children($variables['page']) as $key) {
       if ($key != 'content') {
         unset($variables['page'][$key]);
       }
     }
-
-    $variables['theme_hook_suggestions'][] = 'asset_form_page';
-
-    ///$children = element_children($variables['page']);
-    ///$page_content = $variables['page']['content'];
-    ///foreach ($children as $child_key) {
-    ///  unset($variables['page'][$child_key]);
-    ///}
-    ///$variables['page']['content'] = $page_content;
+    if (isset($_GET['pure']) && $_GET['pure']) {
+      $variables['theme_hook_suggestions'][] = 'asset_pure';
+    }
+    else {
+      $variables['theme_hook_suggestions'][] = 'asset_form_page';
+    }
     unset($variables['title_prefix']);
     unset($variables['title_suffix']);
     unset($variables['secondary_menu']);
@@ -590,6 +586,9 @@ function asset_theme() {
     ) + $base,
     'asset_form_page'  => array(
       'template' => 'asset-form'
+    ) + $base,
+    'asset_pure'  => array(
+      'template' => 'asset-pure'
     ) + $base,
     'asset_tooltip' => array(
       'render element' => 'page',

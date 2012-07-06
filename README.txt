@@ -29,3 +29,14 @@ of your asset types to be used in editor.
 in the "Cleanup and output" fieldset we suggest to choose <br> "Enter mode" for now.
 
 in the "Advanced options" fieldset set "HTML Entities" to "No" (At this moment it is a required option if you use the Asset module.)
+
+
+Sample asset modules
+--------------------
+Audio
+-----
+Provides a simple audio assset with jplayer frontend.
+Please follow the instructions of jplayer module to configure it properly.
+To make the player look as it should inside the editor, please add the jplayer css to the ckeditor profile:
+in the "CSS" tab of the ckeditor profile edition page choose "Define CSS" and add the proper path to the jplayer css into
+"CSS file path" field. In most cases it should be: %hsites/all/modules/contrib/jplayer/theme/jplayer.css

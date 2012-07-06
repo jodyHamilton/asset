@@ -234,7 +234,7 @@ function asset_gallery_install() {
   );
   field_bundle_settings('asset', 'gallery', $bundle_settings);
 
-  assets_set_wysiwyg_modes('image', array(
+  assets_set_wysiwyg_modes('gallery', array(
     'full' => 'full'
   ));
 

@@ -113,7 +113,8 @@ function asset_base_form($form, &$form_state, $asset, $op = 'edit') {
   );
 
   field_attach_form('asset', $asset, $form, $form_state);
-  unset($form['#submit']);
+  //unset($form['#submit']);
+  $form['#submit'] = array('asset_base_form_submit');
   unset($form['#validate']);
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
@@ -282,6 +283,7 @@ function assets_wysiwyg_form($form, &$form_state, $op, $asset, $mode = ASSET_DEF
   else {
     $form['#submit'][] = 'assets_wysiwyg_form_submit';
   }
+  kpr($form);
 
   _assets_wysiwyg_fields($form, $asset, array('mode' => $mode, 'align' => $align));
 
@@ -523,10 +525,10 @@ function assets_get_full_content() {
     if (!empty($matches)) {
       $match = reset($matches);
       $asset = asset_load($match[2]);
-      $content .= assets_render_by_tag($asset, $match[3], TRUE);
+      $content .= assets_render_by_tag($asset, $match[3], FALSE);
     }
   }
-  print $content;
+  return $content;
 }
 
 function _assets_get_tag($tag_id) {

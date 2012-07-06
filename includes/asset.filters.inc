@@ -29,6 +29,7 @@ function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
       }
     }
     $clone->asset_options = $options;
+    $clone->asset_source_string = $params_string;
     return render($clone->view($view_mode));
   }
   return '';
