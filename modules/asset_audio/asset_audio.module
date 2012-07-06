@@ -1,0 +1,34 @@
+<?php
+/**
+ * @file
+ * Code for the Asset Audio sample module.
+ */
+
+/**
+ * Implements hook_default_asset_type().
+ */
+function asset_audio_default_asset_type() {
+  $items = array();
+  $items['audio'] = entity_import('asset_type', '{
+    "type" : "audio",
+    "name" : "Audio",
+    "icon" : "AddSound.png",
+    "description" : "",
+    "help" : "",
+    "weight" : "5",
+    "locked" : "0"
+  }');
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+/*function asset_audio_theme() {
+  return array(
+    'asset_editor_wrapper__audio' => array(
+      'template' => 'asset-editor-wrapper--audio'
+    )
+  );
+}
+*/

@@ -1,0 +1,7 @@
+name = Asset Audio
+description = Provides a sample audio asset
+core = 7.x
+package = Media assets
+dependencies[] = asset
+dependencies[] = file
+dependencies[] = jplayer
