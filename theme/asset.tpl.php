@@ -29,8 +29,7 @@
  * @see template_process()
  */
 ?>
-<div class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
-
+<!--<div class="<?php /*print $classes; */?> clearfix" <?php /*print $attributes; */?>>-->
   <?php if (!$page): ?>
     <strong <?php print $title_attributes; ?>>
         <?php print $title; ?>
@@ -38,8 +37,6 @@
   <?php endif; ?>
 
   <div class="content"<?php print $content_attributes; ?>>
-    <?php
-      print render($content);
-    ?>
+    <?php print render($content); ?>
   </div>
-</div>
+<!--</div>-->

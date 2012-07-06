@@ -120,8 +120,8 @@ function asset_base_form($form, &$form_state, $asset, $op = 'edit') {
     '#type' => 'submit',
     '#value' => t('Save'),
     '#weight' => 5,
-    '#submit' => array('asset_base_form_submit')
   );
+
   if (!empty($asset->aid) && user_access('administer assets')) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
@@ -431,7 +431,7 @@ function assets_override_form_submit(&$form, &$form_state) {
     var outdated = dialog._outdatedAssetEl;
     if (outdated) {
       var tag_id = outdated.data(\'asset-cid\');
-      dialog._.editor.plugins.assets.replaceAsset(tag_id, \'' . $placeholder . '\' );
+      dialog._.editor.plugins.asset.replaceAsset(tag_id, \'' . $placeholder . '\' );
     }
     dialog.hide();
   ';
@@ -452,7 +452,7 @@ function assets_wysiwyg_add_form_submit(&$form, &$form_state) {
   $js = '
     var CKEDITOR = parent.CKEDITOR;
     var dialog = CKEDITOR.dialog.getCurrent();
-    var newHtml = dialog._.editor.plugins.assets.Assets.getContentByTag(\'' . $placeholder . '\');
+    var newHtml = dialog._.editor.plugins.asset.Assets.getContentByTag(\'' . $placeholder . '\');
     //var newHtml = dialog.definition.Assets.getContentByTag(\'' . $placeholder . '\');
     if (newHtml) {
       var element = CKEDITOR.dom.element.createFromHtml(newHtml);
@@ -486,7 +486,7 @@ function assets_wysiwyg_form_submit(&$form, &$form_state) {
     var outdated = dialog._outdatedAssetEl;
     if (outdated) {
       var tag_id = outdated.data(\'asset-cid\');
-      dialog._.editor.plugins.assets.replaceAsset(tag_id, \'' . $placeholder . '\' );
+      dialog._.editor.plugins.asset.replaceAsset(tag_id, \'' . $placeholder . '\' );
     }
     dialog.hide();
   ';
@@ -496,8 +496,10 @@ function assets_wysiwyg_form_submit(&$form, &$form_state) {
 
 function assets_get_content() {
   $content = '';
+  ///if (isset($_POST['tag']) && !empty($_POST['tag'])) {
   if (isset($_REQUEST['tag']) && !empty($_REQUEST['tag'])) {
     $tag = $_REQUEST['tag'];
+   /// $tag = $_POST['tag'];
    // $tag = html_entity_decode($tag, ENT_NOQUOTES, 'UTF-8');
     $matches = assets_filter_get_matches($tag);
     if (!empty($matches)) {
@@ -510,6 +512,22 @@ function assets_get_content() {
   drupal_exit();
 }
 
+function assets_get_full_content() {
+  $content = '';
+  ///if (isset($_POST['tag']) && !empty($_POST['tag'])) {
+  if (isset($_REQUEST['tag']) && !empty($_REQUEST['tag'])) {
+    $tag = $_REQUEST['tag'];
+    /// $tag = $_POST['tag'];
+    // $tag = html_entity_decode($tag, ENT_NOQUOTES, 'UTF-8');
+    $matches = assets_filter_get_matches($tag);
+    if (!empty($matches)) {
+      $match = reset($matches);
+      $asset = asset_load($match[2]);
+      $content .= assets_render_by_tag($asset, $match[3], TRUE);
+    }
+  }
+  print $content;
+}
 
 function _assets_get_tag($tag_id) {
   $tags = explode(':', $tag_id);
@@ -521,7 +539,7 @@ function _assets_get_tag($tag_id) {
     $view_mode = ASSET_DEFAULT_MODE;
     $asset->in_editor = TRUE;
     $placeholder = assets_get_placeholder($asset, array('mode' => $view_mode, 'align' => ''));
-    $placeholder = addslashes($placeholder);
+    //$placeholder = addslashes($placeholder);
     $placeholder = str_replace("\r\n", '\n', $placeholder);
 
     $asset_content = render($asset->view($view_mode)); //assets_render_by_tag($asset, array('mode' => $view_mode), TRUE);

@@ -21,4 +21,3 @@ function asset_document_default_asset_type() {
   }');
   return $items;
 }
-

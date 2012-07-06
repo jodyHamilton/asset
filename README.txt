@@ -29,7 +29,3 @@ of your asset types to be used in editor.
 in the "Cleanup and output" fieldset we suggest to choose <br> "Enter mode" for now.
 
 in the "Advanced options" fieldset set "HTML Entities" to "No" (At this moment it is a required option if you use the Asset module.)
-
-
-
-

@@ -29,7 +29,7 @@
  * @see template_process()
  */
 ?>
-<div class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
+<!--<div class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>> -->
 
   <strong <?php print $title_attributes; ?>>
       <?php print $title; ?>
@@ -57,4 +57,4 @@
     hide($content['field_asset_gallery_images']);
     print render($content);
   ?></div>
-</div>
+<!--</div> -->

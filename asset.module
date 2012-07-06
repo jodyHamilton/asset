@@ -182,91 +182,6 @@ function asset_permission() {
 }
 
 /**
- * Use a separate class for assets so we can specify some defaults.
- */
-class Asset extends Entity {
-
-  public $type;
-  public $title;
-  public $created;
-  public $changed;
-  public $uid;
-  public $in_editor = FALSE;
-
-
-  public function __construct($values = array()) {
-    if (isset($values['user'])) {
-      $values['uid'] = $values['user']->uid;
-      unset($values['user']);
-    }
-    if (isset($values['type']) && is_object($values['type'])) {
-      $values['type'] = $values['type']->type;
-    }
-
-    parent::__construct($values, 'asset');
-    if (!isset($this->uid)) {
-      $this->uid = $GLOBALS['user']->uid;
-    }
-    if (!isset($this->created)) {
-      $this->created = REQUEST_TIME;
-    }
-  }
-
-  protected function defaultLabel() {
-    if (!empty($this->title)) {
-      return $this->title;
-    }
-    $bundle_key = $this->entityInfo['entity keys']['bundle'];
-    return $this->entityInfo['bundles'][$this->$bundle_key]['label'];
-  }
-
-  protected function defaultUri() {
-    return array('path' => 'admin/content/assets/view/' . $this->identifier());
-  }
-}
-
-/**
- * Use a separate class for asset types so we can specify some defaults.
- */
-class AssetType extends Entity {
-
-  public $type;
-  public $name;
-  public $icon;
-  public $description;
-  public $help;
-  public $weight = 0;
-//'id'
-//'locked'
-//'help'
-
-  public function __construct($values = array()) {
-    parent::__construct($values, 'asset_type');
-  }
-
-  /**
-   * Returns whether the asset type is locked, thus may not be deleted or renamed.
-   *
-   * Asset types provided in code are automatically treated as locked, as well
-   * as any fixed asset type.
-   */
-  public function isLocked() {
-    return isset($this->status) && empty($this->is_new) && (($this->status & ENTITY_IN_CODE) || ($this->status & ENTITY_FIXED));
-  }
-
-  /**
-   * @param $ids
-   * @param DatabaseTransaction|null $transaction
-   *
-   * We have to override this method just to invoke the entity_defaults_rebuild in case when no existent types were reverted
-   */
-  public function delete($ids, DatabaseTransaction $transaction = NULL) {
-    parent::delete($ids, $transaction);
-    entity_defaults_rebuild(array($this->entityType));
-  }
-}
-
-/**
  * Implements hook_menu().
  */
 function asset_menu() {
@@ -337,6 +252,15 @@ function asset_menu() {
   $items['admin/assets/get'] = array(
     'theme callback' => 'assets_get_frontend_theme',
     'page callback' => 'assets_get_content',
+    'page arguments' => array(3),
+    'access arguments' => array('administer assets'),
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/asset.admin.inc',
+  );
+
+  $items['admin/assets/getfull'] = array(
+    'theme callback' => 'assets_get_frontend_theme',
+    'page callback' => 'assets_get_full_content',
     'page arguments' => array(3),
     'access arguments' => array('administer assets'),
     'type' => MENU_CALLBACK,
@@ -507,41 +431,6 @@ function _assets_get_overridable_fields($asset_type) {
 }
 
 /**
- * UI controller.
- */
-class AssetsUIController extends EntityDefaultUIController {
-
-  /**
-   * Overrides hook_menu() defaults.
-   */
-  public function hook_menu() {
-    $items = parent::hook_menu();
-    unset($items[$this->path . '/add']);
-    return $items;
-  }
-
-  public function hook_forms() {
-    // The overview and the operation form are implemented by the controller,
-    // the callback and validation + submit handlers just invoke the controller.
-    $forms[$this->entityType . '_overview_form'] = array(
-      'callback' => 'entity_ui_overview_form',
-      'wrapper_callback' => 'entity_ui_form_defaults',
-    );
-    $forms[$this->entityType . '_operation_form'] = array(
-      'callback' => 'entity_ui_operation_form',
-      'wrapper_callback' => 'entity_ui_form_defaults',
-    );
-
-    if (!(count($this->entityInfo['bundles']) == 1 && isset($this->entityInfo['bundles'][$this->entityType]))) {
-      foreach ($this->entityInfo['bundles'] as $bundle => $bundle_info) {
-        $forms[$this->entityType . '_edit_' . $bundle . '_form']['callback'] = 'asset_base_form';
-      }
-    }
-    return $forms;
-  }
-}
-
-/**
  * Implements hook_ckeditor_plugin().
  */
 function asset_ckeditor_plugin() {
@@ -681,7 +570,7 @@ function assets_get_placeholder($asset, array $options = array()) {
       }
     }
   }
-  $tag_array[] = json_encode($options);
+  $tag_array[] = drupal_json_encode($options);
   $tag_array[] = ']]';
 
   return implode('', $tag_array);
@@ -705,6 +594,15 @@ function asset_theme() {
     'asset_tooltip' => array(
       'render element' => 'page',
       'template' => 'asset-tooltip'
+    ) + $base,
+    'asset_wrapper' => array(
+      'render element' => 'element',
+      'template' => 'asset-wrapper',
+      'file' => 'theme.inc'
+    ) + $base,
+    'asset_editor_wrapper' => array(
+      'render element' => 'element',
+      'template' => 'asset-editor-wrapper'
     ) + $base
   );
 }
@@ -713,18 +611,21 @@ function asset_theme() {
  * Implements hook_preprocess_entity().
  */
 function asset_preprocess_entity(&$variables) {
-  if ($variables['entity_type'] == 'asset') {
-    $asset = $variables['elements']['#entity'];
-    if (isset($asset->in_editor) && $asset->in_editor) {
-      $variables['classes_array'][] = drupal_html_class('editor');
-    }
-    if ($variables['view_mode'] !== ASSET_DEFAULT_MODE) {
-      $options = !empty($asset->asset_options) && is_array($asset->asset_options) ? $asset->asset_options : array();
-      if (!empty($options['align']) && in_array($options['align'], array('', 'left', 'right'), TRUE)) {
-        $variables['classes_array'][] = drupal_html_class('asset-align-' . $options['align']);
-      }
-    }
-  }
+//  if ($variables['entity_type'] == 'asset') {
+//    $asset = $variables['elements']['#entity'];
+//    if (isset($asset->in_editor) && $asset->in_editor) {
+//      $variables['classes_array'][] = drupal_html_class('editor');
+//    }
+//    if ($variables['view_mode'] !== ASSET_DEFAULT_MODE) {
+//      $options = !empty($asset->asset_options) && is_array($asset->asset_options) ? $asset->asset_options : array();
+//      if (!empty($options['align']) && in_array($options['align'], array('', 'left', 'right'), TRUE)) {
+//        $variables['classes_array'][] = drupal_html_class('asset-align-' . $options['align']);
+//      }
+//    }
+//  }
+//  echo '<pre>';
+//  print_r( $variables['classes_array']);
+//  echo '</pre>';
 }
 
 /**
@@ -815,129 +716,6 @@ function asset_views_api() {
   return array(
     'api' => '3.0-alpha1',
     'path' => drupal_get_path('module', 'asset') . '/views',
-  );
-}
-
-
-class AssetViewsController extends EntityDefaultViewsController  {
-
-  public function views_data() {
-    $data = parent::views_data();
-    $table = $this->info['base table']; //asset
-
-    $data[$table]['aid'] = array(
-      'title' => t('Aid'),
-      'help' => t('The asset ID.'),
-      'field' => array(
-        'handler' => 'asset_views_handler_field_asset',
-        'click sortable' => TRUE,
-      ),
-      'argument' => array(
-        'handler' => 'asset_views_handler_argument_asset_aid',
-        'name field' => 'title',
-        'numeric' => TRUE,
-        'validate type' => 'aid',///
-      ),
-      'filter' => array(
-        'handler' => 'views_handler_filter_numeric',
-      ),
-      'sort' => array(
-        'handler' => 'views_handler_sort',
-      ),
-    );
-
-    // title
-    // This definition has more items in it than it needs to as an example.
-    $data[$table]['title'] = array(
-      'title' => t('Title'),
-      'help' => t('The asset title.'),
-      'field' => array(
-        'handler' => 'asset_views_handler_field_asset',
-        'click sortable' => TRUE,
-        'link_to_asset default' => TRUE,
-      ),
-      'sort' => array(
-        'handler' => 'views_handler_sort',
-      ),
-      'filter' => array(
-        'handler' => 'views_handler_filter_string',
-      ),
-      'argument' => array(
-        'handler' => 'views_handler_argument_string',
-      ),
-    );
-    $data[$table]['edit_asset'] = array(
-      'field' => array(
-        'title' => t('Edit link'),
-        'help' => t('Provide a simple link to edit the asset.'),
-        'handler' => 'asset_views_handler_field_asset_link_edit',
-      ),
-    );
-    $data[$table]['delete_asset'] = array(
-      'field' => array(
-        'title' => t('Delete link'),
-        'help' => t('Provide a simple link to delete the asset.'),
-        'handler' => 'asset_views_handler_field_asset_link_delete',
-      ),
-    );
-    $data[$table]['insert_asset'] = array(
-      'field' => array(
-        'title' => t('Insert button'),
-        'help' => t('Provide a button for assets library.'),
-        'handler' => 'asset_views_handler_field_asset_link_insert',
-      ),
-    );
-
-    return $data;
-  }
-}
-
-/**
- * Implements of hook_views_handlers() to register all of the basic handlers
- * views uses.
- */
-function asset_views_handlers() {
-  return array(
-    'info' => array(
-      'path' => drupal_get_path('module', 'asset') . '/views/handlers',
-    ),
-    'handlers' => array(
-      'asset_views_handler_field_asset_link_edit' => array(
-        'parent' => 'asset_views_handler_field_asset_link',
-      ),
-      'asset_views_handler_field_asset_link_delete' => array(
-        'parent' => 'asset_views_handler_field_asset_link',
-      ),
-      'asset_views_handler_field_asset_link_insert' => array(
-        'parent' => 'asset_views_handler_field_asset_link',
-      ),
-      'asset_views_handler_field_asset' => array(
-        'parent' => 'views_handler_field'
-      ),
-      'asset_views_handler_argument_asset_aid' => array(
-        'parent' => 'views_handler_argument_numeric'
-      )
-    ),
-  );
-}
-
-/**
- * Implements hook_views_plugins().
- */
-function asset_views_plugins() {
-  return array(
-    'module' => 'asset',
-    'row' => array(
-      'asset' => array(
-        'title' => t('Rendered asset'),
-        'help' => t('Renders an asset in a specific view mode.'),
-        'handler' => 'asset_views_plugin_row_asset_view',
-        'uses fields' => FALSE,
-        'uses options' => TRUE,
-        'type' => 'normal',
-        'base' => array('asset'),
-      ),
-    ),
   );
 }
 
@@ -1064,3 +842,10 @@ function asset_asset_presave($asset) {
   $asset->changed = REQUEST_TIME;
   return $asset;
 }
+
+//function theme_asset_editor() {
+//  echo '<pre>123123';
+//  print_r(func_get_args());
+//  echo '</pre>';
+//  return '3';
+//}

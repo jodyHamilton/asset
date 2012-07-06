@@ -4,3 +4,9 @@ dependencies[] = "text"
 description = "Provides an Embedded Video field"
 name = "Embedded Video core module"
 package = "Embedded video"
+; Information added by drupal.org packaging script on 2012-07-05
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "asset"
+datestamp = "1341446719"
+

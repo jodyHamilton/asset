@@ -46,6 +46,9 @@ function asset_gallery_theme() {
     'asset__image__gallery' => array(
       'template' => 'asset--image--gallery'
     ),
+    'asset_wrapper__image__gallery' => array(
+      'template' => 'asset-wrapper--image--gallery'
+    ),
     'asset__gallery__full' => array(
       'template' => 'asset--gallery--full'
     ),
