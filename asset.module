@@ -8,6 +8,11 @@
 require_once (dirname(__FILE__) . '/includes/asset.filters.inc');
 define('ASSET_DEFAULT_MODE', 'full');
 
+
+function asset_init() {
+  drupal_add_css(drupal_get_path('module', 'asset') . '/theme/assets.css');
+}
+
 /**
  * Implements hook_entity_info().
  */
@@ -807,9 +812,6 @@ function assets_pre_render_text_format($element) {
   static $init = FALSE;
   if (isset($element['#format']) && FALSE === $init) {
     $init = TRUE;
-
-    drupal_add_css(drupal_get_path('module', 'asset') . '/theme/assets.css');
-
     $asset_types = assets_get_types();
     $entity_info = entity_get_info('asset');
     $view_modes = $entity_info['view modes'];

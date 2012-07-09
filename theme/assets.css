@@ -1,16 +1,16 @@
-.entity-asset {
+.asset {
   background-color: #F6F6F2;
   border-color: #F9F9F9;
   padding: 8px;
   clear:both;
 }
 
-.entity-asset.asset-align-right {
+.asset.asset-align-right {
   float: right;
   margin: 0 0 0 8px;
 }
 
-.entity-asset.asset-align-left {
+.asset.asset-align-left {
   float: left;
   margin: 0 8px 0 0;
 }

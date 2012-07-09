@@ -283,8 +283,6 @@ function assets_wysiwyg_form($form, &$form_state, $op, $asset, $mode = ASSET_DEF
   else {
     $form['#submit'][] = 'assets_wysiwyg_form_submit';
   }
-  kpr($form);
-
   _assets_wysiwyg_fields($form, $asset, array('mode' => $mode, 'align' => $align));
 
   unset($form['actions']['delete']);
