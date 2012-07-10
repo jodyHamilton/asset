@@ -1,0 +1,6 @@
+core = "7.x"
+dependencies[] = "feeds"
+dependencies[] = "asset"
+description = "Asset integration with feeds."
+name = "Assets Feeds Import"
+package = "Feeds"

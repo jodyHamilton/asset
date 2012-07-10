@@ -209,10 +209,10 @@ function asset_menu() {
       'page callback' => 'assets_add',
       'page arguments' => array($type->type),
       'access arguments' => array('administer assets'),
-      'description' => $type->description,
+      //'description' => $type->description,
       'file' => 'includes/asset.admin.inc',
       'title callback' => '_assets_form_page_title',
-      'title arguments' => array('asset_' . $type->type, 'Add'),
+      'title arguments' => array('asset_' . $type->type),
       'weight' => $type->weight
     );
   }
@@ -228,7 +228,7 @@ function asset_menu() {
   $items['admin/assets/add/%'] = array(
     'title' => 'Media assets',
     'title callback' => '_assets_form_page_title',
-    'title arguments' => array(3, 'Add'),
+    'title arguments' => array(3),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('assets_wysiwyg_form', 'add', 3),
     'access arguments' => array('administer assets'),
@@ -426,7 +426,7 @@ function _assets_get_overridable_fields($asset_type) {
         if (!empty($info) && in_array($info['type'], $supported_types)) {
           $cache[$asset_type][$field_name] = array(
             'type'  => $info['type'],
-            'label' =>  t($label)
+            'label' =>  $label
           );
         }
       }
@@ -774,20 +774,20 @@ function assets_set_wysiwyg_modes($bundle, $settings) {
   variable_set('assets_wysiwyg_modes', $current_settings);
 }
 
-function _assets_form_page_title($type, $op) {
+function _assets_form_page_title($type) {
   $type = substr($type, 6);
   $type_obj = assets_get_types($type);
   $type_name = $type_obj->name;
-  return t("$op $type_name");
+  return t("Add @asset_type_name", array('@asset_type_name' => $type_name));
 }
 
 function _assets_form_action_title($op, $entity_type) {
   $info = entity_get_info($entity_type);
   switch ($op) {
     case 'add':
-      return t('Add ' . $info['label']);
+      return t('Add @label', array('@label' => $info['label']));
     case 'import':
-      return t('Import ' . $info['label']);
+      return t('Import @label', array('@label' => $info['label']));
   }
 }
 
