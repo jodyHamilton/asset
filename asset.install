@@ -49,6 +49,12 @@ function asset_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'uuid' => array(
+        'type' => 'char',
+        'length' => 36,
+        'default' => '',
+        'description' => 'The Universally Unique Identifier.',
+      )
     ),
     'indexes' => array(
       'asset_type' => array(array('type', 4)),
@@ -60,10 +66,6 @@ function asset_schema() {
     ),
     'primary key' => array('aid'),
   );
-
-  if (module_exists('uuid')) {
-    uuid_schema_generate($schema, 'asset');
-  }
 
   $schema['asset_type'] = array(
     'description' => 'Stores information about all defined asset types.',
@@ -121,6 +123,12 @@ function asset_schema() {
         'not null' => TRUE,
         'default' => 0,
         'size' => 'tiny'
+      ),
+      'uuid' => array(
+        'type' => 'char',
+        'length' => 36,
+        'default' => '',
+        'description' => 'The Universally Unique Identifier.',
       )
     ) + entity_exportable_schema_fields(),
     'primary key' => array('id'),
@@ -128,10 +136,6 @@ function asset_schema() {
       'type' => array('type'),
     )
   );
-
-  if (module_exists('uuid')) {
-    uuid_schema_generate($schema, 'asset_type');
-  }
 
   return $schema;
 }
@@ -146,4 +150,16 @@ function asset_install() {
     ->condition('type', 'module')
     ->condition('name', 'asset')
     ->execute();
+}
+
+/**
+ * Check if uuid fields exist.
+ */
+function asset_update_7100() {
+  foreach (array('asset', 'asset_type') as $base) {
+    if (!db_field_exists($base, 'uuid')) {
+       db_add_field($base, 'uuid', array('type' => 'char', 'length' => 36, 'default' => '', 'description' => 'The Universally Unique Identifier.'));
+    }
+  }
+  return FALSE;
 }
