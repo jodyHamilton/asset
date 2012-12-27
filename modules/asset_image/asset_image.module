@@ -36,8 +36,8 @@ function asset_image_image_default_styles() {
         'module' => 'image',
         'name' => 'image_scale',
         'data' => array(
-          'width' => '464',
-          'height' => '287',
+          'width' => '664',
+          'height' => '487',
           'upscale' => 0,
         ),
         'weight' => '2',

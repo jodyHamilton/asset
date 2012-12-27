@@ -135,6 +135,10 @@ class AssetViewsController extends EntityDefaultViewsController  {
         'handler' => 'views_handler_argument_string',
       ),
     );
+
+    // Set proper filter handler to allow autocomplete on field.
+    $data[$table]['uid']['filter']['handler'] = 'views_handler_filter_user_name';
+
     $data[$table]['edit_asset'] = array(
       'field' => array(
         'title' => t('Edit link'),

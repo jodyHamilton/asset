@@ -8,6 +8,8 @@
  * Renders asset with overridden optional fields
  */
 function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
+  $output = '';
+
   if (!empty($asset)) {
     $clone = clone($asset);
     $clone->in_editor = $in_editor;
@@ -30,9 +32,14 @@ function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
     }
     $clone->asset_options = $options;
     $clone->asset_source_string = $params_string;
-    return render($clone->view($view_mode));
+    // As render works by reference we should pass variable instead of direct value.
+    $clone_content = $clone->view($view_mode);
+    return render($clone_content);
+    $output = $clone->view($view_mode);
+    return render($output);
   }
-  return '';
+
+  return $output;
 }
 
 /**
@@ -104,47 +111,37 @@ function _assets_set_field_value(&$asset, $field_name, $values) {
     if (!count($values)) {
       $values = array('');
     }
-    //if (count($values)) {
-      $langcode = field_language('asset', $asset, $field_name);
-      if (!$langcode) {
-        $langcode = LANGUAGE_NONE;
-      }
-      $field_type = $types_we_handle[$field_name]['type'];
-      switch ($field_type) { //should we check the type of widget instead?
-        case 'text':
-        case 'text_long':
-          if (!isset($asset->{$field_name}[$langcode])) {
-            $asset->{$field_name}[$langcode] = array();
+
+    $langcode = field_language('asset', $asset, $field_name);
+
+    if (!$langcode) {
+      $langcode = LANGUAGE_NONE;
+    }
+
+    $field_type = $types_we_handle[$field_name]['type'];
+    switch ($field_type) {
+    //should we check the type of widget instead?
+      case 'text':
+      case 'text_long':
+        if (!isset($asset->{$field_name}[$langcode])) {
+          $asset->{$field_name}[$langcode] = array();
+        }
+        foreach ($values as $delta => $value) {
+          $value = html_entity_decode($value, ENT_NOQUOTES, 'UTF-8');
+          if (!isset($asset->{$field_name}[$langcode][$delta])) {
+            $asset->{$field_name}[$langcode][$delta] = array();
           }
-          foreach ($values as $delta => $value) {
-            $value = html_entity_decode($value, ENT_NOQUOTES, 'UTF-8');
-            if (!isset($asset->{$field_name}[$langcode][$delta])) {
-              $asset->{$field_name}[$langcode][$delta] = array();
-            }
-            if (isset($asset->{$field_name}[$langcode][$delta]['format']) && $asset->{$field_name}[$langcode][$delta]['format']) {
-              $safe_value = check_markup($value, $asset->{$field_name}[$langcode][$delta]['format']);
-            }
-            else {
-              $safe_value = check_plain($value);
-            }
-            $asset->{$field_name}[$langcode][$delta]['value'] = $value;
-            $asset->{$field_name}[$langcode][$delta]['safe'] = $safe_value;
-            $asset->{$field_name}[$langcode][$delta]['safe_value'] = $value;
+          if (isset($asset->{$field_name}[$langcode][$delta]['format']) && $asset->{$field_name}[$langcode][$delta]['format']) {
+            $safe_value = check_markup($value, $asset->{$field_name}[$langcode][$delta]['format']);
           }
-          break;
-/*
-        case 'link_field':
-          foreach ($values as $delta => $value) {
-            if ($value === 'EMPTY') {
-              $value = '';
-            }
-            if (!isset($asset->{$field_name}[$langcode][$delta])) {
-              $asset->{$field_name}[$langcode][$delta] = array();
-            }
-            $asset->{$field_name}[$langcode][$delta]['url'] = $value;
+          else {
+            $safe_value = check_plain($value);
           }
-          break;*/
-      }
-    //}
+          $asset->{$field_name}[$langcode][$delta]['value'] = $value;
+          $asset->{$field_name}[$langcode][$delta]['safe'] = $safe_value;
+          $asset->{$field_name}[$langcode][$delta]['safe_value'] = $value;
+        }
+        break;
+    }
   }
 }

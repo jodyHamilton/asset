@@ -347,6 +347,43 @@ function asset_menu() {
 }
 
 /**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function asset_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  // Add action link to 'admin/content/assets/add' on 'admin/content/assets' page.
+  if ($root_path == 'admin/content/assets') {
+    $item = menu_get_item('admin/content/assets/add');
+    if ($item['access']) {
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function asset_menu_alter(&$menu) {
+  // Make view page link viewable both as normal item and local task on "admin/content" page.
+  if (isset($menu['admin/content/assets'])) {
+    $menu['admin/content/assets']['type'] = MENU_LOCAL_TASK | MENU_NORMAL_ITEM;
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function asset_module_implements_alter(&$implementations, $hook) {
+  // Ensure that our hook is last.
+  if ($hook == 'menu_alter' && isset($implementations['asset'])) {
+    unset($implementations['asset']);
+    $implementations['asset'] = FALSE;
+  }
+}
+
+/**
  * Fetch an asset object.
  *
  * @param $aid
@@ -407,7 +444,7 @@ function asset_filter_info() {
     'description' => t('This filter will convert [[asset:...]] tags into markup'),
     'process callback' => 'assets_filter_process',
     'cache' => FALSE// TRUE,
-  );  
+  );
   $filters['assets_cut_filter'] = array(
     'title' => t('Remove asset tags from output'),
     'description' => t('This filter will remove [[asset:...]] from output'),
@@ -607,7 +644,6 @@ function assets_get_placeholder($asset, array $options = array()) {
       if (in_array($field_type, $supported_types)) {
         $values = field_get_items('asset', $asset, $field_name);
         if (is_array($values)) {
-        //if (!empty($values)) {
           $field_values = array();
           foreach ($values as $delta => $data) {
             switch ($field_type) {
@@ -615,6 +651,7 @@ function assets_get_placeholder($asset, array $options = array()) {
               case 'text':
                 $field_values[$delta] = $data['value']; // htmlentities($data['value'], ENT_NOQUOTES, 'UTF-8');
                 break;
+              // @todo: Check is it needed.
               //case 'link_field':
               //  $field_values[$delta] = $data['url'];
               //  break;
@@ -640,6 +677,7 @@ function asset_theme() {
   );
   return array(
     'asset' => array(
+      // @todo: Why elements?
       'render element' => 'elements',
       'template' => 'asset'
     ) + $base,
@@ -669,6 +707,7 @@ function asset_theme() {
  * Implements hook_preprocess_entity().
  */
 function asset_preprocess_entity(&$variables) {
+  // @todo: Check is it needed.
 //  if ($variables['entity_type'] == 'asset') {
 //    $asset = $variables['elements']['#entity'];
 //    if (isset($asset->in_editor) && $asset->in_editor) {
@@ -681,9 +720,6 @@ function asset_preprocess_entity(&$variables) {
 //      }
 //    }
 //  }
-//  echo '<pre>';
-//  print_r( $variables['classes_array']);
-//  echo '</pre>';
 }
 
 /**
@@ -796,6 +832,7 @@ function asset_form_field_ui_display_overview_form_alter(&$form, &$form_state) {
       $view_modes = $entity_info['view modes'];
       unset($view_modes['tooltip']);
       $default = _assets_get_wysiwyg_modes($bundle);
+      $default_wysiwyg_default = _assets_get_default_wysiwyg_mode($bundle);
       foreach ($view_modes as $view_mode_name => $view_mode_info) {
         $options[$view_mode_name] = $view_mode_info['label'];
       }
@@ -804,6 +841,12 @@ function asset_form_field_ui_display_overview_form_alter(&$form, &$form_state) {
         '#title' => t('Use following view modes in the wysiwyg'),
         '#options' => $options,
         '#default_value' => $default
+      );
+      $form['wysiwyg_modes']['default_view_mode_wysiwyg'] = array(
+        '#type' => 'radios',
+        '#title' => t('Use following view mode as default in the wysiwyg'),
+        '#options' => $options,
+        '#default_value' => $default_wysiwyg_default
       );
       $form['#submit'][] = 'assets_field_ui_display_overview_form_submit';
     }
@@ -815,6 +858,8 @@ function assets_field_ui_display_overview_form_submit($form, &$form_state) {
   $bundle = $form['#bundle'];
   $view_modes_wysiwyg = array_filter($form_state['values']['view_modes_wysiwyg']);
   assets_set_wysiwyg_modes($bundle, $view_modes_wysiwyg);
+  $default_view_mode_wysiwyg = $form_state['values']['default_view_mode_wysiwyg'];
+  assets_set_default_wysiwyg_mode($bundle, $default_view_mode_wysiwyg);
 }
 
 function _assets_get_wysiwyg_modes($bundle) {
@@ -826,6 +871,23 @@ function assets_set_wysiwyg_modes($bundle, $settings) {
   $current_settings = variable_get('assets_wysiwyg_modes', array());
   $current_settings[$bundle] = $settings;
   variable_set('assets_wysiwyg_modes', $current_settings);
+}
+
+/**
+ * Get default wysiwyg mode by bundle.
+ */
+function _assets_get_default_wysiwyg_mode($bundle) {
+  $settings = variable_get('assets_default_wysiwyg_modes', array());
+  return isset($settings[$bundle]) ? $settings[$bundle] : array();
+}
+
+/**
+ * Set default wysiwyg mode by bundle.
+ */
+function assets_set_default_wysiwyg_mode($bundle, $settings) {
+  $current_settings = variable_get('assets_default_wysiwyg_modes', array());
+  $current_settings[$bundle] = $settings;
+  variable_set('assets_default_wysiwyg_modes', $current_settings);
 }
 
 function _assets_form_page_title($type) {
@@ -897,10 +959,3 @@ function asset_asset_presave($asset) {
   $asset->changed = REQUEST_TIME;
   return $asset;
 }
-
-//function theme_asset_editor() {
-//  echo '<pre>123123';
-//  print_r(func_get_args());
-//  echo '</pre>';
-//  return '3';
-//}

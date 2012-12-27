@@ -11,10 +11,15 @@ function emvideo_vimeo_emvideo_parse($url) {
       'source' => 'http://www.vimeo.com/moogaloop.swf?clip_id=' . $videoid,
       'provider' => 'vimeo',
     );
-    $xml = simplexml_load_file("http://vimeo.com/api/v2/video/" . $videoid . '.xml');
-    if ($xml) {
-      $xml = $xml->video;
-      $ret['snapshot'] = $xml->thumbnail_medium; //['thumbnail_large']
+    try {
+      $xml = simplexml_load_file("http://vimeo.com/api/v2/video/" . $videoid . '.xml');
+      if ($xml) {
+        $xml = $xml->video;
+        $ret['snapshot'] = $xml->thumbnail_medium; //['thumbnail_large']
+      }
+    }
+    catch (Exception $ex) {
+      watchdog('emvideo_vimeo', $ex->getMessage());
     }
 
     return $ret;

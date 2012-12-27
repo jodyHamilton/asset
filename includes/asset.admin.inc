@@ -97,7 +97,21 @@ function asset_type_form_submit($form, &$form_state) {
  * Form API submit callback for the delete button.
  */
 function asset_type_form_submit_delete(&$form, &$form_state) {
-  $form_state['redirect'] = 'admin/structure/assets/manage/' . $form_state['asset_type']->type . '/delete';
+  if (isset($_GET['destination'])) {
+    $form_state['redirect'] = array(
+      'admin/structure/assets/manage/' . $form_state['asset_type']->type . '/delete',
+      array(
+        'query' => array(
+          'destination' => $_GET['destination'],
+        ),
+      ),
+    );
+
+    unset($_GET['destination']);
+  }
+  else {
+    $form_state['redirect'] = 'admin/structure/assets/manage/' . $form_state['asset_type']->type . '/delete';
+  }
 }
 
 
@@ -151,7 +165,21 @@ function asset_base_form_submit($form, &$form_state) {
  * Form API submit callback for the delete button.
  */
 function asset_base_form_submit_delete(&$form, &$form_state) {
-  $form_state['redirect'] = 'admin/content/assets/manage/' . $form_state['asset']->aid . '/delete';
+  if (isset($_GET['destination'])) {
+    $form_state['redirect'] = array(
+      'admin/content/assets/manage/' . $form_state['asset']->aid . '/delete',
+      array(
+        'query' => array(
+          'destination' => $_GET['destination'],
+        ),
+      ),
+    );
+
+    unset($_GET['destination']);
+  }
+  else {
+    $form_state['redirect'] = 'admin/content/assets/manage/' . $form_state['asset']->aid . '/delete';
+  }
 }
 
 function assets_add_page() {
@@ -183,9 +211,9 @@ function assets_add_page() {
 function assets_add($type) {
   $asset = new Asset(array('type' => $type));
   $form = entity_ui_get_form('asset', $asset, 'add');
-  ///Due to dummy  usage of entity->label instead of entity_label() in entity API
-  ///$label = entity_label('asset', $asset);
-  ///drupal_set_title(t("Add $label"), PASS_THROUGH);
+  // Due to dummy  usage of entity->label instead of entity_label() in entity API.
+  $label = drupal_strtolower(entity_label('asset', $asset));
+  drupal_set_title(t("Add $label"), PASS_THROUGH);
   return $form;
 }
 
@@ -536,10 +564,16 @@ function _assets_get_tag($tag_id) {
   $asset_content = '';
   $placeholder = '';
   if ($asset) {
-    $view_mode = ASSET_DEFAULT_MODE;
+    $view_modes = variable_get('assets_default_wysiwyg_modes', array());
+    if (!empty($view_modes[$asset->type])) {
+      $view_mode = $view_modes[$asset->type];
+    }
+    else {
+      $view_mode = ASSET_DEFAULT_MODE;
+    }
+
     $asset->in_editor = TRUE;
     $placeholder = assets_get_placeholder($asset, array('mode' => $view_mode, 'align' => ''));
-    //$placeholder = addslashes($placeholder);
     $placeholder = str_replace("\r\n", '\n', $placeholder);
 
     $asset_content = render($asset->view($view_mode)); //assets_render_by_tag($asset, array('mode' => $view_mode), TRUE);

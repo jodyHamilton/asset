@@ -12,7 +12,7 @@ function asset_freehtml_default_asset_type() {
   $items['free_html'] = entity_import('asset_type', '{
     "type" : "free_html",
     "name" : "Free HTML",
-    "icon" : "AddEncadre.png",
+    "icon" : "AddFreeHTML.png",
     "description" : "",
     "help" : "",
     "weight" : "4",

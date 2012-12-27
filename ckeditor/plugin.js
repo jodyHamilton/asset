@@ -1,8 +1,8 @@
-(function () {
-  var $ = jQuery,
-    tempContainer = document.createElement('DIV'),
+var Assets;
+(function ($) {
+  var tempContainer = document.createElement('DIV'),
     tagCache = {},
-    cutted = null,
+    cutted = null;
 
     Assets = {
 
@@ -172,18 +172,22 @@
     getContainer : function (tagId, tag, content) {
       tempContainer.innerHTML = content;
       var params = this.getTagData(tag),
-        asset_div = tempContainer.firstChild,
-        align = params.align;
+      asset_div = tempContainer.firstChild,
+      align = params.align;
+
+      if (asset_div == null) {
+        return tempContainer;
+      }
 
       asset_div.contentEditable = 'false';
-      //asset_div.contenteditable = 'false';
       asset_div.setAttribute('data-asset-cid', tagId);
       asset_div.setAttribute('contentEditable', 'false');
-      //asset_div.setAttribute('contenteditable', 'false');
       asset_div.setAttribute('data-cke-editable', 'false');
+
       if (params.mode === 'full') {
         align = '';
       }
+
       switch(align) {
         case 'left':
         case 'right':
@@ -191,10 +195,12 @@
         default:
           align = '';
       }
+
       if (align) {
         asset_div.style.styleFloat = align;
         asset_div.style.cssFloat = align;
       }
+
       return tempContainer;
     },
 
@@ -213,26 +219,20 @@
 
     getContentByTag : function (tag) {
       var content = '', tagmatches = [], time, tagId;
-//
-//      for (cid in tagCache) {
-//        if (tagCache.hasOwnProperty(cid)) {
-//          if (tag === tagCache[cid].tag) {
-//            content = tagCache[cid].html;
-//            console.log('from the cache');
-//            tagId = cid;
-//            break;
-//          }
-//        }
-//      }
-//      if (!content) {
-        $.ajax({
-          type: "POST",
-          url: Drupal.settings.basePath + "admin/assets/get/",
-          data: {tag: tag},
-          async: false,
-          success:  function (asset_content) {content = asset_content;}
-        });
-//      }
+      $.ajax({
+        type: "POST",
+        url: "/admin/assets/get/",
+        data: {tag: tag},
+        async: false,
+        success:function (asset_content) {
+          if (typeof(asset_content) == null) {
+            content = '';
+          }
+          else {
+            content = asset_content;
+          }
+        }
+      });
 
       tagmatches = tag.match(/\[\[asset:([_a-z0-9]+):([0-9]+)\s\{((.)*?)\}\]\]/);
       time = new Date().getTime();
@@ -299,9 +299,14 @@
             },
             async: false,
             success:  function (asset_content) {
+              if (typeof(asset_content) == null) {
+                asset_content = '';
+              }
+
               var el = Assets.outdated, container = Assets.getContainer(tag_id, tag, asset_content),
-                html = container.innerHTML;
+              html = container.innerHTML;
               Assets.outdated = null;
+
               if (html) {
                 tagCache[tag_id] = {tag : tag, html : html};
                 el.getParent() && el.$.parentNode.replaceChild(container.firstChild, el.$);
@@ -751,4 +756,4 @@
       }
     }
   );
-})();
+})(jQuery);

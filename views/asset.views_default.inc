@@ -8,7 +8,7 @@ function asset_views_default_views() {
 
   $view = new view;
   $view->name = 'assets_library';
-  $view->description = 'Médiathèque';
+  $view->description = 'Media';
   $view->tag = 'dashboard';
   $view->base_table = 'asset';
   $view->human_name = 'Assets library';
