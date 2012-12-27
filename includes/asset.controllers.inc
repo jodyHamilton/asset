@@ -47,7 +47,7 @@ class Asset extends Entity {
     return array('path' => 'admin/content/assets/view/' . $this->identifier());
   }
 
-  public function buildContent($view_mode, $langcode) {
+  public function buildContent($view_mode = 'full', $langcode = NULL) {
     $build = parent::buildContent($view_mode, $langcode);
     $build['#theme_wrappers'][] = 'asset_wrapper';
     return $build;
@@ -196,8 +196,8 @@ class AssetType extends Entity {
    *
    * We have to override this method just to invoke the entity_defaults_rebuild in case when no existent types were reverted
    */
-  public function delete($ids, DatabaseTransaction $transaction = NULL) {
-    parent::delete($ids, $transaction);
+  public function delete() {
+    parent::delete();
     entity_defaults_rebuild(array($this->entityType));
   }
 }
