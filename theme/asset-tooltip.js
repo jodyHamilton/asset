@@ -66,6 +66,10 @@
           if (url.substr(0, 1) != '/') {
             url = Drupal.settings.basePath + url;
           }
+          else {
+            var base_url = Drupal.settings.basePath.split('/');
+            url = '/' + base_url[1] + url;
+          }
           $(iframe).attr('src', url);
           iframe.frameBorder = 0;
           iframe.width = 1000;
