@@ -8,12 +8,9 @@
  * Renders asset with overridden optional fields
  */
 function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
-  $output = '';
-
   if (!empty($asset)) {
     $clone = clone($asset);
     $clone->in_editor = $in_editor;
-    $params_string = html_entity_decode($params_string, ENT_COMPAT, 'UTF-8');
     $params_string = html_entity_decode($params_string, ENT_COMPAT, 'UTF-8');
     $options = json_decode('{' . $params_string . '}', TRUE);
     $view_mode = ASSET_DEFAULT_MODE;
@@ -35,11 +32,9 @@ function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
     // As render works by reference we should pass variable instead of direct value.
     $clone_content = $clone->view($view_mode);
     return render($clone_content);
-    $output = $clone->view($view_mode);
-    return render($output);
   }
 
-  return $output;
+  return '';
 }
 
 /**

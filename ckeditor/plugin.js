@@ -221,7 +221,7 @@ var Assets;
       var content = '', tagmatches = [], time, tagId;
       $.ajax({
         type: "POST",
-        url: "/admin/assets/get/",
+        url: Drupal.settings.basePath + 'admin/assets/get/',
         data: {tag: tag},
         async: false,
         success:function (asset_content) {
@@ -327,19 +327,6 @@ var Assets;
         });
         tagCache = {};
         this.Assets = Assets;
-//        if (typeof(Drupal.settings.ckeditor.plugins.assets) == 'undefined') {
-//          var script = new CKEDITOR.dom.element( 'script' );
-//          script.setAttributes( {
-//            type : 'text/javascript',
-//            src : '/admin/assets/conf' } );
-//          script.appendTo( CKEDITOR.document.getHead() );
-//
-//
-//
-//          CKEDITOR.scriptLoader.load('/admin/assets/conf', function() {
-//            console.log(arguments);
-//          }, this, true);
-//        }
         var conf = Drupal.settings.ckeditor.plugins.asset, assetType, type, execFn;
         if (!conf) return;
 
@@ -407,33 +394,6 @@ var Assets;
           command : 'assetSearch',
           icon : this.path + 'search.png'
         });
-
-
-        /*editor.addCss(
-          'div.entity-asset.editor {' +
-            'cursor: default;' +
-            'background-color: #F6F6F2;' +
-            'border-color: #F9F9F9;' +
-            'padding: 8px;' +
-          '}' +
-          '.entity-asset.editor.asset-align-left {' +
-            'margin: 0 8px 0 0;' +
-            'float: left;' +
-          '}' +
-          '.entity-asset.editor.asset-align-right {' +
-            'margin: 0 0 0 8px;' +
-            'float: right;' +
-          '}' +
-          '.entity-asset.editor.selected {' +
-             'box-shadow: inset 0 0 5px #0076B9;' +
-          '}' +
-          '.entity-asset.editor:hover {' +
-             'box-shadow: inset 0 0 3px #0076B9; background-color: #F0F8FF;' +
-          '}' +
-          '.entity-asset.editor.selected:hover {' +
-             'box-shadow: inset 0 0 5px #0076B9; background-color: #F0F8FF;' +
-          '}'
-        );*/
 
         editor.addCommand('assetOverride', {
           exec: function (editor) {
@@ -637,42 +597,7 @@ var Assets;
           }
         };
 
-
-
-      /*  var refresh  = false;
-        editor.on('afterPaste', function (evt) {
-          if (refresh) {
-            var wysiwyg = editor.getMode();
-            wysiwyg.loadData(wysiwyg.getData());
-            refresh = false;
-          }
-        }, this);*/
-
         editor.on('paste', function(evt) {
-          //Assets.deselect();
-         /* var content = editor.getMode().getData();
-          var im, tag, clean_tag, matches = content.match(/\[\[asset:([_a-z0-9]+):([0-9]+)\s\{((.)*?)\}\]\]/g);
-          var contentItems = {};
-
-          if (matches) {
-            for (im = 0; im < matches.length; im = im + 1) {
-              tag = matches[im];
-              clean_tag = tag.replace( /&amp;quot;/g, '"' );
-              var cid;
-              for (cid in tagCache) {
-                if (tagCache.hasOwnProperty(cid)) {
-                  if (clean_tag === tagCache[cid].tag) {
-                    if (!contentItems[cid]) {
-                      contentItems[cid] = [];
-                    }
-                    contentItems[cid].push(clean_tag);
-                    break;
-                  }
-                }
-              }
-            }
-          }     */
-
           var data = evt.data, dataProcessor = new pasteProcessor(), htmlFilter = dataProcessor.htmlFilter,
             processed = {};
 
@@ -706,7 +631,6 @@ var Assets;
           } catch (e) {
             if (typeof(console) !== 'undefined') {
               console.log(editor.lang.assets_error_paste);
-//              console.log(e);
             }
           }
           Assets.deselect();

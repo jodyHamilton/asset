@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Code for the Asset module.
@@ -8,7 +7,9 @@
 require_once (dirname(__FILE__) . '/includes/asset.filters.inc');
 define('ASSET_DEFAULT_MODE', 'full');
 
-
+/**
+ * Implements hook_init().
+ */
 function asset_init() {
   drupal_add_css(drupal_get_path('module', 'asset') . '/theme/assets.css');
 }
@@ -163,9 +164,7 @@ function assets_type_entity_access_callback($op, $type = NULL, $account = NULL) 
  * Access callback for the entity API.
  */
 function assets_entity_access_callback($op, $type = NULL, $account = NULL) {
-
   switch ($op) {
-
     case 'view':
       // View assets list.
       if ($type == NULL) {
@@ -192,12 +191,10 @@ function assets_entity_access_callback($op, $type = NULL, $account = NULL) {
   }
 }
 
-
 /**
  * Implements hook_permission().
  */
 function asset_permission() {
-
   $permissions = array(
     'administer asset types' => array(
       'title' => t('Administer asset types'),
@@ -247,7 +244,6 @@ function asset_menu() {
 
   $items['admin/content/assets/add'] = array(
     'page callback' => 'assets_add_page',
-    //'access callback' => '_asset_add_access',
     'file' => 'includes/asset.admin.inc',
     'title callback' => '_assets_form_action_title',
     'title arguments' => array('add', 'asset'),
@@ -263,7 +259,6 @@ function asset_menu() {
       'page arguments' => array($type->type),
       'access callback' => 'asset_creation_access',
       'access arguments' => array($type->type),
-      //'description' => $type->description,
       'file' => 'includes/asset.admin.inc',
       'title callback' => '_assets_form_page_title',
       'title arguments' => array('asset_' . $type->type),
@@ -506,9 +501,11 @@ function _assets_get_supported_field_types() {
 function _assets_get_overridable_fields($asset_type) {
   $supported_types = _assets_get_supported_field_types();
   $cache = drupal_static(__FUNCTION__, array());
+
   if (!isset($cache[$asset_type])) {
     $cache[$asset_type] = array();
     $fields_info = field_info_instances('asset', $asset_type);
+
     foreach ($fields_info as $field_info) {
       if (!$field_info['required']) {
         $field_name = $field_info['field_name'];
@@ -523,6 +520,7 @@ function _assets_get_overridable_fields($asset_type) {
       }
     }
   }
+
   return $cache[$asset_type];
 }
 
@@ -583,7 +581,6 @@ function asset_preprocess_page(&$variables) {
   }
 }
 
-
 /**
  * Processes variables for asset-tooltip.tpl.php
  *
@@ -626,8 +623,6 @@ function asset_page_alter(&$page) {
   }
 }
 
-
-
 /**
  * Generates a placeholder for wysiwyg
  */
@@ -636,6 +631,7 @@ function assets_get_placeholder($asset, array $options = array()) {
   $tag_array = array('[[asset:' . $type . ':' . $asset->aid . ' ');
   $fields = field_info_instances('asset', $type);
   $supported_types = _assets_get_supported_field_types();
+
   foreach ($fields as $field) {
     if (!$field['required']) {
       $field_name = $field['field_name'];
@@ -649,12 +645,8 @@ function assets_get_placeholder($asset, array $options = array()) {
             switch ($field_type) {
               case 'text_long':
               case 'text':
-                $field_values[$delta] = $data['value']; // htmlentities($data['value'], ENT_NOQUOTES, 'UTF-8');
+                $field_values[$delta] = $data['value'];
                 break;
-              // @todo: Check is it needed.
-              //case 'link_field':
-              //  $field_values[$delta] = $data['url'];
-              //  break;
             }
           }
           $options[$field_name] = $field_values;
@@ -701,25 +693,6 @@ function asset_theme() {
       'template' => 'asset-editor-wrapper'
     ) + $base
   );
-}
-
-/**
- * Implements hook_preprocess_entity().
- */
-function asset_preprocess_entity(&$variables) {
-  // @todo: Check is it needed.
-//  if ($variables['entity_type'] == 'asset') {
-//    $asset = $variables['elements']['#entity'];
-//    if (isset($asset->in_editor) && $asset->in_editor) {
-//      $variables['classes_array'][] = drupal_html_class('editor');
-//    }
-//    if ($variables['view_mode'] !== ASSET_DEFAULT_MODE) {
-//      $options = !empty($asset->asset_options) && is_array($asset->asset_options) ? $asset->asset_options : array();
-//      if (!empty($options['align']) && in_array($options['align'], array('', 'left', 'right'), TRUE)) {
-//        $variables['classes_array'][] = drupal_html_class('asset-align-' . $options['align']);
-//      }
-//    }
-//  }
 }
 
 /**

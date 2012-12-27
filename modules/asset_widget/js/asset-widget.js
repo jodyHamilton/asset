@@ -13,6 +13,9 @@ assetWidget.loaderEnabled = false;
 // Internal property to store current search params.
 assetWidget.filterParams = '';
 
+// Flag to accept drop when item moved from widget, to prevent dropping through widget.
+assetWidget.allowDrop = false;
+
 (function ($) {
 
   Drupal.behaviors.assetWidget = {
@@ -612,6 +615,7 @@ assetWidget.filterParams = '';
             return true;
           },
           start: function (event, ui) {
+            assetWidget.allowDrop = false;
             var $match = $form.find('.' + classMatch + ':not(".item-drag, .assets-drag-processed")');
 
             assetWidget.hideTooltips();
@@ -657,13 +661,6 @@ assetWidget.filterParams = '';
           }
         });
       }
-
-      // Our widget could overlaps really droppable fields, to avoid bad dropping through widget, just do nothing.
-      assetWidget.$widget.droppable({
-        drop: function(event, ui) {
-          return false;
-        }
-      });
     });
 
     // Handle input format switching.
@@ -694,6 +691,18 @@ assetWidget.filterParams = '';
     }
 
     assetWidget.initDrop($context);
+
+    // Our widget could overlaps really droppable fields, to avoid bad dropping through widget, just do nothing.
+    assetWidget.$widget.once('asset-widget-droppable', function() {
+      $(this).droppable({
+        out: function() {
+          assetWidget.allowDrop = true;
+        },
+        over: function() {
+          assetWidget.allowDrop = false;
+        }
+      });
+    });
   };
 
   /**
@@ -705,42 +714,44 @@ assetWidget.filterParams = '';
         // Can't use accept method because we have only draggable item here.
         // We need drop object to check it's asset type matching.
         drop: function(event, ui) {
-          // Get allowed types.
-          var matches = ui.draggable.attr('class').match(/match-([\w]+)/);
-          var classMatch = (matches && (matches[0] != null)) ? matches.shift() : null;
-          if (matches[0]) {
-            var type = matches[0];
-          }
-          var $droppedField = $(event.target).find('.' + classMatch);
+          if (assetWidget.allowDrop) {
+            // Get allowed types.
+            var matches = ui.draggable.attr('class').match(/match-([\w]+)/);
+            var classMatch = (matches && (matches[0] != null)) ? matches.shift() : null;
+            if (matches[0]) {
+              var type = matches[0];
+            }
+            var $droppedField = $(event.target).find('.' + classMatch);
 
-          if ($droppedField.size()) {
-            var draggedAssetAid = ui.draggable.children().attr('class').match(/order-(\d+)/);
-            draggedAssetAid = (draggedAssetAid && (draggedAssetAid[0] != null)) ? draggedAssetAid.pop() : null;
+            if ($droppedField.size()) {
+              var draggedAssetAid = ui.draggable.children().attr('class').match(/order-(\d+)/);
+              draggedAssetAid = (draggedAssetAid && (draggedAssetAid[0] != null)) ? draggedAssetAid.pop() : null;
 
-            if (draggedAssetAid) {
-              if ($droppedField.is('textarea') && CKEDITOR && Assets) {
-                var aid = draggedAssetAid,
-                  tag_id = [aid, type, new Date().getTime()].join(':');
-                var html = Assets.getDataById(tag_id);
-                if (html && CKEDITOR && CKEDITOR.instances && CKEDITOR.instances[$droppedField.attr('id')]) {
-                  var editor = CKEDITOR.instances[$droppedField.attr('id')];
-                  var element = CKEDITOR.dom.element.createFromHtml(html);
-                  element.setAttribute('contentEditable', 'false');
-                  editor.insertElement(element);
-                }
-              }
-              else {
-                var settings = {
-                  url : Drupal.settings.basePath + 'ajax/asset-widget/drop',
-                  submit : {
-                    aid : draggedAssetAid,
-                    selector_id : $droppedField.attr('id')
+              if (draggedAssetAid) {
+                if ($droppedField.is('textarea') && CKEDITOR && Assets) {
+                  var aid = draggedAssetAid,
+                    tag_id = [aid, type, new Date().getTime()].join(':');
+                  var html = Assets.getDataById(tag_id);
+                  if (html && CKEDITOR && CKEDITOR.instances && CKEDITOR.instances[$droppedField.attr('id')]) {
+                    var editor = CKEDITOR.instances[$droppedField.attr('id')];
+                    var element = CKEDITOR.dom.element.createFromHtml(html);
+                    element.setAttribute('contentEditable', 'false');
+                    editor.insertElement(element);
                   }
-                };
+                }
+                else {
+                  var settings = {
+                    url : Drupal.settings.basePath + 'ajax/asset-widget/drop',
+                    submit : {
+                      aid : draggedAssetAid,
+                      selector_id : $droppedField.attr('id')
+                    }
+                  };
 
-                // Send AJAX request to fetch rendered entity or label.
-                var ajax = new Drupal.ajax(false, false, settings);
-                ajax.eventResponse(ajax, {});
+                  // Send AJAX request to fetch rendered entity or label.
+                  var ajax = new Drupal.ajax(false, false, settings);
+                  ajax.eventResponse(ajax, {});
+                }
               }
             }
           }
