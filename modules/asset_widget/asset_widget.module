@@ -66,7 +66,7 @@ function asset_widget_views_api() {
 }
 
 /**
- * Static flag to indicate should we add widget to page or not.
+ * Static flag to indicate should we add widget to page or not. Attaching widget seev in hook_page_alter().
  */
 function asset_widget_add_to_page($set = NULL) {
   static $add_to_page = FALSE;
@@ -80,8 +80,10 @@ function asset_widget_add_to_page($set = NULL) {
  * Implements hook_element_info_alter().
  */
 function asset_widget_element_info_alter(&$info) {
-  // Don't process fields if no access, inside widget frames and different fields added by ajax.
-  if (user_access('access search widget') && !asset_widget_in_frame_form()) {
+  // Don't process fields if no access, inside widget frames, field settings form and different fields added by ajax.
+  if (user_access('access search widget')
+    && !asset_widget_in_frame_form()
+    && !drupal_match_path(current_path(), 'admin/*')) {
     // Add callback for text fields with wysiwyg.
     if (isset($info['text_format'])) {
       $info['text_format']['#process'][] = 'asset_widget_pre_render_text_format';
@@ -119,6 +121,7 @@ function asset_widget_module_implements_alter(&$implementations, $hook) {
  * Text format element pre_render function.
  */
 function asset_widget_pre_render_text_format($element) {
+  // Cache attaching by element id.
   static $attached = array();
 
   if (empty($attached[$element['#id']])) {
@@ -127,7 +130,9 @@ function asset_widget_pre_render_text_format($element) {
     // If $element['#format'] is empty, it means that field don't have input formats enabled.
     if (!empty($element['#format'])) {
       if (!empty($element['format']['format']['#options'])) {
+        // Cache allowed formats in one element. Not static, because drupal_add_js will write it properly.
         $formats_asset_plugin = array();
+        $classes_added = FALSE;
 
         foreach ($element['format']['format']['#options'] as $format => $name) {
           // Skip plain text.
@@ -135,15 +140,38 @@ function asset_widget_pre_render_text_format($element) {
             continue;
           }
 
+          // Load format.
           if ($format = filter_format_load($format)) {
+            // Check user access.
             $allowed_roles = filter_get_roles_by_format($format);
-
             foreach ($user->roles as $id => $role) {
               if (!empty($allowed_roles[$id])) {
+                // Check that asset plugin is enabled.
                 module_load_include('inc', 'ckeditor', 'includes/ckeditor.lib');
-
                 if ($ckeditor_profile = ckeditor_get_profile($format->format)) {
                   if (!empty($ckeditor_profile->settings['loadPlugins']['asset'])) {
+                    // Build some additional classes for textarea.
+                    // We always have all asset types allowed in wysiwyg. So we can cache it.
+                    static $additional_classes = array();
+                    if (empty($additional_classes)) {
+                      $additional_classes['match-field'] = 'match-field';
+
+                      if ($asset_types = asset_widget_get_assets_types()) {
+                        foreach ($asset_types as $asset_type) {
+                          if (empty($additional_classes[$asset_type])) {
+                            $additional_classes[$asset_type] = "match-$asset_type";
+                          }
+                        }
+                      }
+                    }
+
+                    // Avoid multiple classes adding to the element.
+                    if (empty($classes_added)) {
+                      // Add classes and attach widget.
+                      _asset_widget_element_attach_asset_widget($element, NULL, $additional_classes);
+                      $classes_added = TRUE;
+                    }
+
                     // Store allowed format.
                     $formats_asset_plugin[$format->format] = $format->format;
                   }
@@ -151,26 +179,6 @@ function asset_widget_pre_render_text_format($element) {
               }
             }
           }
-        }
-
-        // We always have all asset types allowed in wysiwyg. So we can cache it.
-        static $additional_classes = array();
-
-        if (empty($additional_classes)) {
-          $additional_classes['match-field'] = 'match-field';
-
-          if ($asset_types = asset_widget_get_assets_types()) {
-            foreach ($asset_types as $asset_type) {
-              if (empty($additional_classes[$asset_type])) {
-                $additional_classes[$asset_type] = "match-$asset_type";
-              }
-            }
-          }
-        }
-
-        // Process field for default format.
-        if (!empty($formats_asset_plugin[$element['#format']]) && ($element['#format'] != 'plain_text')) {
-          _asset_widget_element_attach_asset_widget($element, NULL, $additional_classes);
         }
 
         // Store allowed formats and additional classes to js.
@@ -185,6 +193,7 @@ function asset_widget_pre_render_text_format($element) {
         );
       }
 
+      // Store element id.
       $attached[$element['#id']] = $element['#id'];
     }
 
