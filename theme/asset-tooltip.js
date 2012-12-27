@@ -46,11 +46,10 @@
         }).animate({
           opacity: 1
         }, 500);
-      }, 1500);
+      }, 2500);
 
       $(action).bind('click', function(){
-        var $thisItem = $(this),
-            thisOffset = $thisItem.offset();
+        var $thisItem = $(this),            thisOffset = $thisItem.offset();
 
         if(!$thisItem.hasClass('already-open')){
           hideAllPreviewElements();
