@@ -35,7 +35,6 @@ function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
   return '';
 }
 
-
 /**
  * Helper function to keep the initial regexp only here
  * returns a set of matches per asset tag
@@ -50,17 +49,12 @@ function assets_filter_get_matches($text) {
  * Filter callback for assets markup filter.
  */
 function assets_filter_process($text) {
-  $matches = assets_filter_get_matches($text);
-  $tags = array();
-  $rendered = array();
-  foreach ($matches as $match) {
-    $tags[] = $match[0];
-    $asset = asset_load($match[2]);
-    $rendered[] = assets_render_by_tag($asset, $match[3]);
-  }
-  if (count($tags)) {
-    $text = str_replace($tags, $rendered, $text);
-  }
+  $text = preg_replace_callback(
+    '/\\[\\[asset:([_a-zA-Z0-9]+):([0-9]+)\\s\\{((\\n|.)*?)\\}\\]\\]/s',
+    'assets_filter_replace_process',
+    $text
+  );
+
   return $text;
 }
 
@@ -77,6 +71,21 @@ function assets_cut_filter_process($text) {
     $text = str_replace($tags, '', $text);
   }
   return $text;
+}
+
+/**
+ * Filter callback for assets_filter_process.
+ */
+function assets_filter_replace_process($matches) {
+  if (!empty($matches[2]) && !empty($matches[1])
+    && !empty($matches[3])) {
+    $asset = asset_load($matches[2]);
+    $rendered = assets_render_by_tag($asset, $matches[3]);
+
+    return $rendered;
+  }
+
+  return $matches[0];
 }
 
 /**
