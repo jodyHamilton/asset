@@ -1,0 +1,158 @@
+html {
+  background: #E2DFDD;
+}
+
+body {
+  background: #E2DFDD;
+  overflow: auto;
+  height: 100%;
+}
+
+/* Deny sticky tables inside iframes */
+table.sticky-header {
+  display: none;
+}
+
+.jspPane, input {
+  max-width: 320px;
+}
+
+.jspPane table.tabledrag-processed input {
+  max-width: 260px;
+}
+
+.jspContainer {
+  overflow: hidden;
+  position: relative;
+}
+
+.jspPane {
+  position: absolute;
+}
+
+.jspVerticalBar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: red;
+}
+
+.jspHorizontalBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 16px;
+  background: red;
+}
+
+.jspVerticalBar *,
+.jspHorizontalBar * {
+  margin: 0;
+  padding: 0;
+}
+
+.jspCap {
+  display: none;
+}
+
+.jspHorizontalBar .jspCap {
+  float: left;
+}
+
+.jspTrack {
+  background: #333333;
+  position: relative;
+}
+
+.jspDrag {
+  background: #5fbfd6;
+  position: relative;
+  top: 0;
+  left: 0;
+  cursor: pointer;
+}
+
+.jspHorizontalBar .jspTrack,
+.jspHorizontalBar .jspDrag {
+  float: left;
+  height: 100%;
+}
+
+.jspArrow {
+  background: #50506d;
+  text-indent: -20000px;
+  display: block;
+  cursor: pointer;
+}
+
+.jspArrow.jspDisabled {
+  cursor: default;
+  background: #80808d;
+}
+
+.jspVerticalBar .jspArrow {
+  height: 16px;
+}
+
+.jspHorizontalBar .jspArrow {
+  width: 16px;
+  float: left;
+  height: 100%;
+}
+
+.jspVerticalBar .jspArrow:focus {
+  outline: none;
+}
+
+.jspCorner {
+  background: #eeeef4;
+  float: left;
+  height: 100%;
+}
+
+/* Yuk! CSS Hack for IE6 3 pixel bug :( */
+* html .jspCorner {
+  margin: 0 -3px 0 0;
+}
+
+.jspScrollable .jspVerticalBar {
+  width: 16px;
+  background: url('../images/bgs/bg_scroll.png') 4px 0 no-repeat;
+}
+.jspScrollable .jspVerticalBar .jspTrack {
+  width: 16px;
+  background: none;
+}
+.jspScrollable .jspVerticalBar .jspTrack .jspDrag {
+  background: none;
+}
+.jspScrollable .jspVerticalBar .jspTrack .jspDrag .jspDragTop {
+  display: block;
+  width: 16px;
+  height: 50%;
+  background: url('../images/bgs/bg_scroll.png') -14px 0 no-repeat;
+}
+.jspScrollable .jspVerticalBar .jspTrack .jspDrag .jspDragBottom {
+  display: block;
+  width: 16px;
+  height: 50%;
+  background: url('../images/bgs/bg_scroll.png') -14px 100% no-repeat;
+}
+.jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspHover,
+.jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspActive {
+  background: none;
+}
+.jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspHover .jspDragTop,
+.jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspActive .jspDragTop {
+  background: url('../images/bgs/bg_scroll.png') -36px 0 no-repeat;
+}
+.jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspHover .jspDragBottom,
+.jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspActive .jspDragBottom {
+  background: url('../images/bgs/bg_scroll.png') -36px 100% no-repeat;
+}
+.jspScrollable .jspHorizontalBar {
+  display: none;
+}

@@ -1,0 +1,9 @@
+name = "Asset widget"
+description = "Provide beautiful assets search widget"
+core = "7.x"
+package = "Media assets"
+dependencies[] = "asset"
+dependencies[] = "views"
+dependencies[] = "image"
+
+files[] = views/plugins/views_plugin_exposed_form_asset_widget.inc
