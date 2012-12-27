@@ -58,12 +58,16 @@
           $thisItem.addClass('already-open');
 
           var iframe = document.createElement('iframe'),
-              wrapper = document.createElement('div');
+              wrapper = document.createElement('div'),
+              url = $this.attr('rel');
 
           $thisItem.addClass('preview-active');
 
           iframe.scrolling = 'no';
-          $(iframe).attr('src', $this.attr('rel'));
+          if (url.substr(0, 1) != '/') {
+            url = Drupal.settings.basePath + url;
+          }
+          $(iframe).attr('src', url);
           iframe.frameBorder = 0;
           iframe.width = 1000;
           iframe.height = 1000;

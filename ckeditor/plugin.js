@@ -100,7 +100,7 @@
             elements : [
               {
                 type : 'iframe',
-                src : '/admin/assets/add/' + type + '/?render=popup',
+                src : Drupal.settings.basePath + 'admin/assets/add/' + type + '/?render=popup',
                 width : '100%',
                 height : '100%'
               }
@@ -132,7 +132,7 @@
           elements : [
             {
               type : 'iframe',
-              src : '/admin/assets/search?render=popup',
+              src : Drupal.settings.basePath + 'admin/assets/search?render=popup',
               width : '100%',
               height : '100%',
               id : 'asset_frame_iframe',
@@ -227,7 +227,7 @@
 //      if (!content) {
         $.ajax({
           type: "POST",
-          url: "/admin/assets/get/",
+          url: Drupal.settings.basePath + "admin/assets/get/",
           data: {tag: tag},
           async: false,
           success:  function (asset_content) {content = asset_content;}
@@ -245,7 +245,7 @@
       $.ajax({
         type: "POST",
         dataType: "json",
-        url: "/admin/assets/tag/" + tagId,
+        url: Drupal.settings.basePath + 'admin/assets/tag/' + tagId,
         async: false,
         success:  function (data) {
           tag = data.tag.replace(/\\"/g, '"');
@@ -293,7 +293,7 @@
         if (Assets.outdated) {
           $.ajax({
             type: "POST",
-            url: "/admin/assets/get/" + tag_id,
+            url: Drupal.settings.basePath + 'admin/assets/get/' + tag_id,
             data: {
               tag: tag
             },
@@ -344,7 +344,7 @@
             CKEDITOR.dialog.add(type, Assets.dialog(editor, type));
             execFn = function (assetType) {
               return function (editor) {
-                Assets.openDialog(editor, assetType,'/admin/assets/add/' + assetType + '/?render=popup', null);
+                Assets.openDialog(editor, assetType, Drupal.settings.basePath + 'admin/assets/add/' + assetType + '/?render=popup', null);
               };
             };
             editor.addCommand(type, {
@@ -437,7 +437,7 @@
               Assets.outdated = element;
               tag_id = element.data('asset-cid');
               tag = encodeURIComponent(tagCache[tag_id].tag);
-              src = '/admin/assets/override?render=popup&tag=' + tag;
+              src = Drupal.settings.basePath + 'admin/assets/override?render=popup&tag=' + tag;
               Assets.openDialog(editor, 'asset_' + Assets.parseId(tag_id, 'type'), src, element);
             }
           },
@@ -456,7 +456,7 @@
                 params.align = 'none';
               }
               src = [
-                '/admin/assets/edit',
+                Drupal.settings.basePath + 'admin/assets/edit',
                 params.aid,
                 params.mode,
                 params.align,

@@ -78,7 +78,7 @@ class asset_views_handler_field_asset extends views_handler_field {
             drupal_add_css(drupal_get_path('module', 'asset') . '/theme/asset-tooltip.css');
             $view_mode = check_plain($this->options['asset_tooltip']);
             $this->options['alter']['link_class'] = 'asset-tooltip';
-            $this->options['alter']['rel'] = '/assets/tooltip/' . $this->get_value($values, 'aid') . '/' . $view_mode;
+            $this->options['alter']['rel'] = 'assets/tooltip/' . $this->get_value($values, 'aid') . '/' . $view_mode;
           }
         }
         else {
@@ -88,7 +88,7 @@ class asset_views_handler_field_asset extends views_handler_field {
             drupal_add_css(drupal_get_path('module', 'asset') . '/theme/asset-tooltip.css');
             $view_mode = check_plain($this->options['asset_tooltip']);
             $this->options['alter']['alter_text'] = TRUE;
-            $rel = '/assets/tooltip/' . $this->get_value($values, 'aid') . '/' . $view_mode;
+            $rel = 'assets/tooltip/' . $this->get_value($values, 'aid') . '/' . $view_mode;
             $this->options['alter']['text'] = '<span class="asset-tooltip" rel="' . $rel . '">' . $data . '</span>';
           }
         }

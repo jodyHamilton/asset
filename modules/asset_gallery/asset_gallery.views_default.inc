@@ -109,7 +109,7 @@ function asset_gallery_views_default_views() {
   $handler->display->display_options['fields']['field_asset_image']['field'] = 'field_asset_image';
   $handler->display->display_options['fields']['field_asset_image']['label'] = 'Preview';
   $handler->display->display_options['fields']['field_asset_image']['alter']['alter_text'] = 1;
-  $handler->display->display_options['fields']['field_asset_image']['alter']['text'] = '<span rel="/assets/tooltip/[aid]/tooltip" class="asset-tooltip">[field_asset_image]</span>';
+  $handler->display->display_options['fields']['field_asset_image']['alter']['text'] = '<span rel="assets/tooltip/[aid]/tooltip" class="asset-tooltip">[field_asset_image]</span>';
   $handler->display->display_options['fields']['field_asset_image']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['field_asset_image']['alter']['absolute'] = 0;
   $handler->display->display_options['fields']['field_asset_image']['alter']['external'] = 0;
