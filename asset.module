@@ -163,10 +163,33 @@ function assets_type_entity_access_callback($op, $type = NULL, $account = NULL) 
  * Access callback for the entity API.
  */
 function assets_entity_access_callback($op, $type = NULL, $account = NULL) {
-  if ($op == 'view') {
-    return user_access('access content', $account);
+
+  switch ($op) {
+
+    case 'view':
+      // View assets list.
+      if ($type == NULL) {
+        return user_access('access assets overview', $account);
+      }
+      // View separate asset.
+      else {
+        return user_access('access content', $account);
+      }
+      break;
+
+    case 'update':
+    case 'edit':
+      return user_access("edit asset with type $type->type", $account);
+      break;
+
+    case 'delete':
+      return user_access("delete asset with type $type->type", $account);
+      break;
+
+    default:
+        return user_access('administer assets', $account);
+      break;
   }
-  return user_access('administer assets', $account);
 }
 
 
@@ -174,7 +197,8 @@ function assets_entity_access_callback($op, $type = NULL, $account = NULL) {
  * Implements hook_permission().
  */
 function asset_permission() {
-  return array(
+
+  $permissions = array(
     'administer asset types' => array(
       'title' => t('Administer asset types'),
       'description' => t('Create, edit and delete types of assets')
@@ -183,7 +207,36 @@ function asset_permission() {
       'title' => t('Administer assets'),
       'description' => t('Create, edit and delete asset entities')
     ),
+    'access assets overview' => array(
+      'title' => t('Access the assets overview page'),
+    ),
   );
+
+  foreach (assets_get_types() as $asset) {
+    $permissions += array(
+      'create asset with type ' . $asset->type => array(
+        'title' => t('Create asset with type %asset', array('%asset' => $asset->name)),
+      ),
+    );
+    $permissions += array(
+      'edit asset with type ' . $asset->type => array(
+        'title' => t('Edit asset with type %asset', array('%asset' => $asset->name)),
+      ),
+    );
+    $permissions += array(
+      'delete asset with type ' . $asset->type => array(
+        'title' => t('Delete asset with type %asset', array('%asset' => $asset->name)),
+      ),
+    );
+  }
+  return $permissions;
+}
+
+/**
+ * Check what user have access to create asset with given type.
+ */
+function asset_creation_access($type) {
+  return user_access("create asset with type $type");
 }
 
 /**
@@ -208,7 +261,8 @@ function asset_menu() {
     $items['admin/content/assets/add/' . $type_url_str] = array(
       'page callback' => 'assets_add',
       'page arguments' => array($type->type),
-      'access arguments' => array('administer assets'),
+      'access callback' => 'asset_creation_access',
+      'access arguments' => array($type->type),
       //'description' => $type->description,
       'file' => 'includes/asset.admin.inc',
       'title callback' => '_assets_form_page_title',
