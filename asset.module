@@ -790,6 +790,40 @@ function assets_get_frontend_theme() {
   return variable_get('theme_default', 'bartik');
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function asset_form_views_exposed_form_alter(&$form, &$form_state) {
+  // Fix redirection for views exposed form.
+  // In case that views_exposed_form form builder gets only view path, we should rebuild $form_state['redirect'].
+  // We should pass query render = popup, to process suppression for unwanted items.
+  // @see views_exposed_form().
+  $destination = drupal_get_destination();
+
+  if (isset($_GET['render']) && ($_GET['render'] == 'popup')) {
+    $destination = drupal_parse_url($destination['destination']);
+    $form_state['redirect'] = array(
+      'path' => $destination['path'],
+      'options' => array(
+        'query' => array(
+          'render' => $_GET['render'],
+        ),
+        'fragment' => $destination['fragment'],
+      ),
+    );
+    $form['render'] = array(
+      '#type' => 'hidden',
+      '#value' => 'popup',
+    );
+  }
+  else {
+    $form['#action'] = '/' . $destination['destination'];
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
 function asset_form_field_ui_display_overview_form_alter(&$form, &$form_state) {
   if ('asset' == $form['#entity_type']) {
     if ($form['#view_mode'] == 'default') {
@@ -826,8 +860,10 @@ function asset_form_field_ui_display_overview_form_alter(&$form, &$form_state) {
   }
 }
 
+/**
+ * Custom submit handler.
+ */
 function assets_field_ui_display_overview_form_submit($form, &$form_state) {
-  $view_mode = $form['#view_mode'];
   $bundle = $form['#bundle'];
   $view_modes_wysiwyg = array_filter($form_state['values']['view_modes_wysiwyg']);
   assets_set_wysiwyg_modes($bundle, $view_modes_wysiwyg);
@@ -835,11 +871,33 @@ function assets_field_ui_display_overview_form_submit($form, &$form_state) {
   assets_set_default_wysiwyg_mode($bundle, $default_view_mode_wysiwyg);
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function asset_form_ckeditor_admin_profile_form_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'asset_ckeditor_admin_profile_form_submit';
+}
+
+/**
+ * Custom submit handler.
+ */
+function asset_ckeditor_admin_profile_form_submit($form, &$form_state) {
+  if (!empty($form_state['values']['loadPlugins']['asset']) && ($form_state['values']['enter_mode'] != 'br')) {
+    $form_state['values']['enter_mode'] = 'br';
+  }
+}
+
+/**
+ * Helper function to get wysiwyg modes.
+ */
 function _assets_get_wysiwyg_modes($bundle) {
   $settings = variable_get('assets_wysiwyg_modes', array());
   return isset($settings[$bundle]) ? $settings[$bundle] : array();
 }
 
+/**
+ * Helper function to set wysiwyg modes.
+ */
 function assets_set_wysiwyg_modes($bundle, $settings) {
   $current_settings = variable_get('assets_wysiwyg_modes', array());
   $current_settings[$bundle] = $settings;
@@ -863,11 +921,18 @@ function assets_set_default_wysiwyg_mode($bundle, $settings) {
   variable_set('assets_default_wysiwyg_modes', $current_settings);
 }
 
+/**
+ * Title callback function.
+ */
 function _assets_form_page_title($type) {
-  $type = substr($type, 6);
-  $type_obj = assets_get_types($type);
-  $type_name = $type_obj->name;
-  return t("Add @asset_type_name", array('@asset_type_name' => $type_name));
+  if ($type = substr($type, 6)) {
+    $type_obj = assets_get_types($type);
+
+    if (!empty($type_obj->name)) {
+      return t('Add @asset_type_name', array('@asset_type_name' => $type_obj->name));
+    }
+  }
+  return t('Add asset');
 }
 
 function _assets_form_action_title($op, $entity_type) {

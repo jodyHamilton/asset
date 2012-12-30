@@ -1,15 +1,15 @@
 <?php
 /**
+ * @file
+ * Emvideo youtube module.
+ */
+
+/**
  * Implements hook_emvideo_parse().
  */
 function emvideo_youtube_emvideo_parse($url) {
   $matches = array();
-  if (preg_match('@^(?:https?\:\/\/)?(?:www\.)?youtu(?:|\.be|be\.com)(\/watch|\/embed|\/v|\/)+((.*)?[\&\?]v=)?([^"\& ]+)@i', $url, $matches)) {
-//  if (preg_match('@youtube\.com/watch[#\?\&]v=([^"\& ]+)@i', $url, $matches) ||
-//      preg_match('@youtu\.be/([^\?"\&]+)@i', $url, $matches) ||
-//      preg_match('@youtube\.com/embed/([^\?"\& ]+)@i', $url, $matches) ||
-//      preg_match('@youtube\.com/v/([^?"\& ]+)@i', $url, $matches)) {
-
+  if (preg_match('@^(?:https?\:\/\/)?(?:www\.)?youtu(?:|\.be|be\.com)(\/watch|\/embed|\/v/|\/)+((.*)?[\&\?]v=)?([^"\& ]+)@i', $url, $matches)) {
     $hosts = array(
       'i.ytimg.com',
       'i1.ytimg.com',
@@ -18,7 +18,9 @@ function emvideo_youtube_emvideo_parse($url) {
       'i4.ytimg.com',
       'img.youtube.com'
     );
+
     $host = $hosts[array_rand($hosts)];
+
     return array(
       'source' => 'http://www.youtube.com/v/' . $matches[4],
       'provider' => 'youtube',

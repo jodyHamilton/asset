@@ -114,7 +114,7 @@ function emvideo_field_formatter_settings_form($field, $instance, $view_mode, $f
 function emvideo_field_formatter_settings_summary($field, $instance, $view_mode) {
   $display = $instance['display'][$view_mode];
   $settings = $display['settings'];
-  $summary = array();
+  $output = '';
 
   switch ($display['type']) {
     case 'emvideo_video':
