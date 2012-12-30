@@ -818,24 +818,6 @@
 .assets-module .assets-module-inner .assets-content .tab-links ul li a.free_html-tab.active span.ico {
   background: url('../images/sprite-a.png') no-repeat -292px -166px;
 }
-.assets-module .assets-module-inner .assets-content .tab-links.audio span.ico {
-  background: url('../images/sprite-a.png') no-repeat -83px -65px;
-}
-.assets-module .assets-module-inner .assets-content .tab-links.video {
-  background: url('../images/sprite-a.png') no-repeat -123px 0;
-}
-.assets-module .assets-module-inner .assets-content .tab-links.image {
-  background: url('../images/sprite-a.png') no-repeat -183px 0;
-}
-.assets-module .assets-module-inner .assets-content .tab-links.search {
-  background: url('../images/sprite-a.png') no-repeat -243px 0;
-}
-.assets-module .assets-module-inner .assets-content .tab-links.bookmark {
-  background: url('../images/sprite-a.png') no-repeat -303px 0;
-}
-.assets-module .assets-module-inner .assets-content .tab-links.document {
-  background: url('../images/sprite-a.png') no-repeat -363px 0;
-}
 .assets-module .assets-module-inner .assets-content .tab-contents {
   width: 386px;
   float: left;

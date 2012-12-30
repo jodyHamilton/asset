@@ -66,7 +66,7 @@ function asset_widget_views_api() {
 }
 
 /**
- * Static flag to indicate should we add widget to page or not. Attaching widget seev in hook_page_alter().
+ * Static flag to indicate should we add widget to page or not. Attaching widget see in hook_page_alter().
  */
 function asset_widget_add_to_page($set = NULL) {
   static $add_to_page = FALSE;
@@ -133,6 +133,7 @@ function asset_widget_pre_render_text_format($element) {
         // Cache allowed formats in one element. Not static, because drupal_add_js will write it properly.
         $formats_asset_plugin = array();
         $classes_added = FALSE;
+        static $additional_classes = array();
 
         foreach ($element['format']['format']['#options'] as $format => $name) {
           // Skip plain text.
@@ -152,7 +153,6 @@ function asset_widget_pre_render_text_format($element) {
                   if (!empty($ckeditor_profile->settings['loadPlugins']['asset'])) {
                     // Build some additional classes for textarea.
                     // We always have all asset types allowed in wysiwyg. So we can cache it.
-                    static $additional_classes = array();
                     if (empty($additional_classes)) {
                       $additional_classes['match-field'] = 'match-field';
 
@@ -168,7 +168,7 @@ function asset_widget_pre_render_text_format($element) {
                     // Avoid multiple classes adding to the element.
                     if (empty($classes_added)) {
                       // Add classes and attach widget.
-                      _asset_widget_element_attach_asset_widget($element, NULL, $additional_classes);
+                      _asset_widget_element_attach_asset_widget($element, array(), $additional_classes);
                       $classes_added = TRUE;
                     }
 
@@ -279,7 +279,6 @@ function asset_widget_library() {
   $libraries['widget'] = array(
     'title' => 'Asset widget library',
     'version' => '1.0',
-    'version' => rand(),
     'js' => array(
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.mousewheel.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.jscrollpane.min.js' => array('weight' => 4),
@@ -336,6 +335,35 @@ function asset_widget_entity_info_alter(&$entity_info) {
     'label' => t('Widget search'),
     'custom settings' => TRUE,
   );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function asset_widget_form_alter(&$form, &$form_state, $form_id) {
+  // Affect edit forms in asset widget iframes.
+  if (!empty($form_id) && preg_match('/asset_edit_.*_form$/', $form_id) && !empty($_GET['asset_frame'])) {
+    if (isset($form['actions']['delete']['#submit'])) {
+      $form['actions']['delete']['#submit'][] = 'asset_widget_base_form_submit_delete';
+    }
+  }
+}
+
+/**
+ * Custom submit handler.
+ */
+function asset_widget_base_form_submit_delete($form, &$form_state) {
+  if (!empty($form_state['redirect'])) {
+    if (($url = drupal_parse_url($form_state['redirect'])) && !empty($_GET['asset_frame'])) {
+      $url['query']['asset_frame'] = $_GET['asset_frame'];
+      $form_state['redirect'] = array(
+        $url['path'],
+        array(
+          'query' => $url['query'],
+        )
+      );
+    }
+  }
 }
 
 /**

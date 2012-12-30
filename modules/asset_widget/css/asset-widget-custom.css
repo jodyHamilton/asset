@@ -13,6 +13,9 @@
 
 .assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .form-wrap .mid .form-item{
 	margin: 0;
+  padding: 9px 0;
+  background: none;
+  border: none;
 }
 
 .assets-module .views-exposed-widget input.form-submit,
@@ -114,3 +117,53 @@
   height: 50px;
   width: 50px;
 }
+
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .form-wrap .mid .views-widget-filter-type .input-tooltip{
+  display: none;
+}
+
+/*--Rubik themes style fixes--*/
+
+/*--Pager styles--*/
+
+.assets-module .pager-container .item-list{
+  background: none;
+  border: none;
+  margin: 0;
+}
+
+.assets-module .item-list .pager{
+  font-size: 11px;
+}
+
+.assets-module .item-list .pager a,
+.assets-module .item-list .pager span{
+  background: none;
+  padding: 0;
+}
+
+.assets-module .pager li{
+  position: static;
+  height: auto;
+  border: none;
+  background: none;
+}
+
+.assets-module .pager li a:hover{
+  background-color: transparent;
+}
+
+.assets-module .pager li.pager-current{
+  background-color: transparent;
+}
+
+.assets-module .pager a,
+.assets-module .pager span,
+.assets-module .primary-tabs a{
+  float: none;
+}
+
+/*--end pager styles--*/
+
+
+/*--end rubik themes style fixes--*/
