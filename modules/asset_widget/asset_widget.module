@@ -48,6 +48,18 @@ function asset_widget_init() {
 }
 
 /**
+ * Implements hook_admin_paths().
+ */
+function asset_widget_admin_paths() {
+  $paths = array(
+    'ajax/asset-widget/get/tab' => TRUE,
+    'ajax/asset-widget/drop' => TRUE,
+  );
+
+  return $paths;
+}
+
+/**
  * Helper to determine in-frame forms context.
  */
 function asset_widget_in_frame_form() {
@@ -80,8 +92,9 @@ function asset_widget_add_to_page($set = NULL) {
  * Implements hook_element_info_alter().
  */
 function asset_widget_element_info_alter(&$info) {
-  // Don't process fields if no access, inside widget frames, field settings form and different fields added by ajax.
+  // Don't process fields if current theme is not admin, access denied, inside widget frames, field settings form and different fields added by ajax.
   if (user_access('access search widget')
+    && _asset_widget_is_admin_theme()
     && !asset_widget_in_frame_form()
     && !drupal_match_path(current_path(), 'admin/*')) {
     // Add callback for text fields with wysiwyg.
@@ -104,6 +117,22 @@ function asset_widget_element_info_alter(&$info) {
       }
     }
   }
+}
+
+/**
+ * Helper function to determine that current theme is admin theme.
+ */
+function _asset_widget_is_admin_theme() {
+  global $theme_key;
+  $admin_theme = variable_get('admin_theme');
+
+  if (($admin_theme && ($theme_key == $admin_theme))
+    || (!$admin_theme && ($theme_key == variable_get('admin_theme', 'seven')))
+    || variable_get('asset_widget_enable_widget_in_front_theme', FALSE)) {
+    return TRUE;
+  }
+
+  return FALSE;
 }
 
 /**
