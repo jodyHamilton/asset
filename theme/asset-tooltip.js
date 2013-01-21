@@ -102,7 +102,7 @@
         };
 
         bodyClick();
-        
+
         setTimeout(function(){ resize = 1; }, 100);
 
         return false;

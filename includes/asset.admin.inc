@@ -1,15 +1,13 @@
 <?php
-
 /**
  * @file
- * Assets administration logic.
+ * Asset admin page callbacks.
  */
 
 /**
-  * Generates the asset type editing form.
-  */
+ * Generates the asset type editing form.
+ */
 function asset_type_form($form, &$form_state, $asset_type, $op = 'edit') {
-
   if ($op == 'clone') {
     $asset_type->name .= ' (cloned)';
     $asset_type->type .= '_clone';
@@ -22,6 +20,7 @@ function asset_type_form($form, &$form_state, $asset_type, $op = 'edit') {
     '#required' => TRUE,
     '#default_value' => $asset_type->name,
   );
+
   // Machine-readable type name.
   $form['type'] = array(
     '#type' => 'machine_name',
@@ -33,12 +32,14 @@ function asset_type_form($form, &$form_state, $asset_type, $op = 'edit') {
     ),
     '#description' => t('A unique machine-readable name for this asset type. It must only contain lowercase letters, numbers, and underscores.'),
   );
+
   $form['description'] = array(
     '#title' => t('Description'),
     '#type' => 'textarea',
     '#default_value' => $asset_type->description,
     '#description' => t('Describe this asset type. The text will be displayed on the <em>Add new asset</em> page.'),
   );
+
   $form['help']  = array(
     '#type' => 'textarea',
     '#title' => t('Explanation or submission guidelines'),
@@ -52,7 +53,7 @@ function asset_type_form($form, &$form_state, $asset_type, $op = 'edit') {
       '#type' => 'radios',
       '#default_value' => $asset_type->icon ? $asset_type->icon : reset(array_keys($icons)),
       '#options' => $icons,
-      '#title' => t('Button icon')
+      '#title' => t('Button icon'),
     );
   }
 
@@ -60,7 +61,7 @@ function asset_type_form($form, &$form_state, $asset_type, $op = 'edit') {
     '#title' => t('Weight'),
     '#type' => 'weight',
     '#default_value' => $asset_type->weight,
-    '#weight' => 50
+    '#weight' => 50,
   );
 
   $form['actions'] = array('#type' => 'actions');
@@ -76,17 +77,16 @@ function asset_type_form($form, &$form_state, $asset_type, $op = 'edit') {
       '#value' => t('Delete asset type'),
       '#weight' => 45,
       '#limit_validation_errors' => array(),
-      '#submit' => array('asset_type_form_submit_delete')
+      '#submit' => array('asset_type_form_submit_delete'),
     );
   }
+
   return $form;
 }
 
-
 /**
- *  Form API submit callback for the asset type form.
+ * Form API submit callback for the asset type form.
  */
-
 function asset_type_form_submit($form, &$form_state) {
   $asset_type = entity_ui_form_submit_build_entity($form, $form_state);
   $asset_type->save();
@@ -114,7 +114,9 @@ function asset_type_form_submit_delete(&$form, &$form_state) {
   }
 }
 
-
+/**
+ * Base form builder.
+ */
 function asset_base_form($form, &$form_state, $asset, $op = 'edit') {
   $form['title'] = array(
     '#type' => 'textfield',
@@ -123,13 +125,14 @@ function asset_base_form($form, &$form_state, $asset, $op = 'edit') {
     '#default_value' => $asset->title,
     '#maxlength' => 255,
     '#weight' => -5,
-    '#description' => t('Title of asset')
+    '#description' => t('Title of asset'),
   );
 
   field_attach_form('asset', $asset, $form, $form_state);
-  //unset($form['#submit']);
   $form['#submit'] = array('asset_base_form_submit');
+
   unset($form['#validate']);
+
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
@@ -149,10 +152,8 @@ function asset_base_form($form, &$form_state, $asset, $op = 'edit') {
   return $form;
 }
 
-
-
 /**
- *  Form API submit callback for the asset form.
+ * Form API submit callback for the asset form.
  */
 function asset_base_form_submit($form, &$form_state) {
   $asset = entity_ui_form_submit_build_entity($form, $form_state);
@@ -182,19 +183,20 @@ function asset_base_form_submit_delete(&$form, &$form_state) {
   }
 }
 
+/**
+ * Page callback for asset add page.
+ */
 function assets_add_page() {
   $item = menu_get_item();
   $content = system_admin_menu_block($item);
 
   if (isset($_GET['destination'])) {
     $destination = array('destination' => $_GET['destination']);
+
     foreach ($content as $mlid => $item) {
       $content[$mlid]['localized_options']['query'] = $destination;
     }
   }
-///  foreach ($content as $mlid => $item) {
-///    $content[$mlid]['title'] = t($content[$mlid]['title']); //such a pity thing
-///  }
 
   // Bypass the asset/add listing if only one content type is available.
   if (count($content) == 1) {
@@ -211,38 +213,42 @@ function assets_add_page() {
 function assets_add($type) {
   $asset = new Asset(array('type' => $type));
   $form = entity_ui_get_form('asset', $asset, 'add');
+
   // Due to dummy  usage of entity->label instead of entity_label() in entity API.
   $label = drupal_strtolower(entity_label('asset', $asset));
   drupal_set_title(t("Add $label"), PASS_THROUGH);
+
   return $form;
 }
 
 /**
- * Adds a fields for an asset tag values to the given form
- *
- * @param $form
- * @param $asset
- * @param $options
- * @return array
+ * Adds a fields for an asset tag values to the given form.
  */
 function _assets_wysiwyg_fields(&$form, $asset, $options) {
   $entity_info = $asset->entityInfo();
-  $align = isset($options['align']) && in_array($options['align'], array('left', 'right', ''), TRUE) ? $options['align'] : '';
+  $align = isset($options['align']) && in_array($options['align'], array('left', 'right', ''), TRUE)
+    ? $options['align']
+    : '';
   $mode = isset($options['mode']) ? $options['mode'] : '';
 
   $modes = array();
   $modes_count = 0;
 
-  $view_modes = $entity_info['view modes']; //to get the human titles
+  // To get the human titles.
+  $view_modes = $entity_info['view modes'];
   $wysiwyg_modes = _assets_get_wysiwyg_modes($asset->type);
+
   if (!empty($wysiwyg_modes)) {
     foreach ($wysiwyg_modes as $view_mode_name) {
       $modes[$view_mode_name] = $view_modes[$view_mode_name]['label'];
     }
+
     $modes_count = count($modes);
+
     if (!array_key_exists($mode, $modes) && $modes_count) {
       $mode = reset(array_keys($modes));
     }
+
     if ($modes_count > 1) {
       $form['view_mode'] = array(
         '#type' => 'select',
@@ -255,16 +261,16 @@ function _assets_wysiwyg_fields(&$form, $asset, $options) {
     else {
       $form['view_mode'] = array(
         '#type' => 'value',
-        '#value' => $mode
+        '#value' => $mode,
       );
     }
   }
 
-  // A convention that default view mode shouldn't have align options
+  // A convention that default view mode shouldn't have align options.
   if (1 >= $modes_count && $mode === ASSET_DEFAULT_MODE) {
     $form['align'] = array(
       '#type' => 'value',
-      '#value' => ''
+      '#value' => '',
     );
   }
   else {
@@ -276,28 +282,32 @@ function _assets_wysiwyg_fields(&$form, $asset, $options) {
       '#options' => array(
         '' => t('None'),
         'left' => t('Left'),
-        'right' => t('Right')
+        'right' => t('Right'),
       ),
-      '#weight' => 30
+      '#weight' => 30,
     );
 
     if ($modes_count > 1) {
       $form['align']['#states'] = array(
         'visible' => array(
-          ':input[name=view_mode]' => array('value' => 'small')
-        )
+          ':input[name=view_mode]' => array('value' => 'small'),
+        ),
       );
     }
   }
+
   return $form;
 }
 
-
+/**
+ * Page callback for wysiwyg form.
+ */
 function assets_wysiwyg_form($form, &$form_state, $op, $asset, $mode = ASSET_DEFAULT_MODE, $align = '') {
   if ($op == 'add') {
-    $type = substr($asset, 6);
+    $type = drupal_substr($asset, 6);
     $asset = new Asset(array('type' => $type));
   }
+
   $form_state['entity_type'] = 'asset';
   $form_state['op'] = $op;
   $form_state['asset'] = $asset;
@@ -305,12 +315,14 @@ function assets_wysiwyg_form($form, &$form_state, $op, $asset, $mode = ASSET_DEF
 
   $form = asset_base_form($form, $form_state, $asset, $op);
   $form['#submit'][] = 'asset_base_form_submit';
+
   if ($op == 'add') {
     $form['#submit'][] = 'assets_wysiwyg_add_form_submit';
   }
   else {
     $form['#submit'][] = 'assets_wysiwyg_form_submit';
   }
+
   _assets_wysiwyg_fields($form, $asset, array('mode' => $mode, 'align' => $align));
 
   unset($form['actions']['delete']);
@@ -318,22 +330,23 @@ function assets_wysiwyg_form($form, &$form_state, $op, $asset, $mode = ASSET_DEF
   return $form;
 }
 
+/**
+ * Page callback for asset override form in wysiwyg.
+ */
 function assets_override_form($form, &$form_state) {
   $form = array();
-  if (isset($_REQUEST['tag']) && !empty($_REQUEST['tag'])) {
 
+  if (isset($_REQUEST['tag']) && !empty($_REQUEST['tag'])) {
     $tag = $_REQUEST['tag'];
-    //$tag = html_entity_decode($tag, ENT_NOQUOTES, 'UTF-8');
     $matches = assets_filter_get_matches($tag);
+
     if (!empty($matches)) {
       $match = reset($matches);
-      $type = $match[1];
-      $aid = (int)$match[2];
+      $aid = (int) $match[2];
       $params = $match[3];
-      $asset = asset_load($aid);// new Asset(array('type' => $type, 'aid' => $aid));
+      $asset = asset_load($aid);
       $form_state['asset'] = $asset;
       $form_state['entity_type'] = 'asset';
-    //$form_state['op'] = $op;
 
       $form_state['build_info']['base_form_id'] = 'asset_base_form';
       $params = '{' . $params . '}';
@@ -351,11 +364,6 @@ function assets_override_form($form, &$form_state) {
       field_attach_form('asset', $asset, $form, $form_state);
 
       _assets_clean_fields($form, $options);
-
-    ///  if (is_array($options) && !empty($options)) {
-    ///    _assets_override_values($form, $options);
-    ///  }
-
       _assets_wysiwyg_fields($form, $asset, $options);
 
       $form['actions'] = array('#type' => 'actions');
@@ -370,45 +378,55 @@ function assets_override_form($form, &$form_state) {
     }
   }
 
-  //TODO: Add validation handlers
+  // @todo: Add validation handlers.
   return $form;
 }
 
+/**
+ * Helper function.
+ */
 function _assets_clean_fields(&$form, $options = array()) {
   $containers = element_children($form);
   $supported_types = _assets_get_supported_field_types();
+
   foreach ($containers as $key) {
     if (isset($form[$key]) && $form[$key]) {
       $elements = $form[$key][$form[$key]['#language']];
       $multiple = isset($elements['#cardinality']) && ($elements['#cardinality'] > 1 || $elements['#cardinality']) == FIELD_CARDINALITY_UNLIMITED;
       $children = element_children($elements);
+
       if (!empty($children)) {
         foreach ($children as $delta) {
           if (isset($elements[$delta]) && $elements[$delta]) {
-            //$field_name = $field['#field_name'];
             $info = field_info_field($key);
+
             if (!empty($info) && in_array($info['type'], $supported_types)) {
               unset($field);
+
               switch ($info['type']) {
                 case 'text':
                 case 'text_long':
                   $field = &$form[$key][$form[$key]['#language']][$delta];
                   if ($multiple) {
-                    $field =  &$form[$key][$form[$key]['#language']][$delta]['value'];
+                    $field = &$form[$key][$form[$key]['#language']][$delta]['value'];
                   }
                   break;
               }
+
               if (isset($field) && !$field['#required']) {
                 if (isset($options[$key])) {
-                  $value = (array)$options[$key];
+                  $value = (array) $options[$key];
+
                   if (!empty($value[$delta])) {
                     continue;
                   }
                 }
+
                 $field['#default_value'] = '';
                 continue;
               }
             }
+
             unset($form[$key]);
           }
         }
@@ -417,56 +435,64 @@ function _assets_clean_fields(&$form, $options = array()) {
         $info = field_info_field($key);
         if (!empty($info) && in_array($info['type'], $supported_types)) {
           unset($field);
+
           switch ($info['type']) {
             case 'text':
               $field = &$form[$key][$form[$key]['#language']];
               if ($multiple) {
-                $field =  &$form[$key][$form[$key]['#language']]['value'];
+                $field = &$form[$key][$form[$key]['#language']]['value'];
               }
               break;
           }
+
           if (isset($field) && !$field['#required']) {
             if (isset($options[$key])) {
-              $value = (array)$options[$key];
+              $value = (array) $options[$key];
+
               if (!empty($value[$delta])) {
                 continue;
               }
             }
+
             $field['#default_value'] = '';
             continue;
           }
         }
+
         unset($form[$key]);
       }
     }
   }
 }
 
+/**
+ * Custom submit handler.
+ */
 function assets_override_form_submit(&$form, &$form_state) {
- // $asset = $form_state['asset'];
   $values = $form_state['values'];
   $view_mode = isset($values['view_mode']) ? $values['view_mode'] : ASSET_DEFAULT_MODE;
   $alignment = isset($values['align']) ? $values['align'] : '';
   $asset = entity_ui_form_submit_build_entity($form, $form_state);
-  //$asset->aid = $form_state['asset']->aid;
   $placeholder = assets_get_placeholder($asset, array('mode' => $view_mode, 'align' => $alignment));
   $placeholder = addslashes($placeholder);
   $placeholder = str_replace("\r\n", '\n', $placeholder);
 
-  $js = '
-    var CKEDITOR = parent.CKEDITOR;
+  $js = 'var CKEDITOR = parent.CKEDITOR;
     var dialog =  CKEDITOR.dialog.getCurrent();
     var outdated = dialog._outdatedAssetEl;
     if (outdated) {
       var tag_id = outdated.data(\'asset-cid\');
       dialog._.editor.plugins.asset.replaceAsset(tag_id, \'' . $placeholder . '\' );
     }
-    dialog.hide();
-  ';
+    dialog.hide();';
+
   echo '<script>' . $js . '</script>';
   drupal_exit();
 }
 
+/**
+ * Custom submit handler.
+ */
 function assets_wysiwyg_add_form_submit(&$form, &$form_state) {
   $asset = $form_state['asset'];
   $values = $form_state['values'];
@@ -476,9 +502,8 @@ function assets_wysiwyg_add_form_submit(&$form, &$form_state) {
   $placeholder = assets_get_placeholder($asset, array('mode' => $view_mode, 'align' => $alignment));
   $placeholder = addslashes($placeholder);
   $placeholder = str_replace("\r\n", '\n', $placeholder);
-  //dialog._.editor.insertText(\'' . $placeholder . '\');
-  $js = '
-    var CKEDITOR = parent.CKEDITOR;
+
+  $js = 'var CKEDITOR = parent.CKEDITOR;
     var dialog = CKEDITOR.dialog.getCurrent();
     var newHtml = dialog._.editor.plugins.asset.Assets.getContentByTag(\'' . $placeholder . '\');
     //var newHtml = dialog.definition.Assets.getContentByTag(\'' . $placeholder . '\');
@@ -491,13 +516,15 @@ function assets_wysiwyg_add_form_submit(&$form, &$form_state) {
         wysiwyg.loadData(wysiwyg.getData());
       }
     }
-    dialog.hide();
-  ';
+    dialog.hide();';
+
   echo '<script>' . $js . '</script>';
   drupal_exit();
 }
 
-
+/**
+ * Custom submit handler.
+ */
 function assets_wysiwyg_form_submit(&$form, &$form_state) {
   $asset     = $form_state['asset'];
   $values    = $form_state['values'];
@@ -508,27 +535,27 @@ function assets_wysiwyg_form_submit(&$form, &$form_state) {
   $placeholder = addslashes($placeholder);
   $placeholder = str_replace("\r\n", '\n', $placeholder);
 
-  $js = '
-    var CKEDITOR = parent.CKEDITOR;
+  $js = 'var CKEDITOR = parent.CKEDITOR;
     var dialog =  CKEDITOR.dialog.getCurrent();
     var outdated = dialog._outdatedAssetEl;
     if (outdated) {
       var tag_id = outdated.data(\'asset-cid\');
       dialog._.editor.plugins.asset.replaceAsset(tag_id, \'' . $placeholder . '\' );
     }
-    dialog.hide();
-  ';
+    dialog.hide();';
+
   echo '<script>' . $js . '</script>';
   drupal_exit();
 }
 
+/**
+ * Page callback to get html for asset preview in wysiwyg.
+ */
 function assets_get_content() {
   $content = '';
-  ///if (isset($_POST['tag']) && !empty($_POST['tag'])) {
+
   if (isset($_REQUEST['tag']) && !empty($_REQUEST['tag'])) {
     $tag = $_REQUEST['tag'];
-   /// $tag = $_POST['tag'];
-   // $tag = html_entity_decode($tag, ENT_NOQUOTES, 'UTF-8');
     $matches = assets_filter_get_matches($tag);
     if (!empty($matches)) {
       $match = reset($matches);
@@ -536,35 +563,44 @@ function assets_get_content() {
       $content .= assets_render_by_tag($asset, $match[3], TRUE);
     }
   }
+
   print $content;
   drupal_exit();
 }
 
-function assets_get_full_content() {
+/**
+ * Page callback, return html of full asset.
+ */
+function asset_get_full_content() {
   $content = '';
-  ///if (isset($_POST['tag']) && !empty($_POST['tag'])) {
+
   if (isset($_REQUEST['tag']) && !empty($_REQUEST['tag'])) {
     $tag = $_REQUEST['tag'];
-    /// $tag = $_POST['tag'];
-    // $tag = html_entity_decode($tag, ENT_NOQUOTES, 'UTF-8');
     $matches = assets_filter_get_matches($tag);
+
     if (!empty($matches)) {
       $match = reset($matches);
       $asset = asset_load($match[2]);
       $content .= assets_render_by_tag($asset, $match[3], FALSE);
     }
   }
+
   return $content;
 }
 
-function _assets_get_tag($tag_id) {
+/**
+ * Page callback, return html of asset by wysiwyg view mode.
+ */
+function _asset_get_tag($tag_id) {
   $tags = explode(':', $tag_id);
   $aid = $tags[0];
   $asset = asset_load($aid);
   $asset_content = '';
   $placeholder = '';
+
   if ($asset) {
     $view_modes = variable_get('assets_default_wysiwyg_modes', array());
+
     if (!empty($view_modes[$asset->type])) {
       $view_mode = $view_modes[$asset->type];
     }
@@ -575,20 +611,31 @@ function _assets_get_tag($tag_id) {
     $asset->in_editor = TRUE;
     $placeholder = assets_get_placeholder($asset, array('mode' => $view_mode, 'align' => ''));
     $placeholder = str_replace("\r\n", '\n', $placeholder);
-
-    $asset_content = render($asset->view($view_mode)); //assets_render_by_tag($asset, array('mode' => $view_mode), TRUE);
+    $asset_content = render($asset->view($view_mode));
   }
-  print drupal_json_encode(array(
-    'tag' => $placeholder,
-    'content' => $asset_content
-  ));
+
+  print drupal_json_encode(
+    array(
+      'tag' => $placeholder,
+      'content' => $asset_content,
+      'content' => $asset_content,
+    )
+  );
+
   drupal_exit();
 }
 
-function assets_tooltip_content($asset, $view_mode) {
-  return assets_view_asset($asset, $view_mode);
+/**
+ * Page callback to get tooltip content.
+ */
+function asset_tooltip_content($asset, $view_mode) {
+  return asset_view_asset($asset, $view_mode);
 }
 
-function assets_view_asset($asset, $view_mode = ASSET_DEFAULT_MODE) {
-  return render($asset->view($view_mode));
+/**
+ * Page callback to get asset html.
+ */
+function asset_view_asset($asset, $view_mode = ASSET_DEFAULT_MODE) {
+  $output = $asset->view($view_mode);
+  return render($output);
 }

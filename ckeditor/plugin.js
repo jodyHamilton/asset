@@ -170,38 +170,25 @@ var Assets;
     },
 
     getContainer : function (tagId, tag, content) {
-      tempContainer.innerHTML = content;
-      var params = this.getTagData(tag),
-      asset_div = tempContainer.firstChild,
-      align = params.align;
+      if (tagId && tag && content) {
+        tempContainer.innerHTML = content;
+        var params = this.getTagData(tag);
+        var asset_div = tempContainer.firstChild;
+        var align = (params.mode === 'full') ? '' : params.align;
 
-      if (asset_div == null) {
+        if (typeof(asset_div) != null) {
+          asset_div.setAttribute('contentEditable', 'false');
+          asset_div.setAttribute('data-cke-editable', 'false');
+          asset_div.setAttribute('data-asset-cid', tagId);
+
+          if (align == 'left' | 'right') {
+            asset_div.style.styleFloat = align;
+            asset_div.style.cssFloat = align;
+          }
+        }
+
         return tempContainer;
       }
-
-      asset_div.contentEditable = 'false';
-      asset_div.setAttribute('data-asset-cid', tagId);
-      asset_div.setAttribute('contentEditable', 'false');
-      asset_div.setAttribute('data-cke-editable', 'false');
-
-      if (params.mode === 'full') {
-        align = '';
-      }
-
-      switch(align) {
-        case 'left':
-        case 'right':
-          break;
-        default:
-          align = '';
-      }
-
-      if (align) {
-        asset_div.style.styleFloat = align;
-        asset_div.style.cssFloat = align;
-      }
-
-      return tempContainer;
     },
 
     cache : function (tagId, tag, content) {

@@ -9,6 +9,7 @@ assetWidget.currentTab = false;
 
 // Special flag to make possible run nested loader and show only one.
 assetWidget.loaderEnabled = false;
+assetWidget.frameLoaderEnabled = false;
 
 // Internal property to store current search params.
 assetWidget.filterParams = '';
@@ -37,18 +38,25 @@ assetWidget.allowDrop = false;
       assetWidget.initSlide();
     });
 
+    // Initialize variable with empty function, it will be filled in initTooltips().
+    assetWidget.tooltipsPositionCalc = function() {};
+
     // We bind tooltips actions with timeout to let content be rendered.
     setTimeout(function () {
       assetWidget.initTooltips($context);
     }, 0);
 
+    // Scroll events.
     assetWidget.initScroll($context);
 
-    // Drag events
+    // Drag events.
     assetWidget.initDrag($context);
 
     // Bind widget height adjusting.
     assetWidget.initHeightAdjust($context);
+
+    // Disable page scroll.
+    assetWidget.disablePageScroll($context);
   };
 
   /**
@@ -249,6 +257,35 @@ assetWidget.allowDrop = false;
   };
 
   /**
+   * Show frame loader.
+   */
+  assetWidget.showTooltipLoader = function () {
+    if (!assetWidget.frameLoaderEnabled) {
+      var $tooltipWrapper = assetWidget.$widget.find(".active-tooltip-container");
+      $tooltipWrapper.find(".loading").show().removeClass('hidden');
+
+      var $tooltip = $tooltipWrapper.find(".tooltip-inner");
+      if ($tooltip.size && !$tooltip.hasClass('masked')) {
+        $tooltip.addClass('masked');
+      }
+
+      assetWidget.frameLoaderEnabled = true;
+    }
+  };
+
+  /**
+   * Hide frame loader.
+   */
+  assetWidget.hideTooltipLoader = function () {
+    if (assetWidget.frameLoaderEnabled) {
+      var $tooltipWrapper = assetWidget.$widget.find(".active-tooltip-container");
+      $tooltipWrapper.find(".loading").addClass('hidden').hide();
+      $tooltipWrapper.find(".tooltip-inner").removeClass('masked');
+      assetWidget.frameLoaderEnabled = false;
+    }
+  };
+
+  /**
    * Bind slide animation to widget.
    */
   assetWidget.initSlide = function () {
@@ -315,9 +352,11 @@ assetWidget.allowDrop = false;
     $context.find('a.asset-widget-modify-asset').once(function () {
       $(this).click(function () {
         var idParts = $(this).attr('id').split('-');
-        var aid = idParts.pop(),
-          type = idParts.pop();
+        var aid = idParts.pop();
+        var type = idParts.pop();
+
         if (aid) {
+          assetWidget.hideTooltips();
           assetWidget.getTabAsyncContent(type, {aid: aid});
           assetWidget.gotoTabById(type, true);
         }
@@ -431,107 +470,140 @@ assetWidget.allowDrop = false;
    * Bind tooltip links.
    */
   assetWidget.initTooltips = function ($context) {
-
-    // Each tooltip toggle to find its match.
     $context.find(".tooltip-call").once('asset-tooltips', function () {
       var $this = $(this);
-      var $order = $this.attr('class').match(/order-[\d]+/);
-      var $tooltipContent = $context.find(".tooltips-container ." + $order);
-      var $module = assetWidget.$widget;
+      $this.click(function(event) {
+        // Show ajax loader.
+        assetWidget.showTooltipLoader();
 
-      /*
-       *  Tooltip content's width calculation, note that we need
-       *  .thumbnail element content have the "width" and "height" attributes to be set
-       *  for webkit proper calculation.
-       */
-      $tooltipContent.css({'right':'-9999px', 'top':'-9999px', 'visibility':'hidden'});
-      $tooltipContent.show();
+        // @todo: add view mode toggle support.
+        var viewMode = 'tooltip';
+        var order = $this.attr('class').match(/order-(\d+)/);
 
-      // Get width based on tooltip content.
-      var imgWidth = $tooltipContent.find(".thumbnail img").width();
-      var videoWidth = $tooltipContent.find(".thumbnail object").width();
+        if (order) {
+          var orderClass = (order[0] != null) ? order[0] : null;
+          var assetAid = (order[1] != null) ? order[1] : null;
 
-      var elWidth;
-      if (imgWidth) {
-        elWidth = imgWidth;
-      }
-      else if (videoWidth) {
-        elWidth = videoWidth;
-      }
-      else {
-        // Present width to the default tooltip size.
-        elWidth = 328;
-      }
+          if (assetAid && orderClass) {
+            var $tooltipWrapper = assetWidget.$widget.find('.active-tooltip-container');
+            var $tooltip = $tooltipWrapper.children();
+            $tooltip.addClass('tooltip-media ' + orderClass);
 
-      // Set width.
-      $tooltipContent.find(".inner-el").width(elWidth);
+            var $pointer = $tooltip.find('.tooltip-inner span.pointer');
+            $pointer.hide();
 
-      var $matchHeight = $tooltipContent.height();
-      $tooltipContent.hide();
-      $tooltipContent.css({'right':'auto', 'top':'auto', 'visibility':'visible'});
+            // @todo: Add js caching for last 5-10 frames.
+            var $frame = $('<iframe />')
+              .attr({
+                'src': Drupal.settings.basePath + 'assets/tooltip/' + assetAid + '/' + viewMode,
+                'frameBorder' : 0,
+                'allowtransparency' : true
+              });
 
-      if ($tooltipContent.hasClass('tooltip-media')) {
-        $this.click(function () {
-          var $activeTooltipContainer = $('.active-tooltip-container');
+            // To avoid white flash from iframe, hide it before loading.
+            $frame.css('visibility', 'hidden');
 
-          // Show only other tooltip.
-          if (!$activeTooltipContainer.find('.' + $order).size()) {
-            assetWidget.hideTooltips();
-
-            // Insert tooltip content to common wrapper to fit styles.
-            $activeTooltipContainer.html($tooltipContent.parent().html());
-            var $activeTooltip = $activeTooltipContainer.children();
-
-            $activeTooltip.click(function (event) {
-              event.stopPropagation();
+            $frame.load(function () {
+              assetWidget.hideTooltipLoader();
+              $frame.css('visibility', 'visible');
+              $pointer.show();
             });
 
-            $activeTooltip.find(".close").click(function () {
+            // Show wrapper.
+            $tooltipWrapper.show();
+
+            // Insert tooltip content to common wrapper to fit styles.
+            var $frameWrapper = $tooltip.find('.tooltip-content-wrapper');
+            $frameWrapper.html($frame);
+
+            // Handle close link.
+            $tooltip.find(".close").click(function () {
               assetWidget.hideTooltips();
             });
 
-            var $windowHeight = $(window).height();
-            var $moduleOffset = $module.offset();
-            var $thisHeight = $this.height();
-            var $thisOffset = $this.offset();
-            var $top = $thisOffset.top - $moduleOffset.top - 10;
-            var $left = $thisOffset.left - $moduleOffset.left - $activeTooltip.outerWidth() + 10;
+            // Tooltip position calculator.
+            var $module = assetWidget.$widget;
+            var moduleOffset = $module.offset();
 
-            // Check for the element going below the viewport
-            if (($matchHeight + $thisOffset.top) > $windowHeight) {
-              $activeTooltip.addClass("tooltip-show-below");
-              $top = $thisOffset.top - $moduleOffset.top - $matchHeight + $thisHeight + 25;
-              $activeTooltip.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass('tooltip-show');
-            }
-            else {
-              $activeTooltip.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass('tooltip-show');
-            }
-          }
-        });
-      // @todo This case used for saved bookmarks tab and not used now.
-      } else if ($tooltipContent.hasClass('tooltip-parameters')) {
-        $this.click(function () {
-          assetWidget.hideTooltips();
-          var $windowHeight = $(window).height();
-          var $moduleOffset = $module.offset();
-          var $thisHeight = $($this).height();
-          var $thisOffset = $($this).offset();
-          var $top = $thisOffset.top - $moduleOffset.top - 28;
-          var $left = $thisOffset.left - $moduleOffset.left - $tooltipContent.outerWidth() + 10;
+            var thisHeight = $this.height();
+            var thisOffset = $this.offset();
 
-          // Check for the element going below the viewport
-          if (($matchHeight + $thisOffset.top) > $windowHeight) {
-            $tooltipContent.addClass("tooltip-show-below");
-            $top = $thisOffset.top - $moduleOffset.top - $matchHeight + $thisHeight + 30;
-            $tooltipContent.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass('tooltip-show');
-          }
-          else {
-            $tooltipContent.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass('tooltip-show');
-          }
-        });
-      }
+            var windowHeight = $(window).height();
+            var windowWidth = $(window).width();
+            var windowOffset = thisOffset.top - $(window).scrollTop();
 
-      $this.click(function (event) {
+            // Create function to call from children frame window.
+            assetWidget.tooltipsPositionCalc = function (frameWidth, frameHeight) {
+              // Handle size after frame load.
+              if (frameWidth && frameHeight) {
+                var $frame = $frameWrapper.children();
+
+                // Calculate width due to offset and window width.
+                var widthResized = false;
+                if ((thisOffset.left + frameWidth) > windowWidth) {
+                  // Add 100 px to calculate size, it makes indent always looks good.
+                  if ((frameWidth + 100) > thisOffset.left) {
+                    // 50 px is needed to proper indentation from left border of page.
+                    frameWidth = thisOffset.left - 50;
+                    widthResized = true;
+                  }
+                }
+
+                // Calculate height due to offset, window height, scroll position.
+                if (frameHeight > (windowHeight - windowOffset)) {
+                  // Case when window offset value is almost equals frame size:
+                  // We should equate them with taking into account wrapper height, which is hardcoded to 50.
+                  if ((windowOffset + 50) > (windowHeight / 2)) {
+                    if (frameHeight > (windowOffset + thisHeight - 50)) {
+                      frameHeight = windowOffset + thisHeight - 50;
+                    }
+                  }
+                  else {
+                    // 50px is needed to proper indentation from page bottom.
+                    frameHeight = windowHeight - windowOffset - 50;
+                  }
+                }
+
+                // Sometimes need to add extra width to make gallery preview looks good.
+                if (!widthResized) {
+                  frameWidth = frameWidth + 50;
+                }
+
+                // Pass attributes to iframe.
+                $frame.attr('width', frameWidth).attr('height', frameHeight);
+              }
+
+              var $top = thisOffset.top - moduleOffset.top - 10;
+              var $left = thisOffset.left - moduleOffset.left - $tooltip.outerWidth() + 10;
+
+              // Get whole tooltip size to determine display direction.
+              var tootipHeight = $tooltip.height();
+
+              // Display upwards.
+              if (tootipHeight < (windowOffset + thisHeight)) {
+                if (!$tooltip.hasClass('tooltip-show-below')) {
+                  $tooltip.addClass('tooltip-show-below');
+                }
+
+                $top = thisOffset.top - moduleOffset.top - tootipHeight + thisHeight + 25;
+                $tooltip.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass("tooltip-show-below").addClass('tooltip-show');
+              }
+              // Display downwards.
+              else {
+                if ($tooltip.hasClass('tooltip-show-below')) {
+                  $tooltip.removeClass('tooltip-show-below');
+                }
+
+                $tooltip.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass('tooltip-show');
+              }
+            };
+
+            // Calculate initial position of tooltip.
+            assetWidget.tooltipsPositionCalc();
+          }
+        }
+
+        // Make this function the only for this selector.
         event.stopPropagation();
       });
     });
@@ -550,11 +622,16 @@ assetWidget.allowDrop = false;
       });
     });
 
-    // Hide tooltips on scrolling.
+    // Hide tooltips on widget scrolling.
     $context.find(".items-wrap").once(function () {
       $(this).bind('scroll', function () {
         assetWidget.hideTooltips();
       })
+    });
+
+    // Hide tooltips on window scrolling.
+    $(window).scroll(function() {
+      assetWidget.hideTooltips();
     });
 
     // Text input tooltips of search filters description.
@@ -570,6 +647,33 @@ assetWidget.allowDrop = false;
       });
     });
   };
+
+  /**
+   * Disable page scroll while cursor hover widget or tooltip.
+   */
+  assetWidget.disablePageScroll = function ($context) {
+    assetWidget.$widget.hover(
+      function () {
+        $context.bind('mousewheel DOMMouseScroll', function (e) {
+          // IE7, IE8, Chrome, Safari.
+          if (!e) {
+            e = window.event;
+          }
+
+          // Chrome, Safari, Firefox.
+          if (e.preventDefault) {
+            e.preventDefault();
+          }
+
+          // IE7, IE8.
+          e.returnValue = false;
+        });
+      },
+      function () {
+        $context.unbind('mousewheel DOMMouseScroll');
+      }
+    );
+  }
 
   /**
    * Bind reaction to handle search filters tooltip.
@@ -590,8 +694,8 @@ assetWidget.allowDrop = false;
    * Hide all opened tooltips.
    */
   assetWidget.hideTooltips = function () {
-    // Remove active tooltip's HTML.
-    $('.active-tooltip-container').html('');
+    // Remove active tooltip's HTML and hide wrapper.
+    assetWidget.$widget.find('.active-tooltip-container').hide().find('.tooltip-content-wrapper').html('');
   };
 
   /**
@@ -618,7 +722,12 @@ assetWidget.allowDrop = false;
             assetWidget.allowDrop = false;
             var $match = $form.find('.' + classMatch + ':not(".item-drag, .assets-drag-processed")');
 
+            // Hide tooltips.
             assetWidget.hideTooltips();
+
+            // Enable page scrolling.
+            $(document).unbind('mousewheel DOMMouseScroll');
+
             // Add refuse style to all elements.
             // Handle text area.
             $form.find('textarea.match-field').parent().addClass('field-refuse');
@@ -725,7 +834,7 @@ assetWidget.allowDrop = false;
 
             if ($droppedField.size()) {
               var draggedAssetAid = ui.draggable.children().attr('class').match(/order-(\d+)/);
-              draggedAssetAid = (draggedAssetAid && (draggedAssetAid[0] != null)) ? draggedAssetAid.pop() : null;
+              draggedAssetAid = (draggedAssetAid && (draggedAssetAid[1] != null)) ? draggedAssetAid.pop() : null;
 
               if (draggedAssetAid) {
                 if ($droppedField.is('textarea') && CKEDITOR && Assets) {

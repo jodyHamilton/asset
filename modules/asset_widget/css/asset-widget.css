@@ -1181,30 +1181,32 @@
   display: block;
   position: relative;
 }
-.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .item-inner .sizes .low {
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .item-inner .low {
+  display: block;
+  float: left;
   width: 7px;
   height: 8px;
   background: url('../images/sprite-a.png') no-repeat -54px -499px;
-  display: inline-block;
   position: relative;
   top: 1px;
   cursor: pointer;
   margin: 0 3px 0 3px;
 }
-.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .item-inner .sizes .low:hover {
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .item-inner .low:hover {
   background: url('../images/sprite-a.png') no-repeat -70px -499px;
 }
-.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .item-inner .sizes .high {
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .item-inner .high {
+  display: block;
+  float: left;
   width: 7px;
   height: 8px;
   background: url('../images/sprite-a.png') no-repeat -54px -486px;
-  display: inline-block;
   position: relative;
   top: 1px;
   cursor: pointer;
   margin: 0 0 0 3px;
 }
-.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .item-inner .sizes .high:hover {
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .item-inner .high:hover {
   background: url('../images/sprite-a.png') no-repeat -70px -486px;
 }
 .assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .item.match-audio,
@@ -1763,7 +1765,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .loading {
+.assets-module .assets-module-inner .loading {
   width: 64px;
   height: 64px;
   position: absolute;
@@ -1778,6 +1780,11 @@
   -o-border-radius: 5px;
   border-radius: 5px;
 }
+
+.assets-module .assets-module-inner .active-tooltip-container .tooltip .masked {
+  background-color: #e1dedc;
+}
+
 .assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .hidden {
   visibility: hidden;
 }

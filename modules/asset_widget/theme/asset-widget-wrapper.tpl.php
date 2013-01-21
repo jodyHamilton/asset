@@ -37,6 +37,17 @@
         </div>
       <?php endif; ?>
     </div>
-    <div class="active-tooltip-container"></div>
+    <div class="active-tooltip-container">
+      <div class="tooltip">
+        <div class="tooltip-inner masked">
+          <span class="pointer"></span>
+          <div class="tooltip-content-wrapper"></div>
+          <div class="loading">
+            <?php print $loader; ?>
+          </div>
+          <a href="javascript: void(0)" class="close" title="<?php print t('Close popup'); ?>"><?php print t('close'); ?></a>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

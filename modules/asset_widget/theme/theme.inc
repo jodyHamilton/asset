@@ -48,17 +48,15 @@ function template_preprocess_asset_widget_wrapper(&$vars) {
  */
 function template_preprocess_asset_widget_edit_buttons(&$vars) {
   if (!empty($vars['asset'])) {
-    if ($vars['preview']) {
-      $vars['preview_link'] = l(
-        '<span class="ico"></span>' . t('Preview'),
-        "javascript: void(0)",
-        array(
-          'html' => TRUE,
-          // To leave raw href.
-          'external' => TRUE,
-        )
-      );
-    }
+    $vars['preview_link'] = l(
+      '<span class="ico"></span>' . t('Preview'),
+      "javascript: void(0)",
+      array(
+        'html' => TRUE,
+        // To leave raw href.
+        'external' => TRUE,
+      )
+    );
 
     // @todo after applying of custom perms patch, rework it.
     if (user_access('administer assets')) {
@@ -107,9 +105,10 @@ function template_preprocess_asset__widget_search(&$vars) {
     'asset_widget_edit_buttons',
     array(
       'asset' => $vars['asset'],
-      'preview' => $vars['media_field_tooltip'],
     )
   );
+
+  $vars['view_mode_switch'] = theme('asset_widget_view_mode_switch_block', array('asset' => $vars['asset']));
 }
 
 /**
@@ -118,42 +117,55 @@ function template_preprocess_asset__widget_search(&$vars) {
  * @see asset--image--widget-search.tpl.php
  */
 function template_preprocess_asset__image__widget_search(&$vars) {
+  // Listing content.
   $image = field_get_items('asset', $vars['asset'], 'field_asset_image');
   if (!empty($image[0]['uri'])) {
-    $vars['media_field'] = theme(
-      'image_style',
+    $vars['media_field'] = field_view_value(
+      'asset',
+      $vars['asset'],
+      'field_asset_image',
+      $image[0],
       array(
-        'style_name' => 'asset_image_widget_search',
-        'path' => $image[0]['uri'],
-      )
-    );
-
-    $vars['media_field_tooltip'] = theme(
-      'image_style',
-      array(
-        'style_name' => 'asset_image_widget_search_tooltip',
-        'path' => $image[0]['uri'],
-      )
-    );
-
-    $vars['size'] = t(
-      '@width / @height px',
-      array(
-        '@width' => $image[0]['width'],
-        '@height' => $image[0]['height'],
+        'type' => 'image',
+        'settings' => array(
+          'image_style' => 'asset_image_widget_search',
+          'image_link' => '',
+        ),
       )
     );
   }
 
   $description = field_get_items('asset', $vars['asset'], 'field_asset_image_description');
-  if (!empty($description[0]['safe_value'])) {
-    $vars['description'] = truncate_utf8($description[0]['safe_value'], 140, TRUE, TRUE);
+  if (!empty($description[0]['value'])) {
+    $vars['short_description'] = field_view_value(
+      'asset',
+      $vars['asset'],
+      'field_asset_image_description',
+      $description[0],
+      array(
+        'type' => 'text_trimmed',
+        'settings' => array(
+          'trim_length' => '140',
+        ),
+      )
+    );
   }
 
   // @todo: change wrapper for copyright in template.
   $copyright = field_get_items('asset', $vars['asset'], 'field_asset_image_copyright');
-  if (!empty($copyright[0]['safe_value'])) {
-    $vars['copyright'] = $copyright[0]['safe_value'];
+  if (!empty($copyright[0]['value'])) {
+    $vars['short_copyright'] = field_view_value(
+      'asset',
+      $vars['asset'],
+      'field_asset_image_copyright',
+      $copyright[0],
+      array(
+        'type' => 'text_trimmed',
+        'settings' => array(
+          'trim_length' => '30',
+        ),
+      )
+    );
   }
 }
 
@@ -163,21 +175,37 @@ function template_preprocess_asset__image__widget_search(&$vars) {
  * @see asset--image--widget-search.tpl.php
  */
 function template_preprocess_asset__video__widget_search(&$vars) {
+  // Listing content.
   $video = field_get_items('asset', $vars['asset'], 'field_asset_video_file');
   if (!empty($video[0]['snapshot'])) {
-    $vars['media_field'] = theme(
-      'image',
+    $vars['media_field'] = field_view_value(
+      'asset',
+      $vars['asset'],
+      'field_asset_video_file',
+      $video[0],
       array(
-        'path' => $video[0]['snapshot'],
+        'type' => 'emvideo_snapshot',
+        'settings' => array(
+          'width' => '100',
+        ),
       )
     );
-
-    $vars['media_field_tooltip'] = asset_widget_build_video_field_output(NULL, $video);
   }
 
   $description = field_get_items('asset', $vars['asset'], 'field_asset_video_desc');
-  if (!empty($description[0]['safe_value'])) {
-    $vars['description'] = truncate_utf8($description[0]['safe_value'], 140, TRUE, TRUE);
+  if (!empty($description[0]['value'])) {
+    $vars['short_description'] = field_view_value(
+      'asset',
+      $vars['asset'],
+      'field_asset_video_desc',
+      $description[0],
+      array(
+        'type' => 'text_trimmed',
+        'settings' => array(
+          'trim_length' => '140',
+        ),
+      )
+    );
   }
 }
 
@@ -196,8 +224,19 @@ function template_preprocess_asset__audio__widget_search(&$vars) {
  */
 function template_preprocess_asset__document__widget_search(&$vars) {
   $description = field_get_items('asset', $vars['asset'], 'field_asset_document_desc');
-  if (!empty($description[0]['safe_value'])) {
-    $vars['description'] = truncate_utf8($description[0]['safe_value'], 140, TRUE, TRUE);
+  if (!empty($description[0]['value'])) {
+    $vars['short_description'] = field_view_value(
+      'asset',
+      $vars['asset'],
+      'field_asset_document_desc',
+      $description[0],
+      array(
+        'type' => 'text_trimmed',
+        'settings' => array(
+          'trim_length' => '140',
+        ),
+      )
+    );
   }
 }
 
@@ -220,27 +259,36 @@ function template_preprocess_asset__gallery__widget_search(&$vars) {
   if (!empty($image_assets[0]['target_id']) && ($asset = asset_load($image_assets[0]['target_id']))) {
     $image = field_get_items('asset', $asset, 'field_asset_image');
     if (!empty($image[0]['uri'])) {
-      $vars['media_field'] = theme(
-        'image_style',
+      $vars['media_field'] = field_view_value(
+        'asset',
+        $asset,
+        'field_asset_image',
+        $image[0],
         array(
-          'style_name' => 'asset_image_widget_search',
-          'path' => $image[0]['uri'],
-        )
-      );
-
-      $vars['media_field_tooltip'] = theme(
-        'image_style',
-        array(
-          'style_name' => 'asset_image_widget_search_tooltip',
-          'path' => $image[0]['uri'],
+          'type' => 'image',
+          'settings' => array(
+            'image_style' => 'asset_image_widget_search',
+            'image_link' => '',
+          ),
         )
       );
     }
   }
 
   $description = field_get_items('asset', $vars['asset'], 'field_asset_gallery_desc');
-  if (!empty($description[0]['safe_value'])) {
-    $vars['description'] = truncate_utf8($description[0]['safe_value'], 140, TRUE, TRUE);
+  if (!empty($description[0]['value'])) {
+    $vars['short_description'] = field_view_value(
+      'asset',
+      $vars['asset'],
+      'field_asset_gallery_desc',
+      $description[0],
+      array(
+        'type' => 'text_trimmed',
+        'settings' => array(
+          'trim_length' => '140',
+        ),
+      )
+    );
   }
 }
 
@@ -251,4 +299,46 @@ function template_preprocess_asset__gallery__widget_search(&$vars) {
 function template_preprocess_asset_widget_asset_form_page(&$vars) {
   $vars['title'] = drupal_get_title();
   $vars['messages'] = $vars['page']['#show_messages'] ? theme('status_messages') : '';
+}
+
+/**
+ * Return html for asset view mode switch block.
+ */
+function theme_asset_widget_view_mode_switch_block(&$vars) {
+  $output = '';
+
+  if (!empty($vars['asset'])) {
+    if (($view_modes = _assets_get_wysiwyg_modes($vars['asset']->type)) && is_array($view_modes)) {
+      foreach ($view_modes as &$view_mode) {
+        $view_mode = "<strong>$view_mode</strong>";
+      }
+
+      $output = theme(
+        'item_list',
+        array(
+          'items' => $view_modes,
+          'attributes' => array(
+            'class' => 'size sizes',
+            'style' => 'float:left;',
+          ),
+        )
+      );
+    };
+  }
+
+  // Store allowed view modes in js.
+  static $added = FALSE;
+  if (!$added) {
+    drupal_add_js(
+      array(
+        'assetWidget' => array(
+          'assetWysiwygModes' => variable_get('assets_wysiwyg_modes', array()),
+        )
+      ),
+      'setting'
+    );
+    $added = TRUE;
+  }
+
+  return $output;
 }
