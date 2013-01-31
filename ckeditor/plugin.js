@@ -4,26 +4,30 @@ var Assets;
     tagCache = {},
     cutted = null;
 
-    Assets = {
+  Assets = {
+    selectedElement: null,
 
-    selectedElement : null,
-
-    deselect : function () {
+    deselect: function () {
       var element = null, removeSelectedClass = function (el) {
-        var  cl, i, cl_arr;
+        var cl, i, cl_arr;
         if (el) {
           if (el.removeClass) {
             el.removeClass('selected');
-          } else if (el.attributes && el.attributes['class']) {
-            cl = el.attributes['class'];
-            cl_arr = cl.split(' ');
-            cl = [];
-            for (i = 0; i < cl_arr.length; i = i + 1) {
-              if (cl_arr[i] !== 'selected') {
-                cl.push(cl_arr[i]);
+          }
+          else {
+            if (el.attributes && el.attributes['class']) {
+              cl = el.attributes['class'];
+              cl_arr = cl.split(' ');
+              cl = [];
+
+              for (i = 0; i < cl_arr.length; i = i + 1) {
+                if (cl_arr[i] !== 'selected') {
+                  cl.push(cl_arr[i]);
+                }
               }
+
+              el.attributes['class'] = cl.join(' ');
             }
-            el.attributes['class'] = cl.join(' ');
           }
         }
         return el;
@@ -32,158 +36,201 @@ var Assets;
       if (arguments.length && arguments[0]) {
         element = removeSelectedClass(element);
       }
+
       if (this.selectedElement) {
         removeSelectedClass(this.selectedElement);
         this.selectedElement = null;
       }
+
       return element;
     },
 
-    select : function (element) {
+    select: function (element) {
       this.deselect();
       this.selectedElement = element;
       this.selectedElement.addClass('selected');
     },
 
-    getSelected : function (editor) {
+    getSelected: function (editor) {
       if (this.selectedElement) {
         return this.selectedElement;
       }
-      var node, range = editor.getSelection().getRanges()[0];
+
+      var range = editor.getSelection().getRanges()[0];
       range.shrink(CKEDITOR.SHRINK_TEXT);
-      node = range.startContainer;
-      while (node && !(node.type === CKEDITOR.NODE_ELEMENT && node.data('asset-cid'))) {
-        node = node.getParent();
+
+      if (range.startContainer) {
+        var node = range.startContainer;
+
+        while (node && !(node.type === CKEDITOR.NODE_ELEMENT && node.data('asset-cid'))) {
+          node = node.getParent();
+        }
+
+        return node;
       }
-      return node;
     },
 
-    parseId : function (tag_id) {
-      var arr = tag_id.split(':'), obj = {'aid' : arr[0], 'type' : arr[1], 'hash' : arr[2]};
+    parseId: function (tag_id) {
+      var arr = tag_id.split(':'), obj = {'aid': arr[0], 'type': arr[1], 'hash': arr[2]};
       return arguments.length > 1 ? obj[arguments[1]] : obj;
     },
 
-    generateId : function (tag_id) {
+    generateId: function (tag_id) {
       var tagObj = this.parseId(tag_id), time = new Date().getTime();
       return [tagObj.aid, tagObj.type, time].join(':');
     },
 
-    getTagData : function (tag) {
-      var matches = tag.match(/\[\[asset:([_a-zA-Z0-9]+):([0-9]+)\s\{((\n|.)*?)\}\]\]/),
-        params = {aid: 0, params : {}}, paramsString;
+    getTagData: function (tag) {
+      var params = {};
+      var matches = tag.match(/\[\[asset:([_a-zA-Z0-9]+):([0-9]+)\s\{((\n|.)*?)\}\]\]/);
+
       if (matches) {
-        paramsString = matches[3];
+        var paramsString = matches[3];
         paramsString = '{' + paramsString + '}';
 
         try {
           params = JSON.parse(paramsString);
           params.aid = matches[2];
           params.type = matches[1];
-        }
-        catch(err) {
 
+          if (!params.mode) {
+            params.mode = 'full';
+          }
+
+          if (!params.align || (params.mode == 'full')) {
+            params.align = 'none';
+          }
+        }
+        catch (err) {
+          // Empty error handler.
         }
       }
+
       return params;
     },
 
-    dialog : function (editor, type) {
+    dialog: function (editor, type) {
       return function () {
         return {
-          title : 'Media Assets',
-          minWidth : 800,
-          minHeight : 600,
-          contents : [{
-            id : 'asset_frame',
-            label : 'Add a media asset',
-            expand : true,
-            elements : [
-              {
-                type : 'iframe',
-                src : Drupal.settings.basePath + 'admin/assets/add/' + type + '/?render=popup',
-                width : '100%',
-                height : '100%'
-              }
-            ]
+          title: 'Media Assets',
+          minWidth: 800,
+          minHeight: 600,
+          contents: [{
+            id: 'asset_frame',
+            label: 'Add a media asset',
+            expand: true,
+            elements: [{
+              type: 'iframe',
+              src: Drupal.settings.basePath + 'admin/assets/add/' + type + '/?render=popup',
+              width: '100%',
+              height: '100%'
+            }]
           }],
-          buttons : [CKEDITOR.dialog.cancelButton]
+          buttons: [CKEDITOR.dialog.cancelButton]
         };
       };
     },
 
-    openDialog : function (editor, dialogName, src, element) {
-      editor.openDialog(dialogName, function() {
+    openDialog: function (editor, dialogName, src, element) {
+      editor.openDialog(dialogName, function () {
         this.definition.contents[0].elements[0].src = src;
+
         if (typeof(element) !== 'undefined') {
           this._outdatedAssetEl = element;
         }
       });
     },
 
-    searchDialog : function() {
+    searchDialog: function () {
       return {
-        title : 'Media Assets',
-        minWidth : 1000,
-        minHeight : 600,
-        contents : [{
-          id : 'asset_frame',
-          label : 'Choose an asset from the library',
-          expand : true,
-          elements : [
-            {
-              type : 'iframe',
-              src : Drupal.settings.basePath + 'admin/assets/search?render=popup',
-              width : '100%',
-              height : '100%',
-              id : 'asset_frame_iframe',
+        title: 'Media Assets',
+        minWidth: 1000,
+        minHeight: 600,
+        contents: [{
+          id: 'asset_frame',
+          label: 'Choose an asset from the library',
+          expand: true,
+          elements: [{
+            type: 'iframe',
+            src: Drupal.settings.basePath + 'admin/assets/search?render=popup',
+            width: '100%',
+            height: '100%',
+            id: 'asset_frame_iframe',
 
-              onContentLoad : function() {
-                $(this.getElement().$.contentDocument.body).click(
-                  function (event) {
-                    var target = event.target, dialog, element, wysiwyg, html;
-                    if ($(target).hasClass('assets-item-button')) {
-                      var id_arr = target.id.substr(11).split('-'),
-                        aid = (id_arr.shift()),
-                        type = (id_arr).join('-'),
-                        tag_id = [aid, type, new Date().getTime()].join(':');
-                        html = Assets.getDataById(tag_id);
-                        dialog =  CKEDITOR.dialog.getCurrent();
-                      if (html) {
-                        element = CKEDITOR.dom.element.createFromHtml(html);
-                        element.setAttribute('contentEditable', 'false');   //Hello, Chrome
-                        dialog._.editor.insertElement(element);
-                        if (CKEDITOR.env.gecko && html.search(/<object /i) > 0) {
-                          wysiwyg = dialog._.editor.getMode();
-                          wysiwyg.loadData(wysiwyg.getData());
-                        }
+            onContentLoad: function () {
+              $(this.getElement().$.contentDocument.body).click(
+                function (event) {
+                  var target = event.target, dialog, element, wysiwyg, html;
+
+                  if ($(target).hasClass('assets-item-button')) {
+                    var id_arr = target.id.substr(11).split('-'),
+                      aid = (id_arr.shift()),
+                      type = (id_arr).join('-'),
+                      tag_id = [aid, type, new Date().getTime()].join(':');
+
+                    html = Assets.getDataById(tag_id);
+                    dialog = CKEDITOR.dialog.getCurrent();
+                    if (html) {
+                      element = CKEDITOR.dom.element.createFromHtml(html);
+                      element.setAttribute('contentEditable', 'false');
+                      dialog._.editor.insertElement(element);
+
+                      if (CKEDITOR.env.gecko && html.search(/<object /i) > 0) {
+                        wysiwyg = dialog._.editor.getMode();
+                        wysiwyg.loadData(wysiwyg.getData());
                       }
-                      dialog.hide();
                     }
+
+                    dialog.hide();
                   }
-                );
-              }
+                }
+              );
             }
-          ]
+          }]
         }],
-        buttons : [CKEDITOR.dialog.cancelButton]
+        buttons: [CKEDITOR.dialog.cancelButton]
       };
     },
 
-    getContainer : function (tagId, tag, content) {
+    getContainer: function (tagId, tag, content) {
       if (tagId && tag && content) {
-        tempContainer.innerHTML = content;
+        var $tempContainer = $(tempContainer);
+        $tempContainer.html(content);
+
+        var $asset_div = $tempContainer.children();
         var params = this.getTagData(tag);
-        var asset_div = tempContainer.firstChild;
-        var align = (params.mode === 'full') ? '' : params.align;
+        var align = (params.mode == 'full') ? 'none' : params.align;
 
-        if (typeof(asset_div) != null) {
-          asset_div.setAttribute('contentEditable', 'false');
-          asset_div.setAttribute('data-cke-editable', 'false');
-          asset_div.setAttribute('data-asset-cid', tagId);
+        if ($asset_div.size()) {
+          $asset_div.attr('contentEditable', 'false');
+          $asset_div.attr('data-cke-editable', 'false');
+          $asset_div.attr('data-asset-cid', tagId);
 
-          if (align == 'left' | 'right') {
-            asset_div.style.styleFloat = align;
-            asset_div.style.cssFloat = align;
+          if ((align == 'left') || (align == 'right')) {
+            // Add special classes for visual feedback in wysiwyg.
+            var $image = $asset_div.find('img');
+            var $video = $asset_div.find('object');
+            if ($image.size() || $video.size()) {
+              if ($image.size()) {
+                $image.css('float', align).siblings('div.field').css('clear', 'both');
+              }
+              else if ($video.size()) {
+                $video.parents('div.field').css('float', align).next('div.field').css('clear', 'both')
+              }
+            }
+            else {
+              if (align == 'left') {
+                $asset_div.removeClass('rteright').addClass('rteleft');
+              }
+
+              if (align == 'right') {
+                $asset_div.removeClass('rteleft').addClass('rteright');
+              }
+            }
+          }
+          // Need for small mode, and none align.
+          else {
+            $asset_div.removeClass('rteleft rteright');
           }
         }
 
@@ -191,27 +238,34 @@ var Assets;
       }
     },
 
-    cache : function (tagId, tag, content) {
-      var container = this.getContainer(tagId, tag, content), html = container.innerHTML;
-      tagCache[tagId] = {tag : tag, html : html};
-      container.innerHTML = '';
+    cache: function (tagId, tag, content) {
+      var html = '';
+      var container = this.getContainer(tagId, tag, content);
+      if (container) {
+        html = container.innerHTML;
+        tagCache[tagId] = {tag: tag, html: html};
+        container.innerHTML = '';
+      }
+
       return html;
     },
-    getTag : function (tagId) {
+
+    getTag: function (tagId) {
       if (typeof(tagCache[tagId]) === 'undefined') {
         this.getDataById(tagId);
       }
+
       return tagCache[tagId].tag;
     },
 
-    getContentByTag : function (tag) {
+    getContentByTag: function (tag) {
       var content = '', tagmatches = [], time, tagId;
       $.ajax({
         type: "POST",
-        url: Drupal.settings.basePath + 'admin/assets/get/',
+        url: Drupal.settings.basePath + 'admin/assets/get',
         data: {tag: tag},
         async: false,
-        success:function (asset_content) {
+        success: function (asset_content) {
           if (typeof(asset_content) == null) {
             content = '';
           }
@@ -223,26 +277,37 @@ var Assets;
 
       tagmatches = tag.match(/\[\[asset:([_a-z0-9]+):([0-9]+)\s\{((.)*?)\}\]\]/);
       time = new Date().getTime();
-      tagId = tagmatches[2] + ':' + tagmatches[1]  + ':' + time;
+      tagId = tagmatches[2] + ':' + tagmatches[1] + ':' + time;
       return this.cache(tagId, tag, content);
     },
 
-    getDataById : function (tagId) {
-      var tag = '', content = '';
-      $.ajax({
-        type: "POST",
-        dataType: "json",
-        url: Drupal.settings.basePath + 'admin/assets/tag/' + tagId,
-        async: false,
-        success:  function (data) {
-          tag = data.tag.replace(/\\"/g, '"');
-          content = data.content;
+    getDataById: function (tagId, viewMode, align) {
+      if (typeof(tagId) != 'undefined') {
+        if (typeof(viewMode) == 'undefined') {
+          viewMode = 'default';
         }
-      });
-      return this.cache(tagId, tag, content);
+
+        if (typeof(align) == 'undefined') {
+          align = 'none';
+        }
+
+        var tag = '', content = '';
+        $.ajax({
+          type: "POST",
+          dataType: "json",
+          url: Drupal.settings.basePath + 'admin/assets/tag/' + tagId + '/' + viewMode + '/' + align,
+          async: false,
+          success: function (data) {
+            tag = data.tag.replace(/\\"/g, '"');
+            content = data.content;
+          }
+        });
+
+        return this.cache(tagId, tag, content);
+      }
     },
 
-    attach : function (content) {
+    attach: function (content) {
       var matches = content.match(/\[\[asset:([_a-z0-9]+):([0-9]+)\s\{((.)*?)\}\]\]/g),
         tag, im, clean_tag, html = '', cid;
 
@@ -250,10 +315,12 @@ var Assets;
         for (im = 0; im < matches.length; im = im + 1) {
           html = '';
           tag = matches[im];
+          // @todo: Check that it works, needed because wysiwyg encodes 2 times.
           clean_tag = tag.replace(/&amp;quot;/g, '"');
+
           for (cid in tagCache) {
             if (tagCache.hasOwnProperty(cid)) {
-               if (clean_tag === tagCache[cid].tag) {
+              if (clean_tag === tagCache[cid].tag) {
                 html = this.cache(this.generateId(cid), clean_tag, tagCache[cid].html);
                 break;
               }
@@ -263,6 +330,7 @@ var Assets;
           if (!html) {
             html = this.getContentByTag(clean_tag);
           }
+
           content = content.replace(tag, html);
         }
       }
@@ -271,12 +339,11 @@ var Assets;
   };
 
   CKEDITOR.plugins.add('asset', {
-      lang : ['en', 'fr', 'ru'],
-      buttons : [],
+      lang: ['en', 'fr', 'ru'],
+      buttons: [],
 
-      requires : ['htmlwriter', 'iframedialog'],
-
-      replaceAsset : function (tag_id, tag) {
+      requires: ['htmlwriter', 'iframedialog'],
+      replaceAsset: function (tag_id, tag) {
         if (Assets.outdated) {
           $.ajax({
             type: "POST",
@@ -285,17 +352,17 @@ var Assets;
               tag: tag
             },
             async: false,
-            success:  function (asset_content) {
+            success: function (asset_content) {
               if (typeof(asset_content) == null) {
                 asset_content = '';
               }
 
               var el = Assets.outdated, container = Assets.getContainer(tag_id, tag, asset_content),
-              html = container.innerHTML;
+                html = container.innerHTML;
               Assets.outdated = null;
 
               if (html) {
-                tagCache[tag_id] = {tag : tag, html : html};
+                tagCache[tag_id] = {tag: tag, html: html};
                 el.getParent() && el.$.parentNode.replaceChild(container.firstChild, el.$);
               }
               container.innerHTML = '';
@@ -305,38 +372,43 @@ var Assets;
       },
 
 
-      init : function (editor) {
-
+      init: function (editor) {
         var path = this.path;
-        editor.on('instanceReady', function(evt) {
+
+        editor.on('instanceReady', function (evt) {
           var editor = evt.editor;
           editor.document.appendStyleSheet(path + 'assets-editor.css');
         });
+
         tagCache = {};
         this.Assets = Assets;
+
         var conf = Drupal.settings.ckeditor.plugins.asset, assetType, type, execFn;
-        if (!conf) return;
+        if (!conf) {
+          return;
+        }
 
         for (assetType in conf) {
           if (conf.hasOwnProperty(assetType)) {
             type = 'asset_' + assetType;
             CKEDITOR.dialog.add(type, Assets.dialog(editor, type));
+
             execFn = function (assetType) {
               return function (editor) {
                 Assets.openDialog(editor, assetType, Drupal.settings.basePath + 'admin/assets/add/' + assetType + '/?render=popup', null);
               };
             };
+
             editor.addCommand(type, {
               exec: execFn(type),
               canUndo: false,
-              editorFocus : CKEDITOR.env.ie || CKEDITOR.env.webkit
+              editorFocus: CKEDITOR.env.ie || CKEDITOR.env.webkit
             });
 
-            //editor.addCommand(type, new CKEDITOR.dialogCommand(type));
             editor.ui.addButton(type, {
-              label : conf[assetType].name, //editor.lang...,
-              command : type,
-              icon : this.path + 'buttons/' + conf[assetType].icon
+              label: conf[assetType].name,
+              command: type,
+              icon: this.path + 'buttons/' + conf[assetType].icon
             });
           }
         }
@@ -349,12 +421,14 @@ var Assets;
               return editor.document.createElement('div');
               break;
           }
+
           return editor.document.createElement('br');
         };
 
         editor.addCommand('addLineAfter', {
           exec: function (editor) {
             var node = Assets.getSelected(editor), newline;
+
             if (node) {
               newline = _getEnterElement(editor);
               newline.insertAfter(node);
@@ -366,6 +440,7 @@ var Assets;
         editor.addCommand('addLineBefore', {
           exec: function (editor) {
             var node = Assets.getSelected(editor), newline;
+
             if (node) {
               newline = _getEnterElement(editor);
               newline.insertBefore(node);
@@ -377,9 +452,9 @@ var Assets;
         CKEDITOR.dialog.add('assetSearch', Assets.searchDialog);
         editor.addCommand('assetSearch', new CKEDITOR.dialogCommand('assetSearch'));
         editor.ui.addButton('assetSearch', {
-          label : editor.lang.assets_btn_search,
-          command : 'assetSearch',
-          icon : this.path + 'search.png'
+          label: editor.lang.assets_btn_search,
+          command: 'assetSearch',
+          icon: this.path + 'search.png'
         });
 
         editor.addCommand('assetOverride', {
@@ -388,82 +463,99 @@ var Assets;
             if (element) {
               Assets.outdated = element;
               tag_id = element.data('asset-cid');
+
+              // @todo: investigate why cache is empty.
+              if (typeof(tagCache[tag_id]) == 'undefined') {
+                // Load asset and create cache entry.
+                Assets.getDataById(tag_id);
+              }
+
               tag = encodeURIComponent(tagCache[tag_id].tag);
+
               src = Drupal.settings.basePath + 'admin/assets/override?render=popup&tag=' + tag;
               Assets.openDialog(editor, 'asset_' + Assets.parseId(tag_id, 'type'), src, element);
             }
           },
           canUndo: false,
-          editorFocus : CKEDITOR.env.ie || CKEDITOR.env.webkit
+          editorFocus: CKEDITOR.env.ie || CKEDITOR.env.webkit
         });
 
         editor.addCommand('assetEdit', {
           exec: function (editor) {
-            var element = Assets.getSelected(editor), tag_id, params, src;
+            var element = Assets.getSelected(editor);
             if (element) {
               Assets.outdated = element;
-              tag_id = element.data('asset-cid');
-              params = Assets.getTagData(tagCache[tag_id].tag);
-              if (!params.align) {
-                params.align = 'none';
+
+              var tag_id = element.data('asset-cid');
+              // @todo: Investigate why cache is empty.
+              if (typeof(tagCache[tag_id]) == 'undefined') {
+                // Load asset and create cache entry.
+                Assets.getDataById(tag_id);
               }
-              src = [
+
+              var params = Assets.getTagData(tagCache[tag_id].tag);
+              var src = [
                 Drupal.settings.basePath + 'admin/assets/edit',
                 params.aid,
                 params.mode,
                 params.align,
                 '?render=popup'
               ].join('/');
+
               Assets.openDialog(editor, 'asset_' + Assets.parseId(tag_id, 'type'), src, element);
             }
           },
           canUndo: false,
-          editorFocus : CKEDITOR.env.ie || CKEDITOR.env.webkit
+          editorFocus: CKEDITOR.env.ie || CKEDITOR.env.webkit
         });
 
         editor.addCommand('assetDelete', {
           exec: function (editor) {
             var element = Assets.getSelected(editor);
+
             if (element) {
               element.remove();
             }
           },
           canUndo: false,
-          editorFocus : CKEDITOR.env.ie || CKEDITOR.env.webkit
+          editorFocus: CKEDITOR.env.ie || CKEDITOR.env.webkit
         });
 
         editor.addCommand('assetCut', {
           exec: function (editor) {
             var element = Assets.getSelected(editor);
+
             if (element) {
               cutted = element;
               element.remove();
             }
           },
           canUndo: false,
-          editorFocus : CKEDITOR.env.ie || CKEDITOR.env.webkit
+          editorFocus: CKEDITOR.env.ie || CKEDITOR.env.webkit
         });
 
         editor.addCommand('assetPaste', {
           exec: function (editor) {
             if (cutted !== null) {
               Assets.deselect(cutted);
-              cutted.setAttribute('contentEditable', 'false');   //Hello, Chrome
+              // @todo: contentEditable can work incorrect in webkit.
+              cutted.setAttribute('contentEditable', 'false');
               editor.insertElement(cutted);
               cutted = null;
             }
           },
           canUndo: false,
-          editorFocus : CKEDITOR.env.ie || CKEDITOR.env.webkit
+          editorFocus: CKEDITOR.env.ie || CKEDITOR.env.webkit
         });
 
-        editor.on('contentDom', function(evt) {
-
-          editor.document.on('click', function(evt) {
+        editor.on('contentDom', function (evt) {
+          editor.document.on('click', function (evt) {
             var element = evt.data.getTarget();
-            while(element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
+
+            while (element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
               element = element.getParent();
             }
+
             if (element) {
               editor.getSelection().selectElement(element);
               Assets.select(element);
@@ -473,10 +565,11 @@ var Assets;
             }
           });
 
-          editor.document.on('mousedown', function(evt) {
+          editor.document.on('mousedown', function (evt) {
             var element = evt.data.getTarget();
+
             if (element.is('img')) {
-              while(element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
+              while (element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
                 element = element.getParent();
               }
               if (element) {
@@ -493,50 +586,47 @@ var Assets;
             label: editor.lang.assets_override,
             command: 'assetOverride',
             group: 'asset',
-            icon : this.path + 'gear.png'
+            icon: this.path + 'gear.png'
           });
 
           editor.addMenuItem('assetedit', {
             label: editor.lang.assets_edit,
             command: 'assetEdit',
             group: 'asset',
-            icon : this.path + 'edit.png'
+            icon: this.path + 'edit.png'
           });
 
           editor.addMenuItem('assetdelete', {
             label: editor.lang.assets_delete,
             command: 'assetDelete',
-            group: 'asset'/*,
-            icon : this.path + 'delete.png'*/
+            group: 'asset'
           });
 
           editor.addMenuItem('assetcut', {
             label: editor.lang.assets_cut,
             command: 'assetCut',
-            group: 'asset'/*,
-            icon : this.path + 'cut.png'*/
+            group: 'asset'
           });
 
           editor.addMenuItem('assetpaste', {
             label: editor.lang.assets_paste,
             command: 'assetPaste',
-            group: 'asset'/*,
-            icon : this.path + 'paste.png'*/
+            group: 'asset'
           });
 
           editor.addMenuGroup('newline', 200);
           editor.addMenuItems({
-            addLineBefore : {
-              label : editor.lang.assets_nl_before,
-              command : 'addLineBefore',
-              group : 'newline',
-              order : 1
+            addLineBefore: {
+              label: editor.lang.assets_nl_before,
+              command: 'addLineBefore',
+              group: 'newline',
+              order: 1
             },
-            addLineAfter : {
-              label : editor.lang.assets_nl_after,
-              command : 'addLineAfter',
-              group : 'newline',
-              order : 2
+            addLineAfter: {
+              label: editor.lang.assets_nl_after,
+              command: 'addLineAfter',
+              group: 'newline',
+              order: 2
             }
           });
         }
@@ -544,9 +634,11 @@ var Assets;
         if (editor.contextMenu) {
           editor.contextMenu.addListener(function (element, selection) {
             var type, conf, menu = {};
+
             while (element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
               element = element.getParent();
             }
+
             if (element) {
               type = Assets.parseId(element.data('asset-cid'), 'type');
               conf = Drupal.settings.ckeditor.plugins.asset[type];
@@ -559,23 +651,25 @@ var Assets;
               menu.assetdelete = CKEDITOR.TRISTATE_ON;
               menu.assetcut = CKEDITOR.TRISTATE_ON;
               menu.addLineBefore = CKEDITOR.TRISTATE_ON;
-              menu.addLineAfter  = CKEDITOR.TRISTATE_ON;
-
-            } else if (cutted !== null) {
-              menu = {assetpaste: CKEDITOR.TRISTATE_ON};
+              menu.addLineAfter = CKEDITOR.TRISTATE_ON;
             }
+            else {
+              if (cutted !== null) {
+                menu = {assetpaste: CKEDITOR.TRISTATE_ON};
+              }
+            }
+
             return menu;
           });
         }
 
-
         // The paste processor here is just a reduced copy of html data processor.
-        var pasteProcessor = function() {
+        var pasteProcessor = function () {
           this.htmlFilter = new CKEDITOR.htmlParser.filter();
         };
 
         pasteProcessor.prototype = {
-          toHtml : function(data) {
+          toHtml: function (data) {
             var fragment = CKEDITOR.htmlParser.fragment.fromHtml(data, false),
               writer = new CKEDITOR.htmlParser.basicWriter();
 
@@ -584,27 +678,34 @@ var Assets;
           }
         };
 
-        editor.on('paste', function(evt) {
+        editor.on('paste', function (evt) {
           var data = evt.data, dataProcessor = new pasteProcessor(), htmlFilter = dataProcessor.htmlFilter,
             processed = {};
 
           htmlFilter.addRules({
-            elements : {
-              'div' : function (element) {
-                var wrapper, tagId,tag_id;
+            elements: {
+              'div': function (element) {
+                var wrapper, tagId, tag_id;
                 Assets.deselect(element);
+
                 if (element.attributes && element.attributes['data-asset-cid']) {
                   tag_id = element.attributes['data-asset-cid'];
-                  if (CKEDITOR.env.webkit) return false; //sorry, Chrome
+
+                  // @todo: Check for webkit this functionality is forbidden.
+                  if (CKEDITOR.env.webkit) {
+                    return false;
+                  }
+
                   if (!processed[tag_id]) {
                     tagId = Assets.generateId(tag_id);
-                    if (typeof(tagCache[tag_id]) === 'undefined') { //shouldn't be happen
+
+                    if (typeof(tagCache[tag_id]) === 'undefined') {
                       Assets.getDataById(tagId);
-                    } else { //add a new cache entry for the new pasted asset (same tag and almost same HTML)
-                      Assets.cache(tagId, tagCache[tag_id].tag, tagCache[tag_id].html);
                     }
+
                     processed[tagId] = 1;
                     wrapper = new CKEDITOR.htmlParser.fragment.fromHtml(tagCache[tagId].html);
+
                     return wrapper.children[0];
                   }
                 }
@@ -615,7 +716,8 @@ var Assets;
 
           try {
             data['html'] = dataProcessor.toHtml(data['html']);
-          } catch (e) {
+          }
+          catch (e) {
             if (typeof(console) !== 'undefined') {
               console.log(editor.lang.assets_error_paste);
             }
@@ -624,7 +726,7 @@ var Assets;
         }, this);
       },
 
-      afterInit : function (editor) {
+      afterInit: function (editor) {
         // Register a filter to displaying placeholders after mode change.
         var dataProcessor = editor.dataProcessor,
           dataFilter = dataProcessor && dataProcessor.dataFilter,
@@ -632,7 +734,7 @@ var Assets;
           HtmlDPtoHtml = dataProcessor && editor.dataProcessor.toHtml;
 
         if (HtmlDPtoHtml) { //Unprotect some flash tags, force democracy
-          editor.dataProcessor.toHtml = function(data, fixForBody) {
+          editor.dataProcessor.toHtml = function (data, fixForBody) {
             var unprotectFlashElementNamesRegex = /(<\/?)cke:((?:object|embed|param)[^>]*>)/gi;
             data = HtmlDPtoHtml.apply(editor.dataProcessor, [data, fixForBody]);
             return data.replace(unprotectFlashElementNamesRegex, '$1$2');
@@ -641,7 +743,7 @@ var Assets;
 
         if (dataFilter) {
           dataFilter.addRules({
-            text : function (text) {
+            text: function (text) {
               return Assets.attach(text);
             }
           });
@@ -649,14 +751,20 @@ var Assets;
 
         if (htmlFilter) {
           htmlFilter.addRules({
-            elements : {
-              'div' : function (element) {
+            elements: {
+              'div': function (element) {
                 if (element.attributes && element.attributes['data-asset-cid']) {
-                  var tagEl, tag = Assets.getTag(element.attributes['data-asset-cid']);
-                  tag = tag.replace( /</g, '&lt;');
-                  tag = tag.replace( />/g, '&gt;');
+                  var tag_id = element.attributes['data-asset-cid'];
 
-                  tagEl = new CKEDITOR.htmlParser.fragment.fromHtml(tag);
+                  if (typeof(tagCache[tag_id]) == 'undefined') {
+                    Assets.getDataById(tag_id);
+                  }
+
+                  var tag = tagCache[tag_id].tag;
+                  tag = tag.replace(/</g, '&lt;');
+                  tag = tag.replace(/>/g, '&gt;');
+
+                  var tagEl = new CKEDITOR.htmlParser.fragment.fromHtml(tag);
                   return tagEl.children[0];
                 }
                 return element;

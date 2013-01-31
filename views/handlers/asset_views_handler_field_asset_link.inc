@@ -24,7 +24,7 @@ class asset_views_handler_field_asset_link extends views_handler_field_entity {
   }
 
   function render($values) {
-    drupal_add_css(drupal_get_path('module', 'asset') . '/theme/assets-library.css');
+    drupal_add_css(ASSET_MODULE_PATH . '/theme/assets-library.css');
     if ($entity = $this->get_value($values)) {
       return $this->render_link($entity, $values);
     }

@@ -7,7 +7,7 @@
 function asset_views_handlers() {
   return array(
     'info' => array(
-      'path' => drupal_get_path('module', 'asset') . '/views/handlers',
+      'path' => ASSET_MODULE_PATH . '/views/handlers',
     ),
     'handlers' => array(
       'asset_views_handler_field_asset_link_edit' => array(

@@ -4,14 +4,18 @@
  * Asset module.
  */
 
+// Includes.
 require_once (dirname(__FILE__) . '/includes/asset.filters.inc');
+
+// Defines.
 define('ASSET_DEFAULT_MODE', 'full');
+define('ASSET_MODULE_PATH', drupal_get_path('module', 'asset'));
 
 /**
  * Implements hook_init().
  */
 function asset_init() {
-  drupal_add_css(drupal_get_path('module', 'asset') . '/theme/assets.css');
+  drupal_add_css(ASSET_MODULE_PATH . '/theme/assets.css');
 }
 
 /**
@@ -326,10 +330,10 @@ function asset_menu() {
     'file' => 'includes/asset.admin.inc',
   );
 
-  $items['admin/assets/tag/%'] = array(
+  $items['admin/assets/tag/%/%/%'] = array(
     'theme callback' => 'asset_get_frontend_theme',
     'page callback' => '_asset_get_tag',
-    'page arguments' => array(3),
+    'page arguments' => array(3, 4, 5),
     'access arguments' => array('administer assets'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/asset.admin.inc',
@@ -494,7 +498,7 @@ function asset_field_extra_fields() {
  * Helper function to get the list of icons
  */
 function _assets_get_icons() {
-  $dir = drupal_get_path('module', 'asset') . '/ckeditor/buttons/';
+  $dir = ASSET_MODULE_PATH . '/ckeditor/buttons/';
   $icons = &drupal_static(__FUNCTION__, array());
 
   if (!$icons) {
@@ -519,7 +523,7 @@ function _assets_get_icons() {
  * Helper function to get supported field types.
  */
 function _assets_get_supported_field_types() {
-  //TODO: provide a hook
+  // @todo: Provide a hook
   return array('text', 'text_long');
 }
 
@@ -563,7 +567,7 @@ function asset_ckeditor_plugin() {
     $plugin_name => array(
       'name' => $plugin_name,
       'desc' => t('Media assets'),
-      'path' => drupal_get_path('module', 'asset') . '/ckeditor/',
+      'path' => ASSET_MODULE_PATH . '/ckeditor/',
       'buttons' => array(),
     )
   );
@@ -589,10 +593,9 @@ function asset_ckeditor_plugin() {
  * Implements hook_preprocess_page().
  *
  *  Trying to hide unnecessary elements
- *
  */
 function asset_preprocess_page(&$variables) {
-  if (isset($_GET['render']) && $_GET['render'] == 'popup') {
+  if (asset_is_popup()) {
     module_invoke_all('suppress');
 
     foreach (element_children($variables['page']) as $key) {
@@ -616,13 +619,21 @@ function asset_preprocess_page(&$variables) {
 }
 
 /**
- * Processes variables for asset-tooltip.tpl.php
- *
- * @see asset-tooltip.tpl.php
+ * Implements hook_library().
  */
-function template_process_asset_tooltip(&$variables) {
-  drupal_add_js(drupal_get_path('module', 'asset') . '/theme/asset-tooltip-inner.js');
-  drupal_add_css(drupal_get_path('module', 'asset') . '/theme/asset-tooltip-inner.css');
+function asset_library() {
+  $libraries['asset_tooltip'] = array(
+    'title' => 'Asset tooltip library',
+    'version' => '1.0',
+    'js' => array(
+      ASSET_MODULE_PATH . '/theme/asset-tooltip-inner.js' => array(),
+    ),
+    'css' => array(
+      ASSET_MODULE_PATH . '/theme/asset-tooltip-inner.css' => array(),
+    ),
+  );
+
+  return $libraries;
 }
 
 /**
@@ -630,10 +641,9 @@ function template_process_asset_tooltip(&$variables) {
  *
  * If the current page request is inside the tooltip, add appropriate classes
  * to the <body> element
- *
  */
 function asset_preprocess_html(&$variables) {
-  if (arg(0) == 'assets' && arg(1) == 'tooltip') {
+  if (asset_is_tooltip()) {
     $variables['classes_array'][] = 'tooltip-iframe-element-body';
   }
 }
@@ -642,8 +652,12 @@ function asset_preprocess_html(&$variables) {
  * Implements hook_page_alter().
  */
 function asset_page_alter(&$page) {
-  $tooltip = arg(0) == 'assets' && arg(1) == 'tooltip';
-  if ((isset($_GET['render']) && $_GET['render'] == 'popup') || $tooltip) {
+  global $theme_key;
+
+  $tooltip = asset_is_tooltip();
+  $popup = asset_is_popup();
+
+  if ($popup || $tooltip) {
     drupal_set_breadcrumb(array());
     module_invoke_all('suppress');
 
@@ -654,9 +668,32 @@ function asset_page_alter(&$page) {
     }
 
     if ($tooltip) {
+      // Add specific theme and library for tooltip iframes.
       $page['#theme'] = 'asset_tooltip';
+      drupal_add_library('asset', 'asset_tooltip');
+    }
+    // Add css in seven theme for popup.
+    elseif ($popup) {
+      $admin_theme = variable_get('admin_theme', 'seven');
+      if ($theme_key == $admin_theme && ($admin_theme == 'seven')) {
+        drupal_add_css(ASSET_MODULE_PATH . '/theme/asset-popup-inner-form.css');
+      }
     }
   }
+}
+
+/**
+ * Helper to determine that current path used for tooltip.
+ */
+function asset_is_tooltip() {
+  return drupal_match_path($_GET['q'], 'assets/tooltip/*');
+}
+
+/**
+ * Helper to determine that current path used for popup.
+ */
+function asset_is_popup() {
+ return isset($_GET['render']) && ($_GET['render'] == 'popup');
 }
 
 /**
@@ -705,7 +742,7 @@ function assets_get_placeholder($asset, array $options = array()) {
  */
 function asset_theme() {
   $base = array(
-    'path' => drupal_get_path('module', 'asset') . '/theme',
+    'path' => ASSET_MODULE_PATH . '/theme',
   );
 
   return array(
@@ -831,7 +868,7 @@ function asset_references_dialog_entity_admin_paths() {
 function asset_views_api() {
   return array(
     'api' => '3.0-alpha1',
-    'path' => drupal_get_path('module', 'asset') . '/views',
+    'path' => ASSET_MODULE_PATH . '/views',
   );
 }
 
@@ -852,7 +889,7 @@ function asset_form_views_exposed_form_alter(&$form, &$form_state) {
   // @see views_exposed_form().
   $destination = drupal_get_destination();
 
-  if (isset($_GET['render']) && ($_GET['render'] == 'popup')) {
+  if (asset_is_popup()) {
     $destination = drupal_parse_url($destination['destination']);
     $form_state['redirect'] = array(
       'path' => $destination['path'],

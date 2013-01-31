@@ -384,6 +384,9 @@ assetWidget.allowDrop = false;
         assetWidget.initMultiselect($(this));
       });
     }
+
+    // View modes switcher.
+    assetWidget.viewModeSwitcher($context);
   };
 
   // Add multiselects support.
@@ -417,6 +420,86 @@ assetWidget.allowDrop = false;
         $current.find(".multiSelect span").text(selectAllMessage);
       }
     };
+  }
+
+  /**
+   * View modes switcher.
+   */
+  assetWidget.viewModeSwitcher = function ($context) {
+    $context.find('.size.sizes').once('asset-view-switch', function(event) {
+      var $this = $(this);
+
+      var current = 0;
+      var step = 1;
+      var visible = 1;
+      var maximum = $this.find('ul li').size();
+
+      var $nextButton = $this.find('span.high');
+      var $prevButton = $this.find('span.low');
+      $prevButton.hide();
+
+      $nextButton.click(function () {
+        assetWidget.hideTooltips();
+        var $this = $(this);
+
+        if (current + step < 0 || current + step > maximum - visible) {
+          return;
+        }
+        else {
+          current = current + step;
+
+          var $currentContainer = $this.siblings('ul');
+          var $activeEl = $currentContainer.find('li.active');
+
+          if ($activeEl.size()) {
+            var $nextEl = $activeEl.removeClass('active').addClass('hidden').next('li');
+            $nextEl.addClass('active').removeClass('hidden');
+            $this.find('ul').css('width', $nextEl.width() + 'px');
+
+            if (!$nextEl.next('li').size()) {
+              $nextButton.hide();
+            }
+
+            if ($nextEl.prev('li').size()) {
+              $prevButton.show();
+            }
+          }
+        }
+
+        return false;
+      });
+
+      $prevButton.click(function () {
+        assetWidget.hideTooltips();
+        var $this = $(this);
+
+        if (current - step < 0 || current - step > maximum - visible) {
+          return;
+        }
+        else {
+          current = current - step;
+
+          var $currentContainer = $this.siblings('ul');
+          var $activeEl = $currentContainer.find('li.active');
+
+          if ($activeEl.size()) {
+            var $prevEl = $activeEl.removeClass('active').addClass('hidden').prev('li');
+            $prevEl.addClass('active').removeClass('hidden');
+            $this.find('ul').css('width', $prevEl.width() + 'px');
+
+            if (!$prevEl.prev('li').size()) {
+              $prevButton.hide();
+            }
+
+            if ($prevEl.next('li').size()) {
+              $nextButton.show();
+            }
+          }
+        }
+
+        return false;
+      });
+    });
   }
 
   /**
@@ -472,134 +555,147 @@ assetWidget.allowDrop = false;
   assetWidget.initTooltips = function ($context) {
     $context.find(".tooltip-call").once('asset-tooltips', function () {
       var $this = $(this);
+
       $this.click(function(event) {
         // Show ajax loader.
         assetWidget.showTooltipLoader();
 
-        // @todo: add view mode toggle support.
-        var viewMode = 'tooltip';
-        var order = $this.attr('class').match(/order-(\d+)/);
+        var $this = $(this);
 
-        if (order) {
-          var orderClass = (order[0] != null) ? order[0] : null;
-          var assetAid = (order[1] != null) ? order[1] : null;
+        // Get value from view mode switcher.
+        var $viewModeContainer = $this.parent().find('.size.sizes ul li.active');
+        if ($viewModeContainer.size()) {
+          var viewModeClass = $viewModeContainer.attr('class').match(/view-(\w+)/);
 
-          if (assetAid && orderClass) {
-            var $tooltipWrapper = assetWidget.$widget.find('.active-tooltip-container');
-            var $tooltip = $tooltipWrapper.children();
-            $tooltip.addClass('tooltip-media ' + orderClass);
+          if (viewModeClass) {
+            var viewMode = (viewModeClass[1] != null) ? viewModeClass[1] : null;
 
-            var $pointer = $tooltip.find('.tooltip-inner span.pointer');
-            $pointer.hide();
+            if (viewMode) {
+              // Get asset aid.
+              var order = $this.attr('class').match(/order-(\d+)/);
+              if (order) {
+                var orderClass = (order[0] != null) ? order[0] : null;
+                var assetAid = (order[1] != null) ? order[1] : null;
 
-            // @todo: Add js caching for last 5-10 frames.
-            var $frame = $('<iframe />')
-              .attr({
-                'src': Drupal.settings.basePath + 'assets/tooltip/' + assetAid + '/' + viewMode,
-                'frameBorder' : 0,
-                'allowtransparency' : true
-              });
+                if (assetAid && orderClass) {
+                  var $tooltipWrapper = assetWidget.$widget.find('.active-tooltip-container');
+                  var $tooltip = $tooltipWrapper.children();
+                  $tooltip.addClass('tooltip-media ' + orderClass);
 
-            // To avoid white flash from iframe, hide it before loading.
-            $frame.css('visibility', 'hidden');
+                  var $pointer = $tooltip.find('.tooltip-inner span.pointer');
+                  $pointer.hide();
 
-            $frame.load(function () {
-              assetWidget.hideTooltipLoader();
-              $frame.css('visibility', 'visible');
-              $pointer.show();
-            });
+                  // @todo: Add js caching for last 5-10 frames.
+                  var $frame = $('<iframe />')
+                    .attr({
+                      'src': Drupal.settings.basePath + 'assets/tooltip/' + assetAid + '/' + viewMode+ '?asset_widget_tooltip=true',
+                      'frameBorder' : 0,
+                      'allowtransparency' : true
+                    });
 
-            // Show wrapper.
-            $tooltipWrapper.show();
+                  // To avoid white flash from iframe, hide it before loading.
+                  $frame.css('visibility', 'hidden');
 
-            // Insert tooltip content to common wrapper to fit styles.
-            var $frameWrapper = $tooltip.find('.tooltip-content-wrapper');
-            $frameWrapper.html($frame);
+                  $frame.load(function () {
+                    assetWidget.hideTooltipLoader();
+                    $frame.css('visibility', 'visible');
+                    $pointer.show();
+                  });
 
-            // Handle close link.
-            $tooltip.find(".close").click(function () {
-              assetWidget.hideTooltips();
-            });
+                  // Show wrapper.
+                  $tooltipWrapper.show();
 
-            // Tooltip position calculator.
-            var $module = assetWidget.$widget;
-            var moduleOffset = $module.offset();
+                  // Insert tooltip content to common wrapper to fit styles.
+                  var $frameWrapper = $tooltip.find('.tooltip-content-wrapper');
+                  $frameWrapper.html($frame);
 
-            var thisHeight = $this.height();
-            var thisOffset = $this.offset();
+                  // Handle close link.
+                  $tooltip.find(".close").click(function () {
+                    assetWidget.hideTooltips();
+                  });
 
-            var windowHeight = $(window).height();
-            var windowWidth = $(window).width();
-            var windowOffset = thisOffset.top - $(window).scrollTop();
+                  // Tooltip position calculator.
+                  var $module = assetWidget.$widget;
+                  var moduleOffset = $module.offset();
 
-            // Create function to call from children frame window.
-            assetWidget.tooltipsPositionCalc = function (frameWidth, frameHeight) {
-              // Handle size after frame load.
-              if (frameWidth && frameHeight) {
-                var $frame = $frameWrapper.children();
+                  var thisHeight = $this.height();
+                  var thisOffset = $this.offset();
 
-                // Calculate width due to offset and window width.
-                var widthResized = false;
-                if ((thisOffset.left + frameWidth) > windowWidth) {
-                  // Add 100 px to calculate size, it makes indent always looks good.
-                  if ((frameWidth + 100) > thisOffset.left) {
-                    // 50 px is needed to proper indentation from left border of page.
-                    frameWidth = thisOffset.left - 50;
-                    widthResized = true;
-                  }
-                }
+                  var windowHeight = $(window).height();
+                  var windowWidth = $(window).width();
+                  var windowOffset = thisOffset.top - $(window).scrollTop();
 
-                // Calculate height due to offset, window height, scroll position.
-                if (frameHeight > (windowHeight - windowOffset)) {
-                  // Case when window offset value is almost equals frame size:
-                  // We should equate them with taking into account wrapper height, which is hardcoded to 50.
-                  if ((windowOffset + 50) > (windowHeight / 2)) {
-                    if (frameHeight > (windowOffset + thisHeight - 50)) {
-                      frameHeight = windowOffset + thisHeight - 50;
+                  // Create function to call from children frame window.
+                  assetWidget.tooltipsPositionCalc = function (frameWidth, frameHeight) {
+                    // Handle size after frame load.
+                    if (frameWidth && frameHeight) {
+                      var $frame = $frameWrapper.children();
+
+                      // Calculate width due to offset and window width.
+                      var widthResized = false;
+                      if ((thisOffset.left + frameWidth) > windowWidth) {
+                        // Add 100 px to calculate size, it makes indent always looks good.
+                        if ((frameWidth + 100) > thisOffset.left) {
+                          // 50 px is needed to proper indentation from left border of page.
+                          frameWidth = thisOffset.left - 50;
+                          widthResized = true;
+                        }
+                      }
+
+                      // Calculate height due to offset, window height, scroll position.
+                      if (frameHeight > (windowHeight - windowOffset)) {
+                        // Case when window offset value is almost equals frame size:
+                        // We should equate them with taking into account wrapper height, which is hardcoded to 50.
+                        if ((windowOffset + 50) > (windowHeight / 2)) {
+                          if (frameHeight > (windowOffset + thisHeight - 50)) {
+                            frameHeight = windowOffset + thisHeight - 50;
+                          }
+                        }
+                        else {
+                          // 50px is needed to proper indentation from page bottom.
+                          frameHeight = windowHeight - windowOffset - 50;
+                        }
+                      }
+
+                      // Sometimes need to add extra width to make gallery preview looks good.
+                      if (!widthResized) {
+                        frameWidth = frameWidth + 50;
+                      }
+
+                      // Pass attributes to iframe.
+                      $frame.attr('width', frameWidth).attr('height', frameHeight);
                     }
-                  }
-                  else {
-                    // 50px is needed to proper indentation from page bottom.
-                    frameHeight = windowHeight - windowOffset - 50;
-                  }
-                }
 
-                // Sometimes need to add extra width to make gallery preview looks good.
-                if (!widthResized) {
-                  frameWidth = frameWidth + 50;
-                }
+                    var $top = thisOffset.top - moduleOffset.top - 10;
+                    var $left = thisOffset.left - moduleOffset.left - $tooltip.outerWidth() + 10;
 
-                // Pass attributes to iframe.
-                $frame.attr('width', frameWidth).attr('height', frameHeight);
+                    // Get whole tooltip size to determine display direction.
+                    var tootipHeight = $tooltip.height();
+
+                    // Display upwards.
+                    if (tootipHeight < (windowOffset + thisHeight)) {
+                      if (!$tooltip.hasClass('tooltip-show-below')) {
+                        $tooltip.addClass('tooltip-show-below');
+                      }
+
+                      $top = thisOffset.top - moduleOffset.top - tootipHeight + thisHeight + 25;
+                      $tooltip.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass("tooltip-show-below").addClass('tooltip-show');
+                    }
+                    // Display downwards.
+                    else {
+                      if ($tooltip.hasClass('tooltip-show-below')) {
+                        $tooltip.removeClass('tooltip-show-below');
+                      }
+
+                      $tooltip.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass('tooltip-show');
+                    }
+                  };
+
+                  // Calculate initial position of tooltip.
+                  assetWidget.tooltipsPositionCalc();
+                }
               }
-
-              var $top = thisOffset.top - moduleOffset.top - 10;
-              var $left = thisOffset.left - moduleOffset.left - $tooltip.outerWidth() + 10;
-
-              // Get whole tooltip size to determine display direction.
-              var tootipHeight = $tooltip.height();
-
-              // Display upwards.
-              if (tootipHeight < (windowOffset + thisHeight)) {
-                if (!$tooltip.hasClass('tooltip-show-below')) {
-                  $tooltip.addClass('tooltip-show-below');
-                }
-
-                $top = thisOffset.top - moduleOffset.top - tootipHeight + thisHeight + 25;
-                $tooltip.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass("tooltip-show-below").addClass('tooltip-show');
-              }
-              // Display downwards.
-              else {
-                if ($tooltip.hasClass('tooltip-show-below')) {
-                  $tooltip.removeClass('tooltip-show-below');
-                }
-
-                $tooltip.css({"top":$top + "px", "left":$left + "px"}).fadeIn(200).addClass('tooltip-show');
-              }
-            };
-
-            // Calculate initial position of tooltip.
-            assetWidget.tooltipsPositionCalc();
+            }
           }
         }
 
@@ -747,14 +843,7 @@ assetWidget.allowDrop = false;
               // We haven't case when we can restrict to add some types to wysiwyg.
               // Add accept style to matched fields.
               var $fieldWrapper = $this.parent();
-              var $multipleFieldWrapper = $this.parents('tr td');
-
-              if ($multipleFieldWrapper.size()) {
-                $multipleFieldWrapper.addClass('field-accept');
-              }
-              else {
-                $fieldWrapper.addClass('field-accept');
-              }
+              $fieldWrapper.addClass('field-accept');
             });
 
             // Blur buttons in original item.
@@ -824,42 +913,60 @@ assetWidget.allowDrop = false;
         // We need drop object to check it's asset type matching.
         drop: function(event, ui) {
           if (assetWidget.allowDrop) {
-            // Get allowed types.
-            var matches = ui.draggable.attr('class').match(/match-([\w]+)/);
-            var classMatch = (matches && (matches[0] != null)) ? matches.shift() : null;
-            if (matches[0]) {
-              var type = matches[0];
-            }
-            var $droppedField = $(event.target).find('.' + classMatch);
+            // Get value from view mode switcher.
+            var $viewModeContainer = ui.helper.prevObject.find('.size.sizes ul li.active');
+            if ($viewModeContainer.size()) {
+              var viewModeClass = $viewModeContainer.attr('class').match(/view-(\w+)/);
 
-            if ($droppedField.size()) {
-              var draggedAssetAid = ui.draggable.children().attr('class').match(/order-(\d+)/);
-              draggedAssetAid = (draggedAssetAid && (draggedAssetAid[1] != null)) ? draggedAssetAid.pop() : null;
+              if (viewModeClass) {
+                var viewMode = (viewModeClass[1] != null) ? viewModeClass[1] : null;
 
-              if (draggedAssetAid) {
-                if ($droppedField.is('textarea') && CKEDITOR && Assets) {
-                  var aid = draggedAssetAid,
-                    tag_id = [aid, type, new Date().getTime()].join(':');
-                  var html = Assets.getDataById(tag_id);
-                  if (html && CKEDITOR && CKEDITOR.instances && CKEDITOR.instances[$droppedField.attr('id')]) {
-                    var editor = CKEDITOR.instances[$droppedField.attr('id')];
-                    var element = CKEDITOR.dom.element.createFromHtml(html);
-                    element.setAttribute('contentEditable', 'false');
-                    editor.insertElement(element);
-                  }
-                }
-                else {
-                  var settings = {
-                    url : Drupal.settings.basePath + 'ajax/asset-widget/drop',
-                    submit : {
-                      aid : draggedAssetAid,
-                      selector_id : $droppedField.attr('id')
+                if (viewMode) {
+                  // Get allowed types.
+                  var matches = ui.draggable.attr('class').match(/match-([\w]+)/);
+                  if (matches) {
+                    var classMatch = matches[0] != null ? matches[0] : null;
+                    var type = matches[1] != null ? matches[1] : null;
+
+                    var $droppedField = $(event.target).find('.' + classMatch);
+                    if ($droppedField.size()) {
+                      var draggedAssetAid = ui.draggable.children().attr('class').match(/order-(\d+)/);
+                      draggedAssetAid = (draggedAssetAid && (draggedAssetAid[1] != null)) ? draggedAssetAid.pop() : null;
+
+                      if (draggedAssetAid) {
+                        // Drop to wysiwyg.
+                        if ($droppedField.is('textarea') && CKEDITOR && Assets) {
+                          var tag_id = [draggedAssetAid, type, new Date().getTime()].join(':');
+
+                          // @todo: Add support for align.
+                          var align = null;
+                          var html = Assets.getDataById(tag_id, viewMode, align);
+
+                          if (html && CKEDITOR && CKEDITOR.instances && CKEDITOR.instances[$droppedField.attr('id')]) {
+                            var editor = CKEDITOR.instances[$droppedField.attr('id')];
+                            var element = CKEDITOR.dom.element.createFromHtml(html);
+
+                            element.setAttribute('contentEditable', 'false');
+                            editor.insertElement(element);
+                          }
+                        }
+                        // Drop to entityreference.
+                        else {
+                          var settings = {
+                            url : Drupal.settings.basePath + 'ajax/asset-widget/drop',
+                            submit : {
+                              aid : draggedAssetAid,
+                              selector_id : $droppedField.attr('id')
+                            }
+                          };
+
+                          // Send AJAX request to fetch rendered entity or label.
+                          var ajax = new Drupal.ajax(false, false, settings);
+                          ajax.eventResponse(ajax, {});
+                        }
+                      }
                     }
-                  };
-
-                  // Send AJAX request to fetch rendered entity or label.
-                  var ajax = new Drupal.ajax(false, false, settings);
-                  ajax.eventResponse(ajax, {});
+                  }
                 }
               }
             }

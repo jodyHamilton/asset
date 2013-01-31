@@ -11,9 +11,15 @@ function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
   if (!empty($asset)) {
     $clone = clone($asset);
     $clone->in_editor = $in_editor;
-    $params_string = html_entity_decode($params_string, ENT_COMPAT, 'UTF-8');
+
+    if (!$in_editor) {
+      // Need double decode if ckeditor plugin HTML entities is enabled.
+      $params_string = html_entity_decode(html_entity_decode($params_string, ENT_QUOTES, 'UTF-8'));
+    }
+
     $options = json_decode('{' . $params_string . '}', TRUE);
     $view_mode = ASSET_DEFAULT_MODE;
+
     if (is_array($options)) {
       foreach ($options as $name => $value) {
         if ($name == 'mode') {
@@ -27,10 +33,12 @@ function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
         }
       }
     }
+
     $clone->asset_options = $options;
     $clone->asset_source_string = $params_string;
     // As render works by reference we should pass variable instead of direct value.
     $clone_content = $clone->view($view_mode);
+
     return render($clone_content);
   }
 
@@ -100,9 +108,9 @@ function assets_filter_replace_process($matches) {
  */
 function _assets_set_field_value(&$asset, $field_name, $values) {
   $values = (array) $values;
-  $types_we_handle = _assets_get_overridable_fields($asset->type);
+  $overridden_fields = _assets_get_overridable_fields($asset->type);
 
-  if (isset($types_we_handle[$field_name])) {
+  if (isset($overridden_fields[$field_name])) {
     if (!count($values)) {
       $values = array('');
     }
@@ -113,9 +121,9 @@ function _assets_set_field_value(&$asset, $field_name, $values) {
       $langcode = LANGUAGE_NONE;
     }
 
-    $field_type = $types_we_handle[$field_name]['type'];
+    $field_type = $overridden_fields[$field_name]['type'];
     switch ($field_type) {
-    //should we check the type of widget instead?
+    // @todo: We should check the type of widget instead.
       case 'text':
       case 'text_long':
         if (!isset($asset->{$field_name}[$langcode])) {

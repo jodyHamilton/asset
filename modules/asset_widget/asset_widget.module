@@ -67,6 +67,13 @@ function asset_widget_in_frame_form() {
 }
 
 /**
+ * Helper to determine that current path used for tooltip in widget.
+ */
+function asset_widget_is_tooltip() {
+  return drupal_match_path($_GET['q'], 'assets/tooltip/*') && !empty($_GET['asset_widget_tooltip']);
+}
+
+/**
  * Implements hook_views_api().
  */
 function asset_widget_views_api() {
@@ -322,7 +329,7 @@ function _asset_widget_element_attach_asset_widget(&$element, $asset_types = arr
  * Implements hook_library().
  */
 function asset_widget_library() {
-  $libraries['widget'] = array(
+  $libraries['asset_widget'] = array(
     'title' => 'Asset widget library',
     'version' => '1.0',
     'js' => array(
@@ -344,21 +351,46 @@ function asset_widget_library() {
     ),
   );
 
-  $libraries['child_form'] = array(
-    'title' => 'Asset inner form library',
+  $libraries['asset_widget_inner_form'] = array(
+    'title' => 'Asset widget inner form library',
     'version' => '1.0',
     'js' => array(
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.mousewheel.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.jscrollpane.min.js' => array('weight' => 4),
-      ASSET_WIDGET_MODULE_PATH . '/js/asset-child-form.js' => array('weight' => 10, 'group' => JS_THEME),
+      ASSET_WIDGET_MODULE_PATH . '/js/asset-widget-inner-form.js' => array('weight' => 10, 'group' => JS_THEME),
     ),
     // Note that we add our css last, after all THEME styles to avoid overrides.
     'css' => array(
-      ASSET_WIDGET_MODULE_PATH . '/css/asset-inner-form.css' => array('weight' => 10, 'group' => CSS_THEME),
+      ASSET_WIDGET_MODULE_PATH . '/css/asset-widget-inner-form.css' => array('weight' => 10, 'group' => CSS_THEME),
+    ),
+  );
+
+  $libraries['asset_widget_tooltip'] = array(
+    'title' => 'Asset widget tooltip library',
+    'version' => '1.0',
+    'js' => array(
+      ASSET_WIDGET_MODULE_PATH . '/js/jquery.mousewheel.js' => array('weight' => 4),
+      ASSET_WIDGET_MODULE_PATH . '/js/jquery.jscrollpane.min.js' => array('weight' => 4),
+      ASSET_WIDGET_MODULE_PATH . '/js/asset-widget-inner-tooltip.js' => array('weight' => 10, 'group' => JS_THEME),
+    ),
+    // Note that we add our css last, after all THEME styles to avoid overrides.
+    'css' => array(
+      ASSET_WIDGET_MODULE_PATH . '/css/asset-widget-inner-tooltip.css' => array('weight' => 10, 'group' => CSS_THEME),
     ),
   );
 
   return $libraries;
+}
+
+/**
+ * Implements hook_library_alter().
+ */
+function asset_widget_library_alter(&$libraries, $module) {
+  // Switch default asset tooltip library to widget library.
+  if ($module == 'asset' && asset_widget_is_tooltip() && isset($libraries['asset_tooltip'])) {
+    unset($libraries['asset_tooltip']);
+    drupal_add_library('asset_widget', 'asset_widget_tooltip');
+  }
 }
 
 /**
@@ -864,23 +896,13 @@ function asset_widget_preprocess_asset_wrapper(&$vars) {
 }
 
 /**
- * Processes variables for asset-tooltip.tpl.php
- *
- * @see asset-tooltip.tpl.php
- */
-function asset_widget_process_asset_tooltip(&$variables) {
-  // @todo: make integration with asset-tooltip-inner.js
-  drupal_add_js(ASSET_WIDGET_MODULE_PATH . '/js/asset-widget-tooltip-inner.js');
-}
-
-/**
  * Implements hook_page_alter().
  */
 function asset_widget_page_alter(&$page) {
   // Remove all except form part from page via custom page theming.
   if (asset_widget_in_frame_form()) {
-    // Add specific form specific library.
-    drupal_add_library('asset_widget', 'child_form');
+    // Add specific library for inner widget forms.
+    drupal_add_library('asset_widget', 'asset_widget_inner_form');
 
     unset($page['page_top']);
     unset($page['page_bottom']);
@@ -889,7 +911,7 @@ function asset_widget_page_alter(&$page) {
   }
   elseif (asset_widget_add_to_page()) {
     // Add our widget to page far from form to avoid any rebuilding.
-    drupal_add_library('asset_widget', 'widget');
+    drupal_add_library('asset_widget', 'asset_widget');
     $page['content']['asset_widget'] = array('#markup' => theme('asset_widget_wrapper'));
   }
 }

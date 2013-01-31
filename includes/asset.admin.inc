@@ -591,34 +591,43 @@ function asset_get_full_content() {
 /**
  * Page callback, return html of asset by wysiwyg view mode.
  */
-function _asset_get_tag($tag_id) {
-  $tags = explode(':', $tag_id);
-  $aid = $tags[0];
-  $asset = asset_load($aid);
-  $asset_content = '';
+function _asset_get_tag($tag_id, $view_mode = NULL, $align = NULL) {
+  $output = '';
   $placeholder = '';
 
-  if ($asset) {
-    $view_modes = variable_get('assets_default_wysiwyg_modes', array());
+  $tags = explode(':', $tag_id);
+  $asset = !empty($tags[0]) ? asset_load($tags[0]) : NULL;
 
-    if (!empty($view_modes[$asset->type])) {
-      $view_mode = $view_modes[$asset->type];
-    }
-    else {
-      $view_mode = ASSET_DEFAULT_MODE;
+  if ($asset) {
+    if (empty($view_mode) || ($view_mode == 'default')) {
+      $view_modes = variable_get('assets_default_wysiwyg_modes', array());
+
+      if (!empty($view_modes[$asset->type])) {
+        $view_mode = $view_modes[$asset->type];
+      }
+      else {
+        $view_mode = ASSET_DEFAULT_MODE;
+      }
     }
 
     $asset->in_editor = TRUE;
-    $placeholder = assets_get_placeholder($asset, array('mode' => $view_mode, 'align' => ''));
+    $placeholder = assets_get_placeholder(
+      $asset,
+      array(
+        'mode' => $view_mode,
+        'align' => $align,
+      )
+    );
     $placeholder = str_replace("\r\n", '\n', $placeholder);
-    $asset_content = render($asset->view($view_mode));
+
+    $asset_content = $asset->view($view_mode);
+    $output = render($asset_content);
   }
 
   print drupal_json_encode(
     array(
       'tag' => $placeholder,
-      'content' => $asset_content,
-      'content' => $asset_content,
+      'content' => $output,
     )
   );
 

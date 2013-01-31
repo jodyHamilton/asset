@@ -74,8 +74,8 @@ class asset_views_handler_field_asset extends views_handler_field {
           $this->options['alter']['make_link'] = TRUE;
           $this->options['alter']['path'] = "admin/content/assets/view/" . $this->get_value($values, 'aid');
           if (!empty($this->options['asset_tooltip'])) {
-            drupal_add_js(drupal_get_path('module', 'asset') . '/theme/asset-tooltip.js');
-            drupal_add_css(drupal_get_path('module', 'asset') . '/theme/asset-tooltip.css');
+            drupal_add_js(ASSET_MODULE_PATH . '/theme/asset-tooltip.js');
+            drupal_add_css(ASSET_MODULE_PATH . '/theme/asset-tooltip.css');
             $view_mode = check_plain($this->options['asset_tooltip']);
             $this->options['alter']['link_class'] = 'asset-tooltip';
             $this->options['alter']['rel'] = 'assets/tooltip/' . $this->get_value($values, 'aid') . '/' . $view_mode;
@@ -84,8 +84,8 @@ class asset_views_handler_field_asset extends views_handler_field {
         else {
           $this->options['alter']['make_link'] = FALSE;
           if (!empty($this->options['asset_tooltip'])) {
-            drupal_add_js(drupal_get_path('module', 'asset') . '/theme/asset-tooltip.js');
-            drupal_add_css(drupal_get_path('module', 'asset') . '/theme/asset-tooltip.css');
+            drupal_add_js(ASSET_MODULE_PATH . '/theme/asset-tooltip.js');
+            drupal_add_css(ASSET_MODULE_PATH . '/theme/asset-tooltip.css');
             $view_mode = check_plain($this->options['asset_tooltip']);
             $this->options['alter']['alter_text'] = TRUE;
             $rel = 'assets/tooltip/' . $this->get_value($values, 'aid') . '/' . $view_mode;

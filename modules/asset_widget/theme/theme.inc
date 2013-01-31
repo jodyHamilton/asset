@@ -145,7 +145,7 @@ function template_preprocess_asset__image__widget_search(&$vars) {
       array(
         'type' => 'text_trimmed',
         'settings' => array(
-          'trim_length' => '140',
+          'trim_length' => '120',
         ),
       )
     );
@@ -307,37 +307,30 @@ function template_preprocess_asset_widget_asset_form_page(&$vars) {
 function theme_asset_widget_view_mode_switch_block(&$vars) {
   $output = '';
 
-  if (!empty($vars['asset'])) {
+  if (!empty($vars['asset']->type)) {
     if (($view_modes = _assets_get_wysiwyg_modes($vars['asset']->type)) && is_array($view_modes)) {
-      foreach ($view_modes as &$view_mode) {
-        $view_mode = "<strong>$view_mode</strong>";
+      $view_modes = array_keys($view_modes);
+
+      foreach ($view_modes as $key => &$view_mode) {
+        $classes = array("view-$view_mode");
+        if ($key ==  0) {
+          $classes[] = 'active';
+        }
+
+        $classes = implode(' ', $classes);
+        $view_mode = '<li class="' . $classes . '"><strong>' . $view_mode . '</strong></li>';
       }
 
-      $output = theme(
-        'item_list',
-        array(
-          'items' => $view_modes,
-          'attributes' => array(
-            'class' => 'size sizes',
-            'style' => 'float:left;',
-          ),
-        )
-      );
-    };
-  }
+      $output = '<ul>' . implode('', $view_modes) . '</ul>';
 
-  // Store allowed view modes in js.
-  static $added = FALSE;
-  if (!$added) {
-    drupal_add_js(
-      array(
-        'assetWidget' => array(
-          'assetWysiwygModes' => variable_get('assets_wysiwyg_modes', array()),
-        )
-      ),
-      'setting'
-    );
-    $added = TRUE;
+      // Add arrows.
+      if (count($view_modes) > 1) {
+        $output = '<span class="low"></span>' . $output . '<span class="high"></span>';
+      }
+
+      // Add wrapper.
+      $output = '<div class="size sizes">' . $output . '</div>';
+    };
   }
 
   return $output;

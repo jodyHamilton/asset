@@ -32,9 +32,9 @@
     </div>
   <?php endif; ?>
 
-<!--  --><?php //if (!empty($view_mode_switch)): ?>
-<!--    <span class="low"></span>--><?php //print $view_mode_switch; ?><!--<span class="high"></span>-->
-<!--  --><?php //endif; ?>
+  <?php if (!empty($view_mode_switch)): ?>
+    <?php print $view_mode_switch; ?>
+  <?php endif; ?>
 
 </div>
 <?php print $buttons; ?>

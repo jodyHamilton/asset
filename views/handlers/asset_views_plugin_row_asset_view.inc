@@ -27,7 +27,7 @@ class asset_views_plugin_row_asset_view extends entity_views_plugin_row_entity_v
   }
 
   public function render($values) {
-    drupal_add_css(drupal_get_path('module', 'asset') . '/theme/assets-library.css');
+    drupal_add_css(ASSET_MODULE_PATH . '/theme/assets-library.css');
     if ($entity = $this->get_value($values)) {
       $render = $this->rendered_content[$entity->aid];
       $render['#prefix'] = '<div class="assets-library-item-wrapper">
