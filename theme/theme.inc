@@ -15,6 +15,7 @@ function template_preprocess_asset_wrapper(&$vars) {
   $base = 'asset_wrapper';
   $classes_array = $vars['classes_array'];
   $classes_array[] = drupal_html_class('asset');
+  $classes_array[] = drupal_html_class("aid-$asset->aid");
 
   if (isset($asset->in_editor) && $asset->in_editor) {
     $classes_array[] = drupal_html_class('editor');
@@ -35,6 +36,8 @@ function template_preprocess_asset_wrapper(&$vars) {
 
   $vars['classes_array'] = $classes_array;
   $vars['attributes_array']['class'] = $classes_array;
+  $vars['attributes_array']['contenteditable'] = 'false';
+
   $vars['asset'] = $asset;
   $vars['content'] = $element['#children'];
   $vars['view_mode'] = $view_mode;

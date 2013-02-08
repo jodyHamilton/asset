@@ -347,6 +347,7 @@ function asset_widget_library() {
     'dependencies' => array(
       array('system', 'ui.draggable'),
       array('system', 'ui.droppable'),
+      array('system', 'ui.datepicker'),
       array('system', 'drupal.ajax'),
     ),
   );
@@ -449,6 +450,7 @@ function asset_widget_base_form_submit_delete($form, &$form_state) {
  */
 function asset_widget_get_tabs_info($tab_id = FALSE) {
   $tabs_info = &drupal_static(__FUNCTION__);
+
   if (!isset($tabs_info)) {
     $tabs_info = array(
       'search' => array(
@@ -854,7 +856,7 @@ function asset_widget_theme() {
 }
 
 /**
- * Implements hook_preprocess_entity().
+ * Process variables for entity.tpl.php.
  */
 function asset_widget_preprocess_entity(&$vars) {
   if ($vars['entity_type'] == 'asset') {

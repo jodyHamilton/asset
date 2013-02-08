@@ -10,6 +10,7 @@ require_once (dirname(__FILE__) . '/includes/asset.filters.inc');
 // Defines.
 define('ASSET_DEFAULT_MODE', 'full');
 define('ASSET_MODULE_PATH', drupal_get_path('module', 'asset'));
+define('ASSET_MODULE_CKEDITOR_PLUGIN_PATH', ASSET_MODULE_PATH . '/ckeditor');
 
 /**
  * Implements hook_init().
@@ -506,10 +507,10 @@ function _assets_get_icons() {
 
       foreach (scandir($dir) as $file_name) {
         if (!in_array($file_name, array('.', '..'))) {
-          $file_path = $dir . '/' . $file_name;
+          $file_path = $dir . $file_name;
 
           if (FALSE !== getimagesize($file_path)) {
-            $icons[$file_name] = theme('image', array('path' => $file_path, 'width' => 24, 'height' => 24));
+            $icons[$file_name] = theme('image', array('path' => $file_path, 'width' => 18, 'height' => 18));
           }
         }
       }
@@ -567,7 +568,7 @@ function asset_ckeditor_plugin() {
     $plugin_name => array(
       'name' => $plugin_name,
       'desc' => t('Media assets'),
-      'path' => ASSET_MODULE_PATH . '/ckeditor/',
+      'path' =>  ASSET_MODULE_CKEDITOR_PLUGIN_PATH . '/',
       'buttons' => array(),
     )
   );
@@ -615,6 +616,19 @@ function asset_preprocess_page(&$variables) {
     unset($variables['title_suffix']);
     unset($variables['secondary_menu']);
     $variables['tabs'] = array('#secondary' => '');
+  }
+}
+
+/**
+ * Process variables for entity.tpl.php.
+ */
+function asset_preprocess_entity(&$vars) {
+  if (!empty($vars['asset'])) {
+    if (($vars['asset']->type == 'audio') && !empty($vars['asset']->in_editor)) {
+      if (isset($vars['content']['field_asset_audio'])) {
+        hide($vars['content']['field_asset_audio']);
+      }
+    }
   }
 }
 
@@ -748,26 +762,26 @@ function asset_theme() {
   return array(
     'asset' => array(
       'render element' => 'elements',
-      'template' => 'asset'
+      'template' => 'asset',
     ) + $base,
     'asset_form_page'  => array(
-      'template' => 'asset-form'
+      'template' => 'asset-form',
     ) + $base,
     'asset_pure'  => array(
-      'template' => 'asset-pure'
+      'template' => 'asset-pure',
     ) + $base,
     'asset_tooltip' => array(
       'render element' => 'page',
-      'template' => 'asset-tooltip'
+      'template' => 'asset-tooltip',
     ) + $base,
     'asset_wrapper' => array(
       'render element' => 'element',
       'template' => 'asset-wrapper',
-      'file' => 'theme.inc'
+      'file' => 'theme.inc',
     ) + $base,
     'asset_editor_wrapper' => array(
       'render element' => 'element',
-      'template' => 'asset-editor-wrapper'
+      'template' => 'asset-editor-wrapper',
     ) + $base
   );
 }

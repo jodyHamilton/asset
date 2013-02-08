@@ -172,7 +172,6 @@ var Assets;
                     dialog = CKEDITOR.dialog.getCurrent();
                     if (html) {
                       element = CKEDITOR.dom.element.createFromHtml(html);
-                      element.setAttribute('contentEditable', 'false');
                       dialog._.editor.insertElement(element);
 
                       if (CKEDITOR.env.gecko && html.search(/<object /i) > 0) {
@@ -202,8 +201,6 @@ var Assets;
         var align = (params.mode == 'full') ? 'none' : params.align;
 
         if ($asset_div.size()) {
-          $asset_div.attr('contentEditable', 'false');
-          $asset_div.attr('data-cke-editable', 'false');
           $asset_div.attr('data-asset-cid', tagId);
 
           if ((align == 'left') || (align == 'right')) {
@@ -233,7 +230,6 @@ var Assets;
             $asset_div.removeClass('rteleft rteright');
           }
         }
-
         return tempContainer;
       }
     },
@@ -378,6 +374,41 @@ var Assets;
         editor.on('instanceReady', function (evt) {
           var editor = evt.editor;
           editor.document.appendStyleSheet(path + 'assets-editor.css');
+
+          // For webkit set cursor of wysiwyg to the end to prevent wrong pasting of asset.
+          // Webkit works incorrectly with contentEditable.
+          if (CKEDITOR.instances && CKEDITOR.env && CKEDITOR.env.webkit) {
+            editor.focus();
+
+            // Getting selection.
+            var selected = editor.getSelection();
+            // Getting ranges.
+            var selected_ranges = selected.getRanges();
+            // Selecting the starting node.
+            var node = selected_ranges[0].startContainer;
+            var parents = node.getParents(true);
+
+            node = parents[parents.length - 2].getFirst();
+            if (node) {
+              while (true) {
+                var x = node ? node.getNext() : null;
+
+                if (x == null) {
+                  break;
+                }
+
+                node = x;
+              }
+
+              selected.selectElement(node);
+            }
+
+            selected_ranges = selected.getRanges();
+            // False collapses the range to the end of the selected node, true before the node.
+            selected_ranges[0].collapse(false);
+            // Putting the current selection there.
+            selected.selectRanges(selected_ranges);
+          }
         });
 
         tagCache = {};
@@ -538,8 +569,6 @@ var Assets;
           exec: function (editor) {
             if (cutted !== null) {
               Assets.deselect(cutted);
-              // @todo: contentEditable can work incorrect in webkit.
-              cutted.setAttribute('contentEditable', 'false');
               editor.insertElement(cutted);
               cutted = null;
             }
@@ -575,6 +604,29 @@ var Assets;
               if (element) {
                 evt.data.preventDefault(true);
               }
+            }
+          });
+
+          editor.document.on('keydown', function (evt) {
+            var keyCode = evt.data.getKeystroke();
+
+            // Backspace OR Delete.
+            if (keyCode in { 8 : 1, 46 : 1 }) {
+              // @todo: Fix that backspace delete all assets in wysiwyg.
+              // @see: http://drupal.org/node/1905278
+//              var sel = editor.getSelection();
+//              var control = sel.getSelectedElement();
+//
+//              var selected = evt.editor.getSelection().getStartElement().$;
+//              var $selected = $(selected);
+//              var $assetWrapper;
+//
+//              if (!$selected.hasClass('asset-wrapper')) {
+//                $assetWrapper = $selected.parents('.asset-wrapper');
+//              }
+//              else {
+//                $assetWrapper = $selected;
+//              }
             }
           });
         });

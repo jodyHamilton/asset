@@ -111,7 +111,7 @@ function asset_schema() {
         'translatable' => TRUE,
       ),
       'icon' => array(
-        'description' => 'WYSIWYG button image path',
+        'description' => 'WYSIWYG button image path.',
         'type' => 'varchar',
         'length' => 128,
         'not null' => FALSE

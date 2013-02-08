@@ -49,10 +49,10 @@ function asset_freehtml_install() {
           'weight' => '0',
         ),
         'full' => array(
-          'label' => 'above',
+          'label' => 'hidden',
           'settings' => array(),
-          'type' => 'hidden',
-          'weight' => 0,
+          'type' => 'text_default',
+          'weight' => '0',
         ),
       ),
       'entity_type' => 'asset',

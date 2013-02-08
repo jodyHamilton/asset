@@ -57,6 +57,9 @@ assetWidget.allowDrop = false;
 
     // Disable page scroll.
     assetWidget.disablePageScroll($context);
+
+    // Init datepicker for search form.
+    assetWidget.initDatepicker($context);
   };
 
   /**
@@ -219,6 +222,34 @@ assetWidget.allowDrop = false;
   assetWidget.gotoTabById = function (tabId, dontRefresh) {
     var $targetTabLink = assetWidget.$widget.find(assetWidget.getTabLinkSelectorById(tabId));
     assetWidget.gotoTab($targetTabLink, dontRefresh);
+  };
+
+  // Init date picker for search form.
+  assetWidget.initDatepicker = function ($context) {
+    $context.find('#edit-created').once('asset-datepicker', function () {
+      $(this).datepicker({
+        autoSize: true,
+        changeMonth: true,
+        changeYear: true,
+        autoPopUp: 'focus',
+        closeAtTop: false,
+        dateFormat: 'yy-mm-dd 00:00:00',
+        disabled: false,
+        firstDay: 1,
+        prevText: '',
+        nextText: '',
+        closeText: '',
+        showSpeed: 'slow',
+        buttonImageOnly: true,
+        beforeShow: function (input, inst) {
+          var $datepicker = inst.dpDiv;
+          // Set z-index to bigger value than widget have.
+          setTimeout(function () {
+            $datepicker.css('z-index', 30000);
+          }, 0);
+        }}
+      );
+    });
   };
 
   /**
@@ -806,6 +837,7 @@ assetWidget.allowDrop = false;
 
       if (classMatch) {
         $asset.draggable({
+          iframeFix: true,
           helper: 'clone',
           appendTo: $asset.parents('.tab'),
           revert: function(droppedTo) {
@@ -909,6 +941,7 @@ assetWidget.allowDrop = false;
   assetWidget.initDrop = function ($context) {
     $context.find('.match-field').parent().once('assets-drop', function () {
       $(this).droppable({
+        iframeFix: true,
         // Can't use accept method because we have only draggable item here.
         // We need drop object to check it's asset type matching.
         drop: function(event, ui) {
@@ -946,7 +979,6 @@ assetWidget.allowDrop = false;
                             var editor = CKEDITOR.instances[$droppedField.attr('id')];
                             var element = CKEDITOR.dom.element.createFromHtml(html);
 
-                            element.setAttribute('contentEditable', 'false');
                             editor.insertElement(element);
                           }
                         }

@@ -323,11 +323,7 @@
   font-family: Helvetica, Arial, sans-serif, Garuda, FreeSans;
   font-size: 12px;
   line-height: 14px;
-  z-index: 200;
-  /**/
-  /**/
-  /**/
-  /**/
+  z-index: 20000;
 }
 .assets-module * {
   outline: 0;
@@ -579,6 +575,7 @@
 }
 .assets-module .tooltip .tooltip-inner .close {
   float: right;
+  margin: 5px 0 0;
 }
 .assets-module .tooltip .tooltip-inner .pointer {
   display: block;
@@ -1401,6 +1398,14 @@
   overflow: hidden;
   visibility: hidden;
 }
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .form-wrap .mid .form-item table {
+  border: none;
+}
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .form-wrap .mid .form-item table th {
+  border: none;
+  background: none;
+  padding: 0;
+}
 .assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .form-wrap .mid .form-item label {
   line-height: 14px;
   font-size: 11px;
@@ -1860,7 +1865,7 @@
   font-size: 12px;
   padding: 0;
   height: 24px;
-  line-height: 24px;
+  line-height: 25px;
 }
 .assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .bookmark-tab .items-wrap .item .search-edit .edit.editing {
   background: #777;
@@ -1913,7 +1918,7 @@
 .assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .bookmark-tab .items-wrap .item .buttons-2 .button-arrow {
   float: right;
   width: 37px;
-  background: url('../images/sprite-a.png') -481px -42px no-repeat;
+  background: url('../images/sprite-a.png') -481px -43px no-repeat;
 }
 .assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .bookmark-tab .items-wrap .item .buttons-2 .button-arrow a .ico {
   background: url('../images/sprite-a.png') -461px -107px no-repeat;
@@ -2089,4 +2094,140 @@
   display: inline;
   float: left;
   margin: 0 0 0 3px;
+}
+
+/*frame-page-wrapper*/
+.frame-page-wrapper .form-item table, .frame-page-wrapper .form-item th {
+  border: none;
+}
+.frame-page-wrapper .form-item label {
+  text-transform: none;
+}
+.frame-page-wrapper .form-item table {
+  margin: 0 0 0 1px;
+}
+.frame-page-wrapper .form-item table tr.even, .frame-page-wrapper .form-item table tr.odd {
+  border: 1px solid #A8A8A8;
+  background: #fefef8;
+}
+.frame-page-wrapper .form-item .form-textarea {
+  height: 130px;
+  padding: 7px;
+  line-height: 16px;
+}
+
+/*editor*/
+.asset.editor {
+  margin: 10px 0;
+  padding: 5px 10px;
+  background: #F4F1ED;
+  box-shadow: 0 0 15px #e1dede inset;
+}
+
+.asset.editor.selected {
+  background: #FDFDEE;
+  box-shadow: 0 0 15px #e1dede inset;
+}
+
+.asset.editor.selected:hover {
+  background: #F3E1DB;
+  box-shadow: 0 0 15px #D7C9C4 inset;
+}
+
+.asset.editor .content {
+  padding: 5px 0;
+}
+
+/*tooltip-inner*/
+.tooltip-inner .jspScrollable .jspVerticalBar {
+  width: 8px;
+  background: #faf7f4;
+  padding: 0 1px 0 11px;
+}
+.tooltip-inner .jspScrollable .jspVerticalBar .pointer {
+  backround: none;
+}
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack {
+  width: 10px;
+  background: url('../images/bgs/track-y.png') 3px 0 repeat-y;
+}
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack .jspDrag {
+  background: none;
+}
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack .jspDrag .jspDragTop {
+  display: block;
+  width: 8px;
+  height: 50%;
+  background: url('../images/bgs/bg_scroll-a.png') -28px 0 no-repeat;
+}
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack .jspDrag .jspDragBottom {
+  display: block;
+  width: 8px;
+  height: 50%;
+  background: url('../images/bgs/bg_scroll-a.png') -28px 100% no-repeat;
+}
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspHover,
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspActive {
+  background: none;
+}
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspHover .jspDragTop,
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspActive .jspDragTop {
+  background: url('../images/bgs/bg_scroll-a.png') -44px 0 no-repeat;
+}
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspHover .jspDragBottom,
+.tooltip-inner .jspScrollable .jspVerticalBar .jspTrack .jspDrag.jspActive .jspDragBottom {
+  background: url('../images/bgs/bg_scroll-a.png') -44px 100% no-repeat;
+}
+.tooltip-inner .jspScrollable .jspHorizontalBar {
+  width: 100%;
+  background: #faf7f4;
+  padding: 10px 0 0;
+  bottom: -5px;
+}
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack {
+  width: 100%;
+  background: url('../images/bgs/track-x.png') 0 3px repeat-x;
+}
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack .jspDrag {
+  background: none;
+}
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack .jspDrag .jspDragLeft {
+  display: block;
+  height: 8px;
+  width: 50%;
+  background: url('../images/bgs/bg_scroll-b.png') 0 -28px no-repeat;
+  float: left;
+}
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack .jspDrag .jspDragRight {
+  display: block;
+  height: 8px;
+  width: 50%;
+  background: url('../images/bgs/bg_scroll-b.png') 100% -28px no-repeat;
+  float: right;
+}
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack .jspDrag.jspHover,
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack .jspDrag.jspActive {
+  background: none;
+}
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack .jspDrag.jspHover .jspDragLeft,
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack .jspDrag.jspActive .jspDragLeft {
+  background: url('../images/bgs/bg_scroll-b.png') 0 -44px no-repeat;
+}
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack .jspDrag.jspHover .jspDragRight,
+.tooltip-inner .jspScrollable .jspHorizontalBar .jspTrack .jspDrag.jspActive .jspDragRight {
+  background: url('../images/bgs/bg_scroll-b.png') 100% -44px no-repeat;
+}
+.tooltip-inner .tooltip-scroll {
+  height: 395px;
+  width: 450px;
+}
+
+.asset-wrapper {
+  font-family: Helvetica, Arial, sans-serif, Garuda, FreeSans;
+}
+.asset-wrapper .content .field-items {
+  font-family: Helvetica, Arial, sans-serif, Garuda, FreeSans;
+}
+.asset-wrapper .content .field-items .field-item {
+  padding: 10px 0 5px 0;
 }

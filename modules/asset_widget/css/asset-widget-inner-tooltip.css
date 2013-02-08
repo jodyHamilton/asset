@@ -200,3 +200,13 @@ html .jspCorner {
  .jspScrollable .jspHorizontalBar .jspTrack .jspDrag.jspActive .jspDragRight {
   background: url('../images/bgs/bg_scroll-b.png') 100% -44px no-repeat;
 }
+
+.asset-wrapper {
+  font-family: Helvetica, Arial, sans-serif, Garuda, FreeSans;
+}
+.asset-wrapper .content .field-items {
+  font-family: Helvetica, Arial, sans-serif, Garuda, FreeSans;
+}
+.asset-wrapper .content .field-items .field-item {
+  padding: 10px 0 5px 0;
+}

@@ -176,9 +176,6 @@ class AssetType extends Entity {
   public $description;
   public $help;
   public $weight = 0;
-//'id'
-//'locked'
-//'help'
 
   public function __construct($values = array()) {
     parent::__construct($values, 'asset_type');

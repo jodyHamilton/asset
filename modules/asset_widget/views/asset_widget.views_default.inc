@@ -116,6 +116,21 @@ function asset_widget_views_default_views() {
     1 => 0,
     3 => 0,
   );
+  /* Filter criterion: Media Asset: Date created */
+  $handler->display->display_options['filters']['created']['id'] = 'created';
+  $handler->display->display_options['filters']['created']['table'] = 'asset';
+  $handler->display->display_options['filters']['created']['field'] = 'created';
+  $handler->display->display_options['filters']['created']['operator'] = '>=';
+  $handler->display->display_options['filters']['created']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['created']['expose']['operator_id'] = 'created_op';
+  $handler->display->display_options['filters']['created']['expose']['label'] = 'Date created';
+  $handler->display->display_options['filters']['created']['expose']['operator'] = 'created_op';
+  $handler->display->display_options['filters']['created']['expose']['identifier'] = 'created';
+  $handler->display->display_options['filters']['created']['expose']['remember_roles'] = array(
+    2 => '2',
+    1 => 0,
+    3 => 0,
+  );
 
   $views[$view->name] = $view;
 

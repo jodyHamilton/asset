@@ -47,15 +47,25 @@ function asset_type_form($form, &$form_state, $asset_type, $op = 'edit') {
     '#description' => t('This text will be displayed at the top of the page when creating or editing asset of this type.'),
   );
 
-  $icons = _assets_get_icons();
-  if (!empty($icons)) {
-    $form['icon'] = array(
-      '#type' => 'radios',
-      '#default_value' => $asset_type->icon ? $asset_type->icon : reset(array_keys($icons)),
-      '#options' => $icons,
-      '#title' => t('Button icon'),
-    );
+  $form['icons'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Icon settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $icons_options = array('none' => t('No icon'));
+  $module_icons = _assets_get_icons();
+  if (!empty($module_icons)) {
+    $icons_options = $icons_options + $module_icons;
   }
+
+  $form['icons']['icon'] = array(
+    '#type' => 'radios',
+    '#default_value' => $asset_type->icon ? $asset_type->icon : reset(array_keys($icons_options)),
+    '#options' => $icons_options,
+    '#title' => t('Button icon'),
+  );
 
   $form['weight'] = array(
     '#title' => t('Weight'),
