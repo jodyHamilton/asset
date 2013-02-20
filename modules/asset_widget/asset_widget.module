@@ -104,8 +104,9 @@ function asset_widget_element_info_alter(&$info) {
     && _asset_widget_is_admin_theme()
     && !asset_widget_in_frame_form()
     && !drupal_match_path(current_path(), 'admin/*')) {
+
     // Add callback for text fields with wysiwyg.
-    if (isset($info['text_format'])) {
+    if (module_exists('ckeditor') && isset($info['text_format'])) {
       $info['text_format']['#process'][] = 'asset_widget_pre_render_text_format';
     }
 
@@ -133,7 +134,6 @@ function asset_widget_element_info_alter(&$info) {
 
 /**
  * Alter contextual_links renderable array to prevent wrong destination for view edit link.
- * @see contextual_pre_render_links().
  */
 function asset_widget_pre_render_contextual($element) {
   if ((arg(0) == 'ajax') && !empty($element['#links']['views-ui-edit']['query']['destination'])) {
@@ -333,10 +333,10 @@ function asset_widget_library() {
     'title' => 'Asset widget library',
     'version' => '1.0',
     'js' => array(
-      ASSET_WIDGET_MODULE_PATH . '/js/jquery.mousewheel.js' => array('weight' => 4),
+      ASSET_WIDGET_MODULE_PATH . '/js/jquery.mousewheel.min.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.jscrollpane.min.js' => array('weight' => 4),
-      ASSET_WIDGET_MODULE_PATH . '/js/jquery.ui.selectmenu.js' => array('weight' => 4),
-      ASSET_WIDGET_MODULE_PATH . '/js/jquery.multiSelect.js' => array('weight' => 4),
+      ASSET_WIDGET_MODULE_PATH . '/js/jquery.ui.selectmenu.min.js' => array('weight' => 4),
+      ASSET_WIDGET_MODULE_PATH . '/js/jquery.multiSelect.min.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/asset-widget.js' => array('weight' => 5),
     ),
     // Note that we add our css last, after all THEME styles to avoid overrides.
@@ -356,7 +356,7 @@ function asset_widget_library() {
     'title' => 'Asset widget inner form library',
     'version' => '1.0',
     'js' => array(
-      ASSET_WIDGET_MODULE_PATH . '/js/jquery.mousewheel.js' => array('weight' => 4),
+      ASSET_WIDGET_MODULE_PATH . '/js/jquery.mousewheel.min.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.jscrollpane.min.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/asset-widget-inner-form.js' => array('weight' => 10, 'group' => JS_THEME),
     ),
@@ -370,7 +370,7 @@ function asset_widget_library() {
     'title' => 'Asset widget tooltip library',
     'version' => '1.0',
     'js' => array(
-      ASSET_WIDGET_MODULE_PATH . '/js/jquery.mousewheel.js' => array('weight' => 4),
+      ASSET_WIDGET_MODULE_PATH . '/js/jquery.mousewheel.min.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.jscrollpane.min.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/asset-widget-inner-tooltip.js' => array('weight' => 10, 'group' => JS_THEME),
     ),
@@ -388,8 +388,8 @@ function asset_widget_library() {
  */
 function asset_widget_library_alter(&$libraries, $module) {
   // Switch default asset tooltip library to widget library.
-  if ($module == 'asset' && asset_widget_is_tooltip() && isset($libraries['asset_tooltip'])) {
-    unset($libraries['asset_tooltip']);
+  if ($module == 'asset' && asset_widget_is_tooltip() && isset($libraries['asset_tooltip_inner'])) {
+    unset($libraries['asset_tooltip_inner']);
     drupal_add_library('asset_widget', 'asset_widget_tooltip');
   }
 }
@@ -439,7 +439,7 @@ function asset_widget_base_form_submit_delete($form, &$form_state) {
         $url['path'],
         array(
           'query' => $url['query'],
-        )
+        ),
       );
     }
   }

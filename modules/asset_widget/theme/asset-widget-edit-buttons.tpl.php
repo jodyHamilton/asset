@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * asset-widget-edit-buttons.php
+ * Template for asset widget edit buttons
  */
  ?>
 <?php if (!empty($preview_link) || !empty($edit_link)): ?>

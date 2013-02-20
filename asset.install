@@ -54,7 +54,7 @@ function asset_schema() {
         'length' => 36,
         'default' => '',
         'description' => 'The Universally Unique Identifier.',
-      )
+      ),
     ),
     'indexes' => array(
       'asset_type' => array(array('type', 4)),
@@ -114,7 +114,7 @@ function asset_schema() {
         'description' => 'WYSIWYG button image path.',
         'type' => 'varchar',
         'length' => 128,
-        'not null' => FALSE
+        'not null' => FALSE,
       ),
       'weight' => array(
         'description' => 'The weight of this asset type in relation to others.',
@@ -122,19 +122,19 @@ function asset_schema() {
         'unsigned' => FALSE,
         'not null' => TRUE,
         'default' => 0,
-        'size' => 'tiny'
+        'size' => 'tiny',
       ),
       'uuid' => array(
         'type' => 'char',
         'length' => 36,
         'default' => '',
         'description' => 'The Universally Unique Identifier.',
-      )
+      ),
     ) + entity_exportable_schema_fields(),
     'primary key' => array('id'),
     'unique keys' => array(
       'type' => array('type'),
-    )
+    ),
   );
 
   return $schema;
@@ -144,7 +144,7 @@ function asset_schema() {
  * Implements hook_install().
  */
 function asset_install() {
-  // Increase the module weight..
+  // Increase the module weight.
   db_update('system')
     ->fields(array('weight' => 1))
     ->condition('type', 'module')
@@ -158,7 +158,16 @@ function asset_install() {
 function asset_update_7100() {
   foreach (array('asset', 'asset_type') as $base) {
     if (!db_field_exists($base, 'uuid')) {
-       db_add_field($base, 'uuid', array('type' => 'char', 'length' => 36, 'default' => '', 'description' => 'The Universally Unique Identifier.'));
+      db_add_field(
+        $base,
+        'uuid',
+        array(
+          'type' => 'char',
+          'length' => 36,
+          'default' => '',
+          'description' => 'The Universally Unique Identifier.',
+        )
+      );
     }
   }
   return FALSE;

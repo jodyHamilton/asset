@@ -153,10 +153,11 @@ function asset_document_install() {
     ),
   );
 
-  // Translatables
+  // Translatables.
   // Included for use with string extractors like potx.
-  st('Description');
-  st('Document');
+  $t = get_t();
+  $t('Description');
+  $t('Document');
 
 
   foreach ($fields as $field) {
@@ -194,13 +195,11 @@ function asset_document_install() {
         ),
       ),
       'display' => array(),
-    )
+    ),
   );
-  field_bundle_settings('asset', 'document', $bundle_settings);
 
-  assets_set_wysiwyg_modes('document', array(
-    'full' => 'full'
-  ));
+  field_bundle_settings('asset', 'document', $bundle_settings);
+  assets_set_wysiwyg_modes('document', array('full' => 'full'));
 }
 
 /**

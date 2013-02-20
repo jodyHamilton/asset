@@ -12,7 +12,7 @@
 }
 
 .iframe-preview-loading {
-  background: white url('images/iframe-loader.gif') no-repeat 0 0;
+  background: white url('../theme/images/iframe-loader.gif') no-repeat 0 0;
   width: 59px;
   height: 59px;
   overflow: hidden;
@@ -29,7 +29,7 @@
   position: absolute;
   top: -9999px;
   left: -9999px;
-  background: url('images/preview-icon.png') no-repeat 0 0;
+  background: url('../theme/images/preview-icon.png') no-repeat 0 0;
   display: block;
   width: 15px;
   height: 15px;

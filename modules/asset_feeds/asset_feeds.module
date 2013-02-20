@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Feeds module integration.
+ */
 
 /*
  * Implements hook_ctools_plugin_api().
@@ -10,10 +14,7 @@ function asset_ctools_plugin_api($owner, $api) {
 }
 
 /**
- * Implements hook_feeds_plugins(). Declares available Processor
- * plugin to Feeds.
- *
- * @see feeds_feeds_plugin()
+ * Implements hook_feeds_plugins().
  */
 function asset_feeds_feeds_plugins() {
   $info = array();
@@ -25,7 +26,7 @@ function asset_feeds_feeds_plugins() {
       'parent' => 'FeedsProcessor',
       'class' => 'AssetFeedsProcessor',
       'file' => 'AssetFeedsProcessor.inc',
-      'path' => drupal_get_path('module', 'asset_feeds')
+      'path' => drupal_get_path('module', 'asset_feeds'),
     ),
   );
   return $info;

@@ -66,7 +66,7 @@ function template_preprocess_asset_widget_edit_buttons(&$vars) {
         array(
           'html' => TRUE,
           'attributes' => array(
-            'id' => 'aid-' . $vars['asset']->type  . '-' . $vars['asset']->aid,
+            'id' => 'aid-' . $vars['asset']->type . '-' . $vars['asset']->aid,
             'target' => '_blank',
             'class' => 'asset-widget-modify-asset',
           ),
@@ -215,6 +215,10 @@ function template_preprocess_asset__video__widget_search(&$vars) {
  * @see asset--image--widget-search.tpl.php
  */
 function template_preprocess_asset__audio__widget_search(&$vars) {
+  $audio = field_get_items('asset', $vars['asset'], 'field_asset_audio');
+  if (!empty($audio[0]['fid']) && !empty($audio[0]['description'])) {
+    $vars['short_description'] = truncate_utf8($audio[0]['description'], '140');
+  }
 }
 
 /**
@@ -313,7 +317,7 @@ function theme_asset_widget_view_mode_switch_block(&$vars) {
 
       foreach ($view_modes as $key => &$view_mode) {
         $classes = array("view-$view_mode");
-        if ($key ==  0) {
+        if ($key == 0) {
           $classes[] = 'active';
         }
 

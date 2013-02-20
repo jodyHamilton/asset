@@ -1,8 +1,7 @@
 <?php
-
 /**
  * @file
- * Contains the basic 'asset' field handler.
+ * Contains the basic asset field handler.
  */
 
 /**
@@ -14,23 +13,34 @@
  */
 class asset_views_handler_field_asset extends views_handler_field {
 
+  /**
+   * Initialize, don't add the additional fields to group by.
+   */
   function init(&$view, &$options) {
     parent::init($view, $options);
-    // Don't add the additional fields to groupby
+
     if (!empty($this->options['link_to_asset']) || !empty($this->options['asset_tooltip'])) {
       $this->additional_fields['aid'] = array('table' => 'asset', 'field' => 'aid');
     }
   }
 
+  /**
+   * Provide appropriate default options for a handler.
+   */
   function option_definition() {
     $options = parent::option_definition();
-    $options['link_to_asset'] = array('default' => isset($this->definition['link_to_asset default']) ? $this->definition['link_to_asset default'] : FALSE, 'bool' => TRUE);
+
     $options['asset_tooltip'] = array('default' => '');
+    $options['link_to_asset'] = array(
+      'default' => isset($this->definition['link_to_asset default']) ? $this->definition['link_to_asset default'] : FALSE,
+      'bool' => TRUE,
+    );
+
     return $options;
   }
 
   /**
-   * Provide link to asset option
+   * Provide options form for a handler.
    */
   function options_form(&$form, &$form_state) {
     $form['link_to_asset'] = array(
@@ -39,6 +49,7 @@ class asset_views_handler_field_asset extends views_handler_field {
       '#type' => 'checkbox',
       '#default_value' => !empty($this->options['link_to_asset']),
     );
+
     $entity_info = entity_get_info('asset');
     $options = array();
     if (!empty($entity_info['view modes'])) {
@@ -46,19 +57,19 @@ class asset_views_handler_field_asset extends views_handler_field {
         $options[$mode] = $settings['label'];
       }
     }
+
     if (empty($options)) {
       $options = array(
-        'full' => t('Default')
+        'full' => t('Default'),
       );
     }
-    ///$options = assets_view_modes_options();
     $form['asset_tooltip'] = array(
       '#title' => t('Show an asset tooltip preview'),
-      '#description' => t("Choose a desired view mode for a tooltip."),
+      '#description' => t('Choose a desired view mode for a tooltip.'),
       '#type' => 'select',
       '#default_value' => !empty($this->options['asset_tooltip']) ? $this->options['asset_tooltip'] : '',
       '#options' => $options,
-      '#empty_value' => 0
+      '#empty_value' => 0,
     );
 
     parent::options_form($form, $form_state);
@@ -73,9 +84,10 @@ class asset_views_handler_field_asset extends views_handler_field {
         if (!empty($this->options['link_to_asset'])) {
           $this->options['alter']['make_link'] = TRUE;
           $this->options['alter']['path'] = "admin/content/assets/view/" . $this->get_value($values, 'aid');
+
           if (!empty($this->options['asset_tooltip'])) {
-            drupal_add_js(ASSET_MODULE_PATH . '/theme/asset-tooltip.js');
-            drupal_add_css(ASSET_MODULE_PATH . '/theme/asset-tooltip.css');
+            drupal_add_library('asset', 'asset_tooltip');
+
             $view_mode = check_plain($this->options['asset_tooltip']);
             $this->options['alter']['link_class'] = 'asset-tooltip';
             $this->options['alter']['rel'] = 'assets/tooltip/' . $this->get_value($values, 'aid') . '/' . $view_mode;
@@ -83,9 +95,10 @@ class asset_views_handler_field_asset extends views_handler_field {
         }
         else {
           $this->options['alter']['make_link'] = FALSE;
+
           if (!empty($this->options['asset_tooltip'])) {
-            drupal_add_js(ASSET_MODULE_PATH . '/theme/asset-tooltip.js');
-            drupal_add_css(ASSET_MODULE_PATH . '/theme/asset-tooltip.css');
+            drupal_add_library('asset', 'asset_tooltip');
+
             $view_mode = check_plain($this->options['asset_tooltip']);
             $this->options['alter']['alter_text'] = TRUE;
             $rel = 'assets/tooltip/' . $this->get_value($values, 'aid') . '/' . $view_mode;
@@ -94,9 +107,13 @@ class asset_views_handler_field_asset extends views_handler_field {
         }
       }
     }
+
     return $data;
   }
 
+  /**
+   * Return HTML.
+   */
   function render($values) {
     $value = $this->get_value($values);
     return $this->render_link($this->sanitize_value($value), $values);

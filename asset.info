@@ -1,13 +1,13 @@
 name = "Asset"
 description = "Provides entity based media assets"
-core = "7.x"
 package = "Media assets"
+core = "7.x"
+
 dependencies[] = entity
-dependencies[] = ckeditor
 dependencies[] = field_ui
 dependencies[] = field_sql_storage
 dependencies[] = menu
-dependencies[] = views
+
 files[] = "asset.install"
 files[] = "includes/asset.controllers.inc"
 files[] = "includes/asset.migrate.inc"

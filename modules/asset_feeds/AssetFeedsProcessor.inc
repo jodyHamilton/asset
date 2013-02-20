@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Class definition of AssetFeedsProcessor.
@@ -9,6 +8,7 @@
  * Creates assets from feed items.
  */
 class AssetFeedsProcessor extends FeedsProcessor {
+
   /**
    * Define entity type.
    */
@@ -22,6 +22,7 @@ class AssetFeedsProcessor extends FeedsProcessor {
   protected function entityInfo() {
     $info = parent::entityInfo();
     $info['label plural'] = t('Assets');
+
     return $info;
   }
 
@@ -33,6 +34,7 @@ class AssetFeedsProcessor extends FeedsProcessor {
     $asset->changed = REQUEST_TIME;
     $asset->created = REQUEST_TIME;
     $asset->uid = $this->config['author'];
+
     return $asset;
   }
 
@@ -52,11 +54,11 @@ class AssetFeedsProcessor extends FeedsProcessor {
       $asset = new Asset(array(
         'aid' => $aid,
         'uid' => $this->config['author'],
-
       ));
       $asset = db_query("SELECT created, nid, type FROM {asset} WHERE aid = :aid", array(':aid' => $aid))->fetchObject();
       $asset->uid = $this->config['author'];
     }
+
     return $asset;
   }
 
@@ -65,11 +67,6 @@ class AssetFeedsProcessor extends FeedsProcessor {
    */
   public function entitySave($entity) {
     entity_save('asset', $entity);
-    // If nid is set and an asset with that id doesn't exist, flag as new.
-//    if (!empty($entity->nid) && !node_load($entity->nid)) {
-//      $entity->is_new = TRUE;
-//    }
-//    node_save($entity);
   }
 
   /**
@@ -87,19 +84,24 @@ class AssetFeedsProcessor extends FeedsProcessor {
     if ($time === NULL) {
       $time = $this->expiryTime();
     }
+
     if ($time == FEEDS_EXPIRE_NEVER) {
       return;
     }
+
     $count = $this->getLimit();
+
     $assets = db_query_range("SELECT a.aid FROM {asset} a JOIN {feeds_item} fi ON fi.entity_type = 'asset' AND a.aid = fi.entity_id WHERE fi.id = :id AND a.created < :created", 0, $count, array(':id' => $this->id, ':created' => REQUEST_TIME - $time));
     $aids = array();
     foreach ($assets as $asset) {
       $aids[$asset->aid] = $asset->aid;
     }
+
     $this->entityDeleteMultiple($aids);
     if (db_query_range("SELECT 1 FROM {asset} a JOIN {feeds_item} fi ON fi.entity_type = 'asset' AND a.aid = fi.entity_id WHERE fi.id = :id AND a.created < :created", 0, 1, array(':id' => $this->id, ':created' => REQUEST_TIME - $time))->fetchField()) {
       return FEEDS_BATCH_ACTIVE;
     }
+
     return FEEDS_BATCH_COMPLETE;
   }
 
@@ -116,9 +118,11 @@ class AssetFeedsProcessor extends FeedsProcessor {
   public function configDefaults() {
     $types = assets_get_types();
     $type = '';
+
     if (!empty($types)) {
       $type = key($types);
     }
+
     return array(
       'asset_type' => $type,
       'expire' => FEEDS_EXPIRE_NEVER,
@@ -132,6 +136,7 @@ class AssetFeedsProcessor extends FeedsProcessor {
   public function configForm(&$form_state) {
     $types = asset_type_get_names();
     array_walk($types, 'check_plain');
+
     $form = parent::configForm($form_state);
     $form['asset_type'] = array(
       '#type' => 'select',
@@ -140,6 +145,7 @@ class AssetFeedsProcessor extends FeedsProcessor {
       '#options' => $types,
       '#default_value' => $this->config['asset_type'],
     );
+
     $author = user_load($this->config['author']);
     $form['author'] = array(
       '#type' => 'textfield',
@@ -148,19 +154,22 @@ class AssetFeedsProcessor extends FeedsProcessor {
       '#autocomplete_path' => 'user/autocomplete',
       '#default_value' => empty($author->name) ?  'anonymous' : check_plain($author->name),
     );
+
     $period = drupal_map_assoc(array(FEEDS_EXPIRE_NEVER, 3600, 10800, 21600, 43200, 86400, 259200, 604800, 2592000, 2592000 * 3, 2592000 * 6, 31536000), 'feeds_format_expire');
     $form['expire'] = array(
       '#type' => 'select',
       '#title' => t('Expire assets'),
       '#options' => $period,
-      '#description' => t('Select after how much time assets should be deleted. The asset\'s published date will be used for determining the asset\'s age, see Mapping settings.'),
+      '#description' => t("Select after how much time assets should be deleted. The asset's published date will be used for determining the asset's age, see Mapping settings."),
       '#default_value' => $this->config['expire'],
     );
+
     $form['update_existing']['#options'] = array(
       FEEDS_SKIP_EXISTING => 'Do not update existing assets',
       FEEDS_REPLACE_EXISTING => 'Replace existing assets',
       FEEDS_UPDATE_EXISTING => 'Update existing assets (slower than replacing them)',
     );
+
     return $form;
   }
 
@@ -194,6 +203,7 @@ class AssetFeedsProcessor extends FeedsProcessor {
       case 'created':
         $target_asset->created = feeds_to_unixtime($value, REQUEST_TIME);
         break;
+
       case 'feeds_source':
         // Get the class of the feed asset importer's fetcher and set the source
         // property. See asset_feeds_asset_update() how $asset->feeds gets stored.
@@ -205,6 +215,7 @@ class AssetFeedsProcessor extends FeedsProcessor {
           $target_asset->feeds['suppress_import'] = TRUE;
         }
         break;
+
       default:
         parent::setTargetElement($source, $target_asset, $target_element, $value);
         break;
@@ -215,7 +226,6 @@ class AssetFeedsProcessor extends FeedsProcessor {
    * Return available mapping targets.
    */
   public function getMappingTargets() {
-    //$type = asset_ty node_type_get_type($this->config['asset_type']);
     $targets = parent::getMappingTargets();
 
     $targets['title'] = array(
@@ -237,13 +247,6 @@ class AssetFeedsProcessor extends FeedsProcessor {
       'name' => t('Created date'),
       'description' => t('The UNIX time when an asset has been created.'),
     );
-    // Include language field if Locale module is enabled.
-//    if (module_exists('locale')) {
-//      $targets['language'] = array(
-//        'name' => t('Language'),
-//        'description' => t('The two-character language code of the asset.'),
-//      );
-//    }
 
     // Let other modules expose mapping targets.
     self::loadMappers();
@@ -267,20 +270,24 @@ class AssetFeedsProcessor extends FeedsProcessor {
         case 'aid':
           $aid = db_query("SELECT aid FROM {asset} WHERE aid = :aid", array(':aid' => $value))->fetchField();
           break;
+
         case 'title':
           $aid = db_query("SELECT aid FROM {asset} WHERE title = :title", array(':title' => $value))->fetchField();
           break;
+
         case 'feeds_source':
           if ($id = feeds_get_importer_id($this->config['asset_type'])) {
             $aid = db_query("SELECT fs.feed_nid FROM {asset} a JOIN {feeds_source} fs ON a.aid = fs.feed_nid WHERE fs.id = :id AND fs.source = :source", array(':id' => $id, ':source' => $value))->fetchField();
           }
           break;
       }
+
       if ($aid) {
         // Return with the first aid found.
         return $aid;
       }
     }
+
     return 0;
   }
 }

@@ -1,7 +1,8 @@
 name = "Asset widget"
-description = "Provide beautiful assets search widget"
-core = "7.x"
+description = "Provides an advanced search UI and contribution widget"
 package = "Media assets"
+core = "7.x"
+
 dependencies[] = "asset"
 dependencies[] = "views"
 dependencies[] = "image"

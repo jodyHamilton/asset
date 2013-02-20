@@ -1,5 +1,12 @@
 <?php
+/**
+ * @file
+ * Asset image module.
+ */
 
+/**
+ * Implements hook_default_asset_type().
+ */
 function asset_image_default_asset_type() {
   $items = array();
   $items['image'] = entity_import('asset_type', '{
@@ -12,9 +19,9 @@ function asset_image_default_asset_type() {
     "locked" : "0",
     "rdf_mapping" : []
   }');
+
   return $items;
 }
-
 
 /**
  * Implements hook_image_default_styles().

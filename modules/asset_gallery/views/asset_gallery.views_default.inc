@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * asset_gallery.views_default.inc
+ * Asset gallery views export.
  */
 
 /**

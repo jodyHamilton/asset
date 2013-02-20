@@ -1,26 +1,7 @@
+name = "Embedded Video core module"
+description = "Provides an Embedded Video field"
+package = "Embedded video"
 core = "7.x"
+
 dependencies[] = "node"
 dependencies[] = "text"
-description = "Provides an Embedded Video field"
-name = "Embedded Video core module"
-package = "Embedded video"
-; Information added by drupal.org packaging script on 2012-07-05
-version = "7.x-1.x-dev"
-core = "7.x"
-project = "asset"
-datestamp = "1341446719"
-
-
-; Information added by drupal.org packaging script on 2012-07-07
-version = "7.x-1.x-dev"
-core = "7.x"
-project = "asset"
-datestamp = "1341619432"
-
-
-; Information added by drupal.org packaging script on 2012-08-10
-version = "7.x-1.0-beta1+4-dev"
-core = "7.x"
-project = "asset"
-datestamp = "1344557077"
-

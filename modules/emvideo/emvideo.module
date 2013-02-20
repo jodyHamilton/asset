@@ -1,9 +1,7 @@
 <?php
-
 /**
  * @file
- * An example field using the Field API.
- * 
+ * Emvideo core module.
  */
 
 /**
@@ -20,13 +18,18 @@ function emvideo_field_info() {
   );
 }
 
+/**
+ * Implements hook_field_presave().
+ */
 function emvideo_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   if ($field['type'] == 'emvideo') {
     foreach ($items as $delta => $item) {
       if (isset($item['url']) && !empty($item['url'])) {
         $url = trim($item['url']);
+
         foreach (module_implements('emvideo_parse') as $module) {
           $res = module_invoke($module, 'emvideo_parse', $url);
+
           if (is_array($res)) {
             $items[$delta] = array_merge($items[$delta], $res);
             break;
@@ -68,6 +71,7 @@ function emvideo_field_formatter_info() {
 function emvideo_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
   $display = $instance['display'][$view_mode];
   $settings = $display['settings'];
+
   switch ($display['type']) {
     case 'emvideo_video':
       $element['width'] = array(
@@ -77,7 +81,8 @@ function emvideo_field_formatter_settings_form($field, $instance, $view_mode, $f
         '#default_value' => $settings['width'],
         '#element_validate' => array('_element_validate_integer_positive'),
         '#required' => TRUE,
-      );            
+      );
+
       $element['height'] = array(
         '#title' => t('Height'),
         '#type' => 'textfield',
@@ -86,8 +91,10 @@ function emvideo_field_formatter_settings_form($field, $instance, $view_mode, $f
         '#element_validate' => array('_element_validate_integer_positive'),
         '#required' => TRUE,
       );
-      return $element;      
+
+      return $element;
       break;
+
     case 'emvideo_snapshot':
       $element['width'] = array(
         '#title' => t('Width'),
@@ -97,12 +104,14 @@ function emvideo_field_formatter_settings_form($field, $instance, $view_mode, $f
         '#element_validate' => array('_element_validate_integer_positive'),
         '#required' => TRUE,
       );
+
       $element['class'] = array(
         '#title' => t('CSS class'),
         '#type' => 'textfield',
         '#size' => 10,
         '#default_value' => $settings['class'],
       );
+
       return $element;
       break;
   }
@@ -121,8 +130,10 @@ function emvideo_field_formatter_settings_summary($field, $instance, $view_mode)
       $output = t('Width') . ': ' . $settings['width'] . 'px<br/>';
       $output .= t('Height') . ': ' . $settings['height'] . 'px';
       break;
+
     case 'emvideo_snapshot':
       $output = t('Width') . ': ' . $settings['width'] . 'px<br/>';
+
       if (!empty($settings['class'])) {
         $output .= t('CSS class') . ': ' . $settings['class'] . '<br/>';
       }
@@ -139,23 +150,27 @@ function emvideo_field_formatter_view($entity_type, $entity, $field, $instance, 
   $element = array();
 
   switch ($display['type']) {
-    case 'emvideo_video':     
+    case 'emvideo_video':
       foreach ($items as $delta => $item) {
+
         $output = '';
         foreach (module_implements('emvideo_emcode') as $module) {
           $params = array(
             'source'   => $item['source'],
             'provider' => $item['provider'],
             'height'   => $display['settings']['height'],
-            'width'    => $display['settings']['width']
+            'width'    => $display['settings']['width'],
           );
+
           $output = module_invoke($module, 'emvideo_emcode', $params);
+
           if ($output !== FALSE) {
             $element[$delta]['#markup'] = $output;
             break;
             continue 2;
           }
         }
+
         if (!empty($item['source']) && empty($output)) {
           $source = $item['source'];
           $output .= '<object type="application/x-shockwave-flash" ';
@@ -174,15 +189,12 @@ function emvideo_field_formatter_view($entity_type, $entity, $field, $instance, 
           $output .= '</object>' . "\n";
           $element[$delta]['#markup'] = $output;
         }
-        elseif (empty($output)) { //There is a complete embed code
-          //$test = trim(strip_tags($item['url']));
-          //if (empty($test)) {// Should be safe to disable that
-            $element[$delta]['#markup'] = $item['url'];
-          //}
+        elseif (empty($output)) {
+          $element[$delta]['#markup'] = $item['url'];
         }
       }
       break;
-  
+
     case 'emvideo_snapshot':
       foreach ($items as $delta => $item) {
         if (isset($item['snapshot'])) {
@@ -190,11 +202,11 @@ function emvideo_field_formatter_view($entity_type, $entity, $field, $instance, 
             'src' => $item['snapshot'],
             'width' => $display['settings']['width'],
           );
-          
+
           if (!empty($display['settings']['class'])) {
             $attributes['class'] = array($display['settings']['class']);
           }
-          
+
           $element[$delta]['#markup'] = '<img' . drupal_attributes($attributes) . ' />';
         }
         else {
@@ -203,6 +215,7 @@ function emvideo_field_formatter_view($entity_type, $entity, $field, $instance, 
       }
       break;
   }
+
   return $element;
 }
 
@@ -228,17 +241,16 @@ function emvideo_field_widget_form(&$form, &$form_state, $field, $instance, $lan
   );
   $element['url'] = array();
 
-  switch ($instance['widget']['type']) {
-    case 'emvideo_text':
-      $element['url'] += array(
-        '#type' => 'textarea',
-        '#title' => check_plain($element['#title']),
-        '#default_value' => $value,
-        '#format' => 1,
-        '#required' => $element['#required']
-      );
-      break;
+  if ($instance['widget']['type'] == 'emvideo_text') {
+    $element['url'] += array(
+      '#type' => 'textarea',
+      '#title' => check_plain($element['#title']),
+      '#default_value' => $value,
+      '#format' => 1,
+      '#required' => $element['#required'],
+    );
   }
+
   return $element;
 }
 
@@ -246,9 +258,7 @@ function emvideo_field_widget_form(&$form, &$form_state, $field, $instance, $lan
  * Implements hook_field_widget_error().
  */
 function emvideo_field_widget_error($element, $error, $form, &$form_state) {
-  switch ($error['error']) {
-    case 'emvideo_invalid':
-      form_error($element, $error['message']);
-      break;
+  if ($error['error'] == 'emvideo_invalid') {
+    form_error($element, $error['message']);
   }
 }

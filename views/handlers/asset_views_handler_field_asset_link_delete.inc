@@ -1,15 +1,21 @@
 <?php
 /**
+ * @file
+ * Field handler to present a link asset edit.
+ */
+
+/**
  * Field handler to present a link asset edit.
  *
  * @ingroup views_field_handlers
  */
 class asset_views_handler_field_asset_link_delete extends asset_views_handler_field_asset_link {
+
   /**
-   * Renders the link.
+   * Return HTML.
    */
   function render_link($asset, $values) {
-    // Ensure user has access to edit this entity.
+    // Ensure user have access to delete this entity.
     if (!entity_access('delete', 'asset', $asset)) {
       return;
     }

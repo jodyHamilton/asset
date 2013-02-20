@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Code for the Asset Audio sample module.
+ * Code for the Asset Audio module.
  */
 
 /**
@@ -20,17 +20,3 @@ function asset_audio_default_asset_type() {
   }');
   return $items;
 }
-
-/**
- * Implements hook_theme().
- */
-/*function asset_audio_theme() {
-  return array(
-    'asset_editor_wrapper__audio' => array(
-      'template' => 'asset-editor-wrapper--audio'
-    )
-  );
-}
-  */
-
-

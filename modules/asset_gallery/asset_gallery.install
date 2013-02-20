@@ -4,6 +4,9 @@
  * Install, update, and uninstall functions for the Asset gallery module.
  */
 
+/**
+ * Implements hook_install().
+ */
 function asset_gallery_install() {
   field_info_cache_clear();
   $fields = array();
@@ -191,9 +194,9 @@ function asset_gallery_install() {
 
   // Translatables
   // Included for use with string extractors like potx.
-  st('Description');
-  st('Images');
-
+  $t = get_t();
+  $t('Description');
+  $t('Images');
 
   foreach ($fields as $field) {
     // Create or update field.
@@ -230,13 +233,11 @@ function asset_gallery_install() {
         ),
       ),
       'display' => array(),
-    )
+    ),
   );
   field_bundle_settings('asset', 'gallery', $bundle_settings);
 
-  assets_set_wysiwyg_modes('gallery', array(
-    'full' => 'full'
-  ));
+  assets_set_wysiwyg_modes('gallery', array('full' => 'full'));
 
   $bundle_settings = field_bundle_settings('asset', 'image');
   $bundle_settings['view_modes']['gallery'] = array('custom_settings' => TRUE);
@@ -249,9 +250,9 @@ function asset_gallery_install() {
     'weight' => 0,
     'settings' => array(
       'image_style' => 'asset_image_full',
-      'image_link' => ''
+      'image_link' => '',
     ),
-    'module' => 'image'
+    'module' => 'image',
   );
   field_update_instance($instance);
 
@@ -261,7 +262,7 @@ function asset_gallery_install() {
     'type' => 'text_default',
     'weight' => 1,
     'settings' => array(),
-    'module' => 'text'
+    'module' => 'text',
   );
   field_update_instance($instance);
 
@@ -271,11 +272,10 @@ function asset_gallery_install() {
     'type' => 'text_default',
     'weight' => 1,
     'settings' => array(),
-    'module' => 'text'
+    'module' => 'text',
   );
   field_update_instance($instance);
 }
-
 
 /**
  * Implements hook_uninstall().

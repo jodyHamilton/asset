@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Asset search widget tooltip related JS actions.
  */
 

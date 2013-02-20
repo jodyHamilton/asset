@@ -5,7 +5,7 @@
  */
 
 /**
- * Renders asset with overridden optional fields
+ * Renders asset with overridden optional fields.
  */
 function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
   if (!empty($asset)) {
@@ -46,8 +46,7 @@ function assets_render_by_tag($asset, $params_string, $in_editor = FALSE) {
 }
 
 /**
- * Helper function to keep the initial regexp only here
- * returns a set of matches per asset tag
+ * Helper function to keep the initial regexp only here, returns a set of matches per asset tag.
  */
 function assets_filter_get_matches($text) {
   $matches = array();
@@ -99,12 +98,7 @@ function assets_filter_replace_process($matches) {
 }
 
 /**
- * Helper function to override the optional asset field values
- *
- * @param type $asset Asset entity
- * @param type $field Field the new value will be applied to
- * @param type $values Values to set for the given asset field
- *
+ * Helper function to override the optional asset field values.
  */
 function _assets_set_field_value(&$asset, $field_name, $values) {
   $values = (array) $values;
@@ -123,7 +117,7 @@ function _assets_set_field_value(&$asset, $field_name, $values) {
 
     $field_type = $overridden_fields[$field_name]['type'];
     switch ($field_type) {
-    // @todo: We should check the type of widget instead.
+      // @todo: We should check the type of widget instead.
       case 'text':
       case 'text_long':
         if (!isset($asset->{$field_name}[$langcode])) {

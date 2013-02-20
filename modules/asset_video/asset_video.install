@@ -4,6 +4,9 @@
  * Install, update, and uninstall functions for the Asset video module.
  */
 
+/**
+ * Implements hook_install().
+ */
 function asset_video_install() {
   field_info_cache_clear();
   $fields = array();
@@ -202,10 +205,11 @@ function asset_video_install() {
     variable_set('menu_rebuild_needed', TRUE);
   }
 
-  // Translatables
+  // Translatables.
   // Included for use with string extractors like potx.
-  st('Description');
-  st('Video');
+  $t = get_t();
+  $t('Description');
+  $t('Video');
 
   $bundle_settings = array(
     'view_modes' => array(
@@ -220,7 +224,7 @@ function asset_video_install() {
         ),
       ),
       'display' => array(),
-    )
+    ),
   );
   field_bundle_settings('asset', 'video', $bundle_settings);
 
@@ -237,4 +241,3 @@ function asset_video_uninstall() {
   field_delete_field('field_asset_video_desc');
   field_delete_field('field_asset_video_file');
 }
-

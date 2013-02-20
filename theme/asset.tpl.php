@@ -30,7 +30,7 @@
 ?>
 <?php if (!$page): ?>
   <strong <?php print $title_attributes; ?>>
-      <?php print $title; ?>
+    <?php print $title; ?>
   </strong>
 <?php endif; ?>
 

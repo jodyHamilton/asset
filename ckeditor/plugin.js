@@ -1,3 +1,7 @@
+/**
+ * @file
+ * Asset plugin for ckeditor.
+ */
 var Assets;
 (function ($) {
   var tempContainer = document.createElement('DIV'),
@@ -242,16 +246,7 @@ var Assets;
         tagCache[tagId] = {tag: tag, html: html};
         container.innerHTML = '';
       }
-
       return html;
-    },
-
-    getTag: function (tagId) {
-      if (typeof(tagCache[tagId]) === 'undefined') {
-        this.getDataById(tagId);
-      }
-
-      return tagCache[tagId].tag;
     },
 
     getContentByTag: function (tag) {
@@ -314,6 +309,7 @@ var Assets;
           // @todo: Check that it works, needed because wysiwyg encodes 2 times.
           clean_tag = tag.replace(/&amp;quot;/g, '"');
 
+          // Get from cache.
           for (cid in tagCache) {
             if (tagCache.hasOwnProperty(cid)) {
               if (clean_tag === tagCache[cid].tag) {
@@ -323,6 +319,7 @@ var Assets;
             }
           }
 
+          // Otherwise get content using ajax and cache it.
           if (!html) {
             html = this.getContentByTag(clean_tag);
           }
@@ -367,7 +364,6 @@ var Assets;
         }
       },
 
-
       init: function (editor) {
         var path = this.path;
 
@@ -411,7 +407,6 @@ var Assets;
           }
         });
 
-        tagCache = {};
         this.Assets = Assets;
 
         var conf = Drupal.settings.ckeditor.plugins.asset, assetType, type, execFn;
@@ -494,15 +489,7 @@ var Assets;
             if (element) {
               Assets.outdated = element;
               tag_id = element.data('asset-cid');
-
-              // @todo: investigate why cache is empty.
-              if (typeof(tagCache[tag_id]) == 'undefined') {
-                // Load asset and create cache entry.
-                Assets.getDataById(tag_id);
-              }
-
               tag = encodeURIComponent(tagCache[tag_id].tag);
-
               src = Drupal.settings.basePath + 'admin/assets/override?render=popup&tag=' + tag;
               Assets.openDialog(editor, 'asset_' + Assets.parseId(tag_id, 'type'), src, element);
             }
@@ -518,12 +505,6 @@ var Assets;
               Assets.outdated = element;
 
               var tag_id = element.data('asset-cid');
-              // @todo: Investigate why cache is empty.
-              if (typeof(tagCache[tag_id]) == 'undefined') {
-                // Load asset and create cache entry.
-                Assets.getDataById(tag_id);
-              }
-
               var params = Assets.getTagData(tagCache[tag_id].tag);
               var src = [
                 Drupal.settings.basePath + 'admin/assets/edit',
@@ -604,29 +585,6 @@ var Assets;
               if (element) {
                 evt.data.preventDefault(true);
               }
-            }
-          });
-
-          editor.document.on('keydown', function (evt) {
-            var keyCode = evt.data.getKeystroke();
-
-            // Backspace OR Delete.
-            if (keyCode in { 8 : 1, 46 : 1 }) {
-              // @todo: Fix that backspace delete all assets in wysiwyg.
-              // @see: http://drupal.org/node/1905278
-//              var sel = editor.getSelection();
-//              var control = sel.getSelectedElement();
-//
-//              var selected = evt.editor.getSelection().getStartElement().$;
-//              var $selected = $(selected);
-//              var $assetWrapper;
-//
-//              if (!$selected.hasClass('asset-wrapper')) {
-//                $assetWrapper = $selected.parents('.asset-wrapper');
-//              }
-//              else {
-//                $assetWrapper = $selected;
-//              }
             }
           });
         });
@@ -785,10 +743,12 @@ var Assets;
           htmlFilter = dataProcessor && dataProcessor.htmlFilter,
           HtmlDPtoHtml = dataProcessor && editor.dataProcessor.toHtml;
 
-        if (HtmlDPtoHtml) { //Unprotect some flash tags, force democracy
+        if (HtmlDPtoHtml) {
+          // Unprotect some flash tags, force democracy.
           editor.dataProcessor.toHtml = function (data, fixForBody) {
             var unprotectFlashElementNamesRegex = /(<\/?)cke:((?:object|embed|param)[^>]*>)/gi;
             data = HtmlDPtoHtml.apply(editor.dataProcessor, [data, fixForBody]);
+
             return data.replace(unprotectFlashElementNamesRegex, '$1$2');
           };
         }
@@ -808,10 +768,6 @@ var Assets;
                 if (element.attributes && element.attributes['data-asset-cid']) {
                   var tag_id = element.attributes['data-asset-cid'];
 
-                  if (typeof(tagCache[tag_id]) == 'undefined') {
-                    Assets.getDataById(tag_id);
-                  }
-
                   var tag = tagCache[tag_id].tag;
                   tag = tag.replace(/</g, '&lt;');
                   tag = tag.replace(/>/g, '&gt;');
@@ -819,6 +775,7 @@ var Assets;
                   var tagEl = new CKEDITOR.htmlParser.fragment.fromHtml(tag);
                   return tagEl.children[0];
                 }
+
                 return element;
               }
             }

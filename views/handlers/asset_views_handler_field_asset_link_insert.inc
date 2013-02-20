@@ -1,12 +1,18 @@
 <?php
 /**
+ * @file
+ * Field handler to present a library button.
+ */
+
+/**
  * Field handler to present a library button.
  *
  * @ingroup views_field_handlers
  */
 class asset_views_handler_field_asset_link_insert extends asset_views_handler_field_asset_link {
+
   /**
-   * Renders the button
+   * Return HTML.
    */
   function render_link($asset, $values) {
     $this->options['alter']['make_link'] = FALSE;

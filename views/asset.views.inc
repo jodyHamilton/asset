@@ -1,8 +1,11 @@
 <?php
+/**
+ * @file
+ * Views module integration.
+ */
 
 /**
- * Implements of hook_views_handlers() to register all of the basic handlers
- * views uses.
+ * Implements hook_views_handlers().
  */
 function asset_views_handlers() {
   return array(
@@ -20,11 +23,11 @@ function asset_views_handlers() {
         'parent' => 'asset_views_handler_field_asset_link',
       ),
       'asset_views_handler_field_asset' => array(
-        'parent' => 'views_handler_field'
+        'parent' => 'views_handler_field',
       ),
       'asset_views_handler_argument_asset_aid' => array(
-        'parent' => 'views_handler_argument_numeric'
-      )
+        'parent' => 'views_handler_argument_numeric',
+      ),
     ),
   );
 }

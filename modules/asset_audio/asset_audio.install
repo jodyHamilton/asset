@@ -103,9 +103,10 @@ function asset_audio_install() {
     ),
   );
 
-  // Translatables
+  // Translatables.
   // Included for use with string extractors like potx.
-  st('Audio');
+  $t = get_t();
+  $t('Audio');
 
   foreach ($fields as $field) {
     // Create or update field.
@@ -142,12 +143,12 @@ function asset_audio_install() {
         ),
       ),
       'display' => array(),
-    )
+    ),
   );
   field_bundle_settings('asset', 'audio', $bundle_settings);
 
   assets_set_wysiwyg_modes('audio', array(
-    'full' => 'full'
+    'full' => 'full',
   ));
 }
 

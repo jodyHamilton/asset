@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Asset search widget related JS actions.
  */
 
@@ -57,9 +57,6 @@ assetWidget.allowDrop = false;
 
     // Disable page scroll.
     assetWidget.disablePageScroll($context);
-
-    // Init datepicker for search form.
-    assetWidget.initDatepicker($context);
   };
 
   /**
@@ -153,7 +150,7 @@ assetWidget.allowDrop = false;
    * Set tab content by ID.
    */
   assetWidget.setTabContent = function (tabId, content) {
-    $('.tab-contents ' + assetWidget.getTabSelectorById(tabId)).html(content);
+    $('.assets-content .tab-contents ' + assetWidget.getTabSelectorById(tabId)).html(content);
   };
 
   /**
@@ -207,6 +204,9 @@ assetWidget.allowDrop = false;
         else {
           assetWidget.paramDown();
         }
+
+        // Init datepicker for search form.
+        assetWidget.initDatepicker();
       }
       // And ensure that selected is visible.
       else {
@@ -225,8 +225,8 @@ assetWidget.allowDrop = false;
   };
 
   // Init date picker for search form.
-  assetWidget.initDatepicker = function ($context) {
-    $context.find('#edit-created').once('asset-datepicker', function () {
+  assetWidget.initDatepicker = function () {
+    $('input[name=created]').once('asset-datepicker', function () {
       $(this).datepicker({
         autoSize: true,
         changeMonth: true,
@@ -427,6 +427,7 @@ assetWidget.allowDrop = false;
       var $current = $item.parents(".form-item");
       $current.addClass('item-multiselect');
       $item.multiSelect({
+        listHeight: 'auto',
         selectAll: true,
         selectAllText: selectAllMessage,
         noneSelected: '',
@@ -457,7 +458,7 @@ assetWidget.allowDrop = false;
    * View modes switcher.
    */
   assetWidget.viewModeSwitcher = function ($context) {
-    $context.find('.size.sizes').once('asset-view-switch', function(event) {
+    $context.find('.item .size.sizes').once('asset-view-switch', function(event) {
       var $this = $(this);
 
       var current = 0;
@@ -762,7 +763,7 @@ assetWidget.allowDrop = false;
     });
 
     // Text input tooltips of search filters description.
-    $context.find(".views-exposed-widgets .views-exposed-widget .description").once('asset-inputs-tooltips', function () {
+    $context.find(".views-exposed-widgets .views-exposed-widget:not('.views-widget-filter-type, .views-widget-filter-created') .description").once('asset-inputs-tooltips', function () {
       var $formItem = $(this).parents(".views-exposed-widget");
 
       $formItem.find('input').focus(function () {
@@ -1110,10 +1111,10 @@ assetWidget.allowDrop = false;
     var $searchParams = assetWidget.$widget.find(".tab-contents-top");
     if ($searchParams.size()) {
       if ($searchParams.hasClass('tab-contents-noparam')) {
-        $searchParams.removeClass('tab-contents-top-empty').animate({"top":"-53px"}, 150, 'linear');
+        $searchParams.removeClass('tab-contents-top-empty').animate({"top":"-60px"}, 150, 'linear');
       }
       else {
-        $searchParams.removeClass('tab-contents-top-empty').animate({"top":"-103px"}, 150, 'linear');
+        $searchParams.removeClass('tab-contents-top-empty').animate({"top":"-110px"}, 150, 'linear');
       }
     }
   };

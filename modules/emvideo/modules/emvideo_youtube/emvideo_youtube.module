@@ -16,7 +16,7 @@ function emvideo_youtube_emvideo_parse($url) {
       'i2.ytimg.com',
       'i3.ytimg.com',
       'i4.ytimg.com',
-      'img.youtube.com'
+      'img.youtube.com',
     );
 
     $host = $hosts[array_rand($hosts)];
@@ -24,7 +24,7 @@ function emvideo_youtube_emvideo_parse($url) {
     return array(
       'source' => 'http://www.youtube.com/v/' . $matches[4],
       'provider' => 'youtube',
-      'snapshot' => 'http://' . $host . '/vi/' . $matches[4] . '/0.jpg'
+      'snapshot' => 'http://' . $host . '/vi/' . $matches[4] . '/0.jpg',
     );
   }
 

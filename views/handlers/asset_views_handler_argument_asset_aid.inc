@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Provide node aid argument handler.
@@ -9,6 +8,7 @@
  * Argument handler to accept an asset id.
  */
 class asset_views_handler_argument_asset_aid extends views_handler_argument_numeric {
+
   /**
    * Override the behavior of title(). Get the title of the node.
    */
@@ -19,6 +19,7 @@ class asset_views_handler_argument_asset_aid extends views_handler_argument_nume
     foreach ($result as $asset) {
       $titles[] = check_plain($asset->title);
     }
+
     return $titles;
   }
 }

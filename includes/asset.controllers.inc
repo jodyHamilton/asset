@@ -16,7 +16,9 @@ class Asset extends Entity {
   public $uid;
   public $in_editor = FALSE;
 
-
+  /**
+   * Basic constructor.
+   */
   public function __construct($values = array()) {
     if (isset($values['user'])) {
       $values['uid'] = $values['user']->uid;
@@ -35,6 +37,9 @@ class Asset extends Entity {
     }
   }
 
+  /**
+   * Defines the entity label if the 'entity_class_label' callback is used.
+   */
   protected function defaultLabel() {
     if (!empty($this->title)) {
       return $this->title;
@@ -43,10 +48,16 @@ class Asset extends Entity {
     return $this->entityInfo['bundles'][$this->$bundle_key]['label'];
   }
 
+  /**
+   * Override this in order to implement a custom default URI.
+   */
   protected function defaultUri() {
     return array('path' => 'admin/content/assets/view/' . $this->identifier());
   }
 
+  /**
+   * Builds a structured array representing the entity's content.
+   */
   public function buildContent($view_mode = 'full', $langcode = NULL) {
     $build = parent::buildContent($view_mode, $langcode);
     $build['#theme_wrappers'][] = 'asset_wrapper';
@@ -92,9 +103,12 @@ class AssetsUIController extends EntityDefaultUIController {
 
 class AssetViewsController extends EntityDefaultViewsController  {
 
+  /**
+   * Alternative for hook_views_data().
+   */
   public function views_data() {
     $data = parent::views_data();
-    $table = $this->info['base table']; //asset
+    $table = $this->info['base table'];
 
     $data[$table]['aid'] = array(
       'title' => t('Aid'),
@@ -107,7 +121,7 @@ class AssetViewsController extends EntityDefaultViewsController  {
         'handler' => 'asset_views_handler_argument_asset_aid',
         'name field' => 'title',
         'numeric' => TRUE,
-        'validate type' => 'aid',///
+        'validate type' => 'aid',
       ),
       'filter' => array(
         'handler' => 'views_handler_filter_numeric',
@@ -138,7 +152,6 @@ class AssetViewsController extends EntityDefaultViewsController  {
 
     // Set proper filter handler to allow autocomplete on field.
     $data[$table]['uid']['filter']['handler'] = 'views_handler_filter_user_name';
-
     $data[$table]['edit_asset'] = array(
       'field' => array(
         'title' => t('Edit link'),
@@ -146,6 +159,7 @@ class AssetViewsController extends EntityDefaultViewsController  {
         'handler' => 'asset_views_handler_field_asset_link_edit',
       ),
     );
+
     $data[$table]['delete_asset'] = array(
       'field' => array(
         'title' => t('Delete link'),
@@ -153,6 +167,7 @@ class AssetViewsController extends EntityDefaultViewsController  {
         'handler' => 'asset_views_handler_field_asset_link_delete',
       ),
     );
+
     $data[$table]['insert_asset'] = array(
       'field' => array(
         'title' => t('Insert button'),
@@ -184,18 +199,21 @@ class AssetType extends Entity {
   /**
    * Returns whether the asset type is locked, thus may not be deleted or renamed.
    *
-   * Asset types provided in code are automatically treated as locked, as well
-   * as any fixed asset type.
+   * Asset types provided in code are automatically treated as locked,
+   * as well as any fixed asset type.
    */
   public function isLocked() {
     return isset($this->status) && empty($this->is_new) && (($this->status & ENTITY_IN_CODE) || ($this->status & ENTITY_FIXED));
   }
 
   /**
-   * @param $ids
-   * @param DatabaseTransaction|null $transaction
+   * Delete function.
    *
-   * We have to override this method just to invoke the entity_defaults_rebuild in case when no existent types were reverted
+   * We have to override this method just to invoke the entity_defaults_rebuild,
+   * in case when no existent types were reverted
+   *
+   * @param $ids
+   * @param DatabaseTransaction | null $transaction
    */
   public function delete() {
     parent::delete();

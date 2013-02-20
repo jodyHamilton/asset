@@ -1,15 +1,21 @@
 <?php
 /**
+ * @file
+ * Field handler to present a link asset edit.
+ */
+
+/**
  * Field handler to present a link asset edit.
  *
  * @ingroup views_field_handlers
  */
 class asset_views_handler_field_asset_link_edit extends asset_views_handler_field_asset_link {
+
   /**
-   * Renders the link.
+   * Return HTML.
    */
   function render_link($asset, $values) {
-    // Ensure user has access to edit this entity.
+    // Ensure that user have access to edit this entity.
     if (!entity_access('update', 'asset', $asset)) {
       return;
     }
