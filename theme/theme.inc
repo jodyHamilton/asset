@@ -32,7 +32,7 @@ function template_preprocess_asset_wrapper(&$vars) {
 
   if ($view_mode !== ASSET_DEFAULT_MODE) {
     $options = !empty($asset->asset_options) && is_array($asset->asset_options) ? $asset->asset_options : array();
-    if (!empty($options['align']) && in_array($options['align'], array('', 'left', 'right'), TRUE)) {
+    if (!empty($options['align']) && in_array($options['align'], array('', 'center', 'left', 'right'), TRUE)) {
       $classes_array[] = drupal_html_class('asset-align-' . $options['align']);
     }
   }

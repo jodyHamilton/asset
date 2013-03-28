@@ -862,17 +862,11 @@ assetWidget.allowDrop = false;
             $form.find('textarea.match-field').parent().addClass('field-refuse');
             // Handle inputs.
             var $fieldWrapper = $form.find('input.match-field').parent();
-            var $multipleFieldWrapper = $form.find('input.match-field').parents('tr td');
-
-            if ($multipleFieldWrapper.size()) {
-              $multipleFieldWrapper.addClass('field-refuse');
-            }
-            else {
-              $fieldWrapper.addClass('field-refuse');
-            }
+            $fieldWrapper.addClass('field-refuse');
 
             $.each($match, function() {
               var $this = $(this);
+
               // We haven't case when we can restrict to add some types to wysiwyg.
               // Add accept style to matched fields.
               var $fieldWrapper = $this.parent();
@@ -1114,7 +1108,7 @@ assetWidget.allowDrop = false;
         $searchParams.removeClass('tab-contents-top-empty').animate({"top":"-60px"}, 150, 'linear');
       }
       else {
-        $searchParams.removeClass('tab-contents-top-empty').animate({"top":"-110px"}, 150, 'linear');
+        $searchParams.removeClass('tab-contents-top-empty').animate({"top":"-103px"}, 150, 'linear');
       }
     }
   };
@@ -1123,9 +1117,8 @@ assetWidget.allowDrop = false;
    * Hide search filters block.
    */
   assetWidget.paramDown = function () {
+    // @todo we have problem with that class, because it could be added with delay after paramUp complete.
     assetWidget.$widget.find(".tab-contents-top").animate({"top":"-11px"}, 150, 'linear', function () {
-      // @todo we have problem with that class, becuase it could be added with delay after paramUp complete.
-      //$(this).addClass('tab-contents-top-empty');
     });
   };
 

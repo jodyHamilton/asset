@@ -4,12 +4,27 @@
  */
 var Assets;
 (function ($) {
+  // Temporary container for asset html.
   var tempContainer = document.createElement('DIV'),
     tagCache = {},
     cutted = null;
 
+  // Assets object.
   Assets = {
     selectedElement: null,
+
+    getCKeditorVersion: function () {
+      if (CKEDITOR.version) {
+        var explodedVersion = CKEDITOR.version.split('.');
+        return explodedVersion[0] ? parseInt(explodedVersion[0]) : null;
+      }
+    },
+
+    select: function (element) {
+      this.deselect();
+      this.selectedElement = element;
+      this.selectedElement.addClass('selected');
+    },
 
     deselect: function () {
       var element = null, removeSelectedClass = function (el) {
@@ -47,12 +62,6 @@ var Assets;
       }
 
       return element;
-    },
-
-    select: function (element) {
-      this.deselect();
-      this.selectedElement = element;
-      this.selectedElement.addClass('selected');
     },
 
     getSelected: function (editor) {
@@ -135,6 +144,15 @@ var Assets;
       };
     },
 
+    adjustDialogHeight: function () {
+      // CKeditor 4 have bug into plugins/dialog/plugin.js line 1036.
+      // Developers forgot to add height:100% into iframe wrapper.
+      // In CKeditor 3 this code present.
+      setTimeout(function () {
+        $('.cke_dialog_contents .cke_dialog_ui_vbox.cke_dialog_page_contents').css('height','100%');
+      }, 0);
+    },
+
     openDialog: function (editor, dialogName, src, element) {
       editor.openDialog(dialogName, function () {
         this.definition.contents[0].elements[0].src = src;
@@ -142,13 +160,16 @@ var Assets;
         if (typeof(element) !== 'undefined') {
           this._outdatedAssetEl = element;
         }
+
+        // Fix height iframe wrapper issue with ckeditor 4.
+        Assets.adjustDialogHeight();
       });
     },
 
     searchDialog: function () {
       return {
         title: 'Media Assets',
-        minWidth: 1000,
+        minWidth: 800,
         minHeight: 600,
         contents: [{
           id: 'asset_frame',
@@ -188,6 +209,9 @@ var Assets;
                   }
                 }
               );
+
+              // Fix height iframe wrapper issue with ckeditor 4.
+              Assets.adjustDialogHeight();
             }
           }]
         }],
@@ -207,19 +231,36 @@ var Assets;
         if ($asset_div.size()) {
           $asset_div.attr('data-asset-cid', tagId);
 
-          if ((align == 'left') || (align == 'right')) {
+          if ((align == 'center') || (align == 'left') || (align == 'right')) {
             // Add special classes for visual feedback in wysiwyg.
             var $image = $asset_div.find('img');
             var $video = $asset_div.find('object');
             if ($image.size() || $video.size()) {
-              if ($image.size()) {
-                $image.css('float', align).siblings('div.field').css('clear', 'both');
+              // Center aligment handler.
+              if (align == 'center') {
+                if ($image.size()) {
+                  $image.css({'margin-left':'auto', 'margin-right':'auto', 'display':'block'});
+                }
+                else if ($video.size()) {
+                  $video.css({'margin-left':'auto', 'margin-right':'auto', 'display':'block'});
+                }
               }
-              else if ($video.size()) {
-                $video.parents('div.field').css('float', align).next('div.field').css('clear', 'both')
+              // Left, right handler.
+              else {
+                if ($image.size()) {
+                  $image.css('float', align).parent().siblings('div.field').css('clear', 'both');
+                }
+                else if ($video.size()) {
+                  $video.parents('div.field').css('float', align).next('div.field').css('clear', 'both')
+                }
               }
             }
+            // Add style to wrapper.
             else {
+              if (align == 'center') {
+                $asset_div.removeClass('rtecenter').addClass('rtecenter');
+              }
+
               if (align == 'left') {
                 $asset_div.removeClass('rteright').addClass('rteleft');
               }
@@ -231,7 +272,7 @@ var Assets;
           }
           // Need for small mode, and none align.
           else {
-            $asset_div.removeClass('rteleft rteright');
+            $asset_div.removeClass('rteleft rteright rtecenter');
           }
         }
         return tempContainer;
@@ -331,11 +372,12 @@ var Assets;
     }
   };
 
+  // Ckeditor plugin body.
   CKEDITOR.plugins.add('asset', {
       lang: ['en', 'fr', 'ru'],
-      buttons: [],
-
       requires: ['htmlwriter', 'iframedialog'],
+
+      // Callbacks.
       replaceAsset: function (tag_id, tag) {
         if (Assets.outdated) {
           $.ajax({
@@ -367,46 +409,164 @@ var Assets;
       init: function (editor) {
         var path = this.path;
 
+        // Ckeditor instanceReady event.
         editor.on('instanceReady', function (evt) {
           var editor = evt.editor;
           editor.document.appendStyleSheet(path + 'assets-editor.css');
 
-          // For webkit set cursor of wysiwyg to the end to prevent wrong pasting of asset.
-          // Webkit works incorrectly with contentEditable.
-          if (CKEDITOR.instances && CKEDITOR.env && CKEDITOR.env.webkit) {
-            editor.focus();
-
-            // Getting selection.
-            var selected = editor.getSelection();
-            // Getting ranges.
-            var selected_ranges = selected.getRanges();
-            // Selecting the starting node.
-            var node = selected_ranges[0].startContainer;
-            var parents = node.getParents(true);
-
-            node = parents[parents.length - 2].getFirst();
-            if (node) {
-              while (true) {
-                var x = node ? node.getNext() : null;
-
-                if (x == null) {
-                  break;
-                }
-
-                node = x;
+          if (CKEDITOR.instances && CKEDITOR.env) {
+            // For webkit set cursor of wysiwyg to the end to prevent asset in asset pasting.
+            if (CKEDITOR.env.webkit) {
+              // Handle case for CKeditor 4.
+              if (Assets.getCKeditorVersion() >= 4) {
+                // Сreate a range for the entire contents of the editor document body.
+                var range = editor.createRange();
+                // Move to the end of the range.
+                range.moveToPosition(range.root, CKEDITOR.POSITION_BEFORE_END);
+                // Putting the current selection there.
+                editor.getSelection().selectRanges([range]);
               }
-
-              selected.selectElement(node);
             }
 
-            selected_ranges = selected.getRanges();
-            // False collapses the range to the end of the selected node, true before the node.
-            selected_ranges[0].collapse(false);
-            // Putting the current selection there.
-            selected.selectRanges(selected_ranges);
+            // Fix for CKeditor 3 & Chrome and for CKeditor 4 && FF.
+            if ((Assets.getCKeditorVersion() < 4 && CKEDITOR.env.webkit)
+              || (Assets.getCKeditorVersion() >= 4 && CKEDITOR.env.gecko)) {
+              editor.focus();
+
+              // Getting selection.
+              var selected = editor.getSelection();
+              // Getting ranges.
+              var selected_ranges = selected.getRanges();
+              // Selecting the starting node.
+              var range = selected_ranges[0];
+
+              if (range) {
+                var node = range.startContainer;
+                var parents = node.getParents(true);
+
+                node = parents[parents.length - 2].getFirst();
+                if (node) {
+                  while (true) {
+                    var x = node ? node.getNext() : null;
+
+                    if (x == null) {
+                      break;
+                    }
+
+                    node = x;
+                  }
+
+                  selected.selectElement(node);
+                }
+
+                selected_ranges = selected.getRanges();
+                // False collapses the range to the end of the selected node, true before the node.
+                selected_ranges[0].collapse(false);
+                // Putting the current selection there.
+                selected.selectRanges(selected_ranges);
+              }
+            }
           }
         });
 
+        // Wrapper for contentDom group events.
+        editor.on('contentDom', function (evt) {
+          editor.document.on('click', function (evt) {
+            var element = evt.data.getTarget();
+
+            while (element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
+              element = element.getParent();
+            }
+
+            if (element) {
+              editor.getSelection().selectElement(element);
+              Assets.select(element);
+            }
+            else {
+              Assets.deselect(element);
+            }
+          });
+
+          editor.document.on('mousedown', function (evt) {
+            var element = evt.data.getTarget();
+
+            if (element.is('img')) {
+              while (element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
+                element = element.getParent();
+              }
+              if (element) {
+                evt.data.preventDefault(true);
+              }
+            }
+          });
+        });
+
+        // Paste event.
+        editor.on('paste', function (evt) {
+          var data = evt.data, dataProcessor = new pasteProcessor(), htmlFilter = dataProcessor.htmlFilter,
+            processed = {};
+
+          htmlFilter.addRules({
+            elements: {
+              'div': function (element) {
+                var wrapper, tagId, tag_id;
+                Assets.deselect(element);
+
+                if (element.attributes && element.attributes['data-asset-cid']) {
+                  tag_id = element.attributes['data-asset-cid'];
+
+                  // @todo: Check for webkit this functionality is forbidden.
+                  if (CKEDITOR.env.webkit) {
+                    return false;
+                  }
+
+                  if (!processed[tag_id]) {
+                    tagId = Assets.generateId(tag_id);
+
+                    if (typeof(tagCache[tag_id]) === 'undefined') {
+                      Assets.getDataById(tagId);
+                    }
+
+                    processed[tagId] = 1;
+                    wrapper = new CKEDITOR.htmlParser.fragment.fromHtml(tagCache[tagId].html);
+
+                    return wrapper.children[0];
+                  }
+                }
+                return element;
+              }
+            }
+          });
+
+          try {
+            data['html'] = dataProcessor.toHtml(data['html']);
+          }
+          catch (e) {
+            if (typeof(console) !== 'undefined') {
+              console.log(editor.lang.asset.assets_error_paste);
+            }
+          }
+          Assets.deselect();
+        }, this);
+
+        // Double click event.
+        editor.on('doubleclick', function (evt) {
+          var editor = evt.editor;
+
+          // Getting selection.
+          var element = Assets.getSelected(editor), tag_id, tag, src;
+
+          // Open dialog frame.
+            if (element) {
+              Assets.outdated = element;
+              tag_id = element.data('asset-cid');
+              tag = encodeURIComponent(tagCache[tag_id].tag);
+              src = Drupal.settings.basePath + 'admin/assets/override?render=popup&tag=' + tag;
+              Assets.openDialog(editor, 'asset_' + Assets.parseId(tag_id, 'type'), src, element);
+            }
+        });
+
+        // Common functionality for the plugin.
         this.Assets = Assets;
 
         var conf = Drupal.settings.ckeditor.plugins.asset, assetType, type, execFn;
@@ -431,7 +591,7 @@ var Assets;
               editorFocus: CKEDITOR.env.ie || CKEDITOR.env.webkit
             });
 
-            editor.ui.addButton(type, {
+            editor.ui.addButton && editor.ui.addButton(type, {
               label: conf[assetType].name,
               command: type,
               icon: this.path + 'buttons/' + conf[assetType].icon
@@ -451,6 +611,7 @@ var Assets;
           return editor.document.createElement('br');
         };
 
+        // Add commands for asset.
         editor.addCommand('addLineAfter', {
           exec: function (editor) {
             var node = Assets.getSelected(editor), newline;
@@ -477,8 +638,8 @@ var Assets;
 
         CKEDITOR.dialog.add('assetSearch', Assets.searchDialog);
         editor.addCommand('assetSearch', new CKEDITOR.dialogCommand('assetSearch'));
-        editor.ui.addButton('assetSearch', {
-          label: editor.lang.assets_btn_search,
+        editor.ui.addButton && editor.ui.addButton('assetSearch', {
+          label: (Assets.getCKeditorVersion() >= 4) ? editor.lang.asset.assets_btn_search : editor.lang.assets_btn_search,
           command: 'assetSearch',
           icon: this.path + 'search.png'
         });
@@ -558,90 +719,76 @@ var Assets;
           editorFocus: CKEDITOR.env.ie || CKEDITOR.env.webkit
         });
 
-        editor.on('contentDom', function (evt) {
-          editor.document.on('click', function (evt) {
-            var element = evt.data.getTarget();
-
-            while (element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
-              element = element.getParent();
-            }
-
-            if (element) {
-              editor.getSelection().selectElement(element);
-              Assets.select(element);
-            }
-            else {
-              Assets.deselect(element);
-            }
-          });
-
-          editor.document.on('mousedown', function (evt) {
-            var element = evt.data.getTarget();
-
-            if (element.is('img')) {
-              while (element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
-                element = element.getParent();
-              }
-              if (element) {
-                evt.data.preventDefault(true);
-              }
-            }
-          });
-        });
-
+        // Create context menu.
         if (editor.addMenuItem) {
-          editor.addMenuGroup('asset');
+          editor.addMenuGroup('asset_operations', 100);
 
-          editor.addMenuItem('assetoverride', {
-            label: editor.lang.assets_override,
-            command: 'assetOverride',
-            group: 'asset',
-            icon: this.path + 'gear.png'
+          editor.addMenuItems({
+            assetcut: {
+              label: (Assets.getCKeditorVersion() >= 4) ? editor.lang.asset.assets_cut : editor.lang.assets_cut,
+              command: 'assetCut',
+              group: 'asset_operations',
+              icon: this.path + 'cut.png',
+              order: 1
+            },
+            assetpaste: {
+              label: (Assets.getCKeditorVersion() >= 4) ? editor.lang.asset.assets_paste : editor.lang.assets_paste,
+              command: 'assetPaste',
+              group: 'asset_operations',
+              icon: this.path + 'paste.png',
+              order: 2
+            },
+            assetdelete: {
+              label: (Assets.getCKeditorVersion() >= 4) ? editor.lang.asset.assets_delete : editor.lang.assets_delete,
+              command: 'assetDelete',
+              group: 'asset_operations',
+              icon: this.path + 'delete.png',
+              order: 3
+            }
           });
 
-          editor.addMenuItem('assetedit', {
-            label: editor.lang.assets_edit,
-            command: 'assetEdit',
-            group: 'asset',
-            icon: this.path + 'edit.png'
-          });
-
-          editor.addMenuItem('assetdelete', {
-            label: editor.lang.assets_delete,
-            command: 'assetDelete',
-            group: 'asset'
-          });
-
-          editor.addMenuItem('assetcut', {
-            label: editor.lang.assets_cut,
-            command: 'assetCut',
-            group: 'asset'
-          });
-
-          editor.addMenuItem('assetpaste', {
-            label: editor.lang.assets_paste,
-            command: 'assetPaste',
-            group: 'asset'
-          });
-
-          editor.addMenuGroup('newline', 200);
+          editor.addMenuGroup('asset_newline', 200);
           editor.addMenuItems({
             addLineBefore: {
-              label: editor.lang.assets_nl_before,
+              label: (Assets.getCKeditorVersion() >= 4) ? editor.lang.asset.assets_nl_before : editor.lang.assets_nl_before,
               command: 'addLineBefore',
-              group: 'newline',
+              group: 'asset_newline',
               order: 1
             },
             addLineAfter: {
-              label: editor.lang.assets_nl_after,
+              label: (Assets.getCKeditorVersion() >= 4) ? editor.lang.asset.assets_nl_after : editor.lang.assets_nl_after,
               command: 'addLineAfter',
-              group: 'newline',
+              group: 'asset_newline',
+              order: 2
+            }
+          });
+
+          editor.addMenuGroup('asset_edit', 300);
+          editor.addMenuItems({
+            assetoverride: {
+              label: (Assets.getCKeditorVersion() >= 4) ? editor.lang.asset.assets_override : editor.lang.assets_override,
+              command: 'assetOverride',
+              group: 'asset_edit',
+              icon: this.path + 'override.png',
+              order: 1
+            },
+            assetedit: {
+              label: (Assets.getCKeditorVersion() >= 4) ? editor.lang.asset.assets_edit : editor.lang.assets_edit,
+              command: 'assetEdit',
+              group: 'asset_edit',
+              icon: this.path + 'edit.png',
               order: 2
             }
           });
         }
 
         if (editor.contextMenu) {
+          // Remove items from div plugin.
+          editor.removeMenuItem('editdiv');
+          editor.removeMenuItem('removediv');
+          // Remove default menu item paste.
+          editor.removeMenuItem('paste');
+
           editor.contextMenu.addListener(function (element, selection) {
             var type, conf, menu = {};
 
@@ -649,19 +796,25 @@ var Assets;
               element = element.getParent();
             }
 
+            // Open context menu.
             if (element) {
+              // Select asset element, if element wasn't selected before.
+              if (!element.hasClass('selected')) {
+                Assets.select(element)
+              }
+
               type = Assets.parseId(element.data('asset-cid'), 'type');
               conf = Drupal.settings.ckeditor.plugins.asset[type];
 
-              if (!(conf.modes.length === 1 && conf.modes.full && !conf.fields.length)) {
-                menu.assetoverride = CKEDITOR.TRISTATE_ON;
-              }
-
-              menu.assetedit = CKEDITOR.TRISTATE_ON;
-              menu.assetdelete = CKEDITOR.TRISTATE_ON;
               menu.assetcut = CKEDITOR.TRISTATE_ON;
+              menu.assetdelete = CKEDITOR.TRISTATE_ON;
               menu.addLineBefore = CKEDITOR.TRISTATE_ON;
               menu.addLineAfter = CKEDITOR.TRISTATE_ON;
+              menu.assetedit = CKEDITOR.TRISTATE_ON;
+
+              if (conf && conf.modes && !(conf.modes.length === 1 && conf.modes.full && !conf.fields.length)) {
+                menu.assetoverride = CKEDITOR.TRISTATE_ON;
+              }
             }
             else {
               if (cutted !== null) {
@@ -687,53 +840,6 @@ var Assets;
             return writer.getHtml(true);
           }
         };
-
-        editor.on('paste', function (evt) {
-          var data = evt.data, dataProcessor = new pasteProcessor(), htmlFilter = dataProcessor.htmlFilter,
-            processed = {};
-
-          htmlFilter.addRules({
-            elements: {
-              'div': function (element) {
-                var wrapper, tagId, tag_id;
-                Assets.deselect(element);
-
-                if (element.attributes && element.attributes['data-asset-cid']) {
-                  tag_id = element.attributes['data-asset-cid'];
-
-                  // @todo: Check for webkit this functionality is forbidden.
-                  if (CKEDITOR.env.webkit) {
-                    return false;
-                  }
-
-                  if (!processed[tag_id]) {
-                    tagId = Assets.generateId(tag_id);
-
-                    if (typeof(tagCache[tag_id]) === 'undefined') {
-                      Assets.getDataById(tagId);
-                    }
-
-                    processed[tagId] = 1;
-                    wrapper = new CKEDITOR.htmlParser.fragment.fromHtml(tagCache[tagId].html);
-
-                    return wrapper.children[0];
-                  }
-                }
-                return element;
-              }
-            }
-          });
-
-          try {
-            data['html'] = dataProcessor.toHtml(data['html']);
-          }
-          catch (e) {
-            if (typeof(console) !== 'undefined') {
-              console.log(editor.lang.assets_error_paste);
-            }
-          }
-          Assets.deselect();
-        }, this);
       },
 
       afterInit: function (editor) {

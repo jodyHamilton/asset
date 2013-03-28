@@ -320,6 +320,17 @@ function asset_menu() {
     'file' => 'includes/asset.admin.inc',
   );
 
+  $items['admin/assets/tag/%/%/%'] = array(
+    'theme callback' => 'asset_get_frontend_theme',
+    'page callback' => '_asset_get_tag',
+    'page arguments' => array(3, 4, 5),
+    'access arguments' => array('administer assets'),
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/asset.admin.inc',
+    'delivery callback' => 'asset_json_delivery',
+  );
+
+  // @todo: Add custom delivery callback for partial asset rendering to the following menu items.
   $items['admin/assets/get'] = array(
     'theme callback' => 'asset_get_frontend_theme',
     'page callback' => 'assets_get_content',
@@ -338,15 +349,6 @@ function asset_menu() {
     'file' => 'includes/asset.admin.inc',
   );
 
-  $items['admin/assets/tag/%/%/%'] = array(
-    'theme callback' => 'asset_get_frontend_theme',
-    'page callback' => '_asset_get_tag',
-    'page arguments' => array(3, 4, 5),
-    'access arguments' => array('administer assets'),
-    'type' => MENU_CALLBACK,
-    'file' => 'includes/asset.admin.inc',
-  );
-
   $items['assets/tooltip/%asset/%'] = array(
     'theme callback' => 'asset_get_frontend_theme',
     'page callback' => 'asset_tooltip_content',
@@ -355,22 +357,23 @@ function asset_menu() {
     'access arguments' => array('view', 'asset', 2),
     'type' => MENU_CALLBACK,
     'file' => 'includes/asset.admin.inc',
-    'delivery_callback' => 'asset_html_delivery',
   );
 
   return $items;
 }
 
 /**
- * Delivery callback for HTML rendering.
+ * Delivery callback for json format.
  */
-function asset_html_delivery($page_callback_result) {
-  // Check if header is set.
-  if (is_null(drupal_get_http_header('Content-Type'))) {
-    drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+function asset_json_delivery($page_callback_result) {
+  if (!empty($page_callback_result['tag']) && !empty($page_callback_result['content'])) {
+    print drupal_json_encode(
+      array(
+        'tag' => $page_callback_result['tag'],
+        'content' => $page_callback_result['content'],
+      )
+    );
   }
-
-  print $page_callback_result;
 }
 
 /**

@@ -327,3 +327,57 @@ table.sticky-header {
   padding: 7px;
   line-height: 16px;
 }
+
+/* override rubik theme css */
+html {
+  overflow-y: visible;
+}
+
+body {
+  background: #E2DFDD !important;
+}
+
+.block {
+  background: transparent;
+}
+
+.block-content {
+  background: transparent;
+  padding: 0;
+}
+
+.form-item {
+  background: transparent;
+}
+
+form .form-actions {
+  background: transparent;
+  border: none;
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+form .form-actions input {
+  margin-top: 0;
+}
+
+table {
+  background: transparent;
+}
+
+.form-type-textarea:after {
+  content: " ";
+  display: block;
+  height: 0;
+  clear: both;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.text-format-wrapper .form-item {
+  background: none;
+}
+
+tbody tr td {
+  width: 100%;
+}

@@ -249,9 +249,8 @@ function asset_widget_pre_render_text_format($element) {
       // Store element id.
       $attached[$element['#id']] = $element['#id'];
     }
-
-    return $element;
   }
+  return $element;
 }
 
 /**
@@ -736,8 +735,9 @@ function asset_widget_views_ajax_data_alter(&$commands, &$view) {
 
           // Set filter params into internal vars.
           $filter_params = drupal_http_build_query(_asset_widget_views_get_exposed_values($view));
-          // @todo we still have problems with cookie.
-          if (variable_get('asset_widget_save_last_search', FALSE)) {
+          // We can disable this functionality using variable.
+          // @todo: Provide settings form for module with this setting.
+          if (variable_get('asset_widget_save_last_search', TRUE)) {
             global $base_path;
             setcookie('Drupal_asset_widget_filter_params', $filter_params, (time() + 60 * 60 * 24), $base_path);
           }

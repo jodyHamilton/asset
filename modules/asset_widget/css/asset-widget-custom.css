@@ -123,7 +123,6 @@
 }
 
 /*--Rubik themes style fixes--*/
-
 /*--Pager styles--*/
 
 .assets-module .pager-container .item-list{
@@ -164,6 +163,62 @@
 }
 
 /*--end pager styles--*/
-
-
 /*--end rubik themes style fixes--*/
+
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .pager-container ul .pager-current {
+  color: #333;
+  text-shadow: white 0px 1px 0px;
+}
+
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .pager-container ul li span {
+  padding: 0;
+}
+
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .pager-container ul li a {
+  padding: 0;
+}
+
+.assets-module .pager-container ul {
+  float: none;
+}
+
+.assets-module .pager-container .pager {
+  margin: 0;
+}
+
+.assets-module .pager-container ul.pager-list {
+  float: none;
+  text-align: center;
+  padding: 0 60px;
+}
+
+.assets-module .pager-container ul.pager-list li {
+  float: none;
+}
+
+.assets-module .pager-container ul.pager-links {
+  float: none;
+  margin-top: -20px;
+  position: relative;
+}
+
+.assets-module .pager-container ul.pager-links .pager-next {
+  position: absolute !important;
+  right: 40px;
+  top: 0 !important;
+}
+
+.assets-module .pager-container ul.pager-links .pager-last {
+  float: right
+}
+
+.assets-module .pager-container ul.pager-links .pager-previous {
+  position: absolute !important;
+  left: 40px;
+  top: 0 !important;
+}
+
+.assets-module .pager-container ul.pager-links .pager-first {
+  float: left;
+  margin-top: -10px;
+}

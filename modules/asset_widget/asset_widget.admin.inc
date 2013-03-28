@@ -23,7 +23,7 @@ function asset_widget_get_tab_by_id($target_tab_id = FALSE) {
   }
   // Render all tabs content.
   else {
-    $use_cookie_fallback = variable_get('asset_widget_save_last_search', FALSE);
+    $use_cookie_fallback = variable_get('asset_widget_save_last_search', TRUE);
     foreach (asset_widget_get_tabs_info() as $tab_id => $info) {
       $output = asset_widget_get_rendered_tab_content($info, $_POST, $use_cookie_fallback);
       if ($output) {
@@ -44,7 +44,7 @@ function asset_widget_get_tab_by_id($target_tab_id = FALSE) {
   }
 
   // Set first tab as active on first load, or search results in case of cookie-stored search.
-  if (!$target_tab_id && variable_get('asset_widget_save_last_search', FALSE) && !empty($_COOKIE['Drupal_asset_widget_filter_params'])) {
+  if (!$target_tab_id && variable_get('asset_widget_save_last_search', TRUE) && !empty($_COOKIE['Drupal_asset_widget_filter_params'])) {
     $target_tab = 'results';
   }
   else {

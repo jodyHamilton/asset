@@ -60,9 +60,11 @@ function asset_type_form($form, &$form_state, $asset_type, $op = 'edit') {
     $icons_options = $icons_options + $module_icons;
   }
 
+  $icons_options = array_keys($icons_options);
+
   $form['icons']['icon'] = array(
     '#type' => 'radios',
-    '#default_value' => $asset_type->icon ? $asset_type->icon : reset(array_keys($icons_options)),
+    '#default_value' => $asset_type->icon ? $asset_type->icon : reset($icons_options),
     '#options' => $icons_options,
     '#title' => t('Button icon'),
   );
@@ -236,7 +238,7 @@ function assets_add($type) {
  */
 function _assets_wysiwyg_fields(&$form, $asset, $options) {
   $entity_info = $asset->entityInfo();
-  $align = isset($options['align']) && in_array($options['align'], array('left', 'right', ''), TRUE)
+  $align = isset($options['align']) && in_array($options['align'], array('center', 'left', 'right', ''), TRUE)
     ? $options['align']
     : '';
   $mode = isset($options['mode']) ? $options['mode'] : '';
@@ -291,6 +293,7 @@ function _assets_wysiwyg_fields(&$form, $asset, $options) {
       '#default_value' => $align,
       '#options' => array(
         '' => t('None'),
+        'center' => t('Center'),
         'left' => t('Left'),
         'right' => t('Right'),
       ),
@@ -602,10 +605,7 @@ function asset_get_full_content() {
  * Page callback, return html of asset by wysiwyg view mode.
  */
 function _asset_get_tag($tag_id, $view_mode = NULL, $align = NULL) {
-  $output = '';
-  $placeholder = '';
-
-  $tags = explode(':', $tag_id);
+  $tags = !empty($tag_id) ? explode(':', $tag_id) : array();
   $asset = !empty($tags[0]) ? asset_load($tags[0]) : NULL;
 
   if ($asset) {
@@ -628,20 +628,14 @@ function _asset_get_tag($tag_id, $view_mode = NULL, $align = NULL) {
         'align' => $align,
       )
     );
+
     $placeholder = str_replace("\r\n", '\n', $placeholder);
 
     $asset_content = $asset->view($view_mode);
     $output = render($asset_content);
+
+    return array('tag' => $placeholder, 'content' => $output);
   }
-
-  print drupal_json_encode(
-    array(
-      'tag' => $placeholder,
-      'content' => $output,
-    )
-  );
-
-  drupal_exit();
 }
 
 /**
@@ -656,5 +650,5 @@ function asset_tooltip_content($asset, $view_mode) {
  */
 function asset_view_asset($asset, $view_mode = ASSET_DEFAULT_MODE) {
   $output = $asset->view($view_mode);
-  return render($output);
+  return $output;
 }
