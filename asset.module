@@ -920,14 +920,14 @@ function asset_get_frontend_theme() {
  * Implements hook_form_FORM_ID_alter().
  */
 function asset_form_views_exposed_form_alter(&$form, &$form_state) {
-  // Fix redirection for views exposed form.
+  // Fix redirection for views exposed form within assets search popup.
   // In case that views_exposed_form form builder gets only view path, we should rebuild $form_state['redirect'].
   // We should pass query render = popup, to process suppression for unwanted items.
   // @see views_exposed_form().
-  $destination = drupal_get_destination();
-
   if (asset_is_popup()) {
+    $destination = drupal_get_destination();
     $destination = drupal_parse_url($destination['destination']);
+
     $form_state['redirect'] = array(
       'path' => $destination['path'],
       'options' => array(
@@ -941,9 +941,6 @@ function asset_form_views_exposed_form_alter(&$form, &$form_state) {
       '#type' => 'hidden',
       '#value' => 'popup',
     );
-  }
-  else {
-    $form['#action'] = '/' . $destination['destination'];
   }
 }
 

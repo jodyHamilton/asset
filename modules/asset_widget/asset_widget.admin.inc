@@ -8,6 +8,11 @@
  * Menu callback to get tab content by ID, or all enabled tabs if ID omitted.
  */
 function asset_widget_get_tab_by_id($target_tab_id = FALSE) {
+  // Disable Rel module activation for our widget forms.
+  if (module_exists('rel')) {
+    $GLOBALS['conf']['rel_build_form_registration'] = FALSE;
+  }
+
   $tabs_content = array();
   $response = array('#type' => 'ajax');
 

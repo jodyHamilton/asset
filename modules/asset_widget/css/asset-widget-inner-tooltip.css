@@ -16,7 +16,7 @@ body {
 }
 
 .tooltip-iframe-elements {
-  padding: 10px;
+  padding: 0px 10px;
 }
 
 /*
@@ -203,6 +203,7 @@ html .jspCorner {
 
 .asset-wrapper {
   font-family: Helvetica, Arial, sans-serif, Garuda, FreeSans;
+  padding: 0 8px;
 }
 .asset-wrapper .content .field-items {
   font-family: Helvetica, Arial, sans-serif, Garuda, FreeSans;

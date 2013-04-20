@@ -19,7 +19,7 @@ table.sticky-header {
 }
 
 .jspPane table.tabledrag-processed input {
-  max-width: 234px;
+  max-width: 228px;
 }
 
 .jspPane table.tabledrag-processed {
@@ -175,7 +175,8 @@ table.sticky-header {
 }
 
 .frame-page-wrapper .form-item{
-  padding: 9px 0 4px;
+  padding: 4px 0;
+  margin-top: 0;
 }
 
 .frame-page-wrapper .form-item label{
@@ -190,6 +191,37 @@ table.sticky-header {
 .frame-page-wrapper .form-item label .form-required{
   color: #c77d5c;
   text-shadow: none;
+}
+
+.frame-page-wrapper .form-item table tr.odd,
+.frame-page-wrapper .form-item table tr.even{
+  //padding-right: 1px;
+}
+
+*+html .frame-page-wrapper .form-item table tr.odd .form-type-textfield,
+*+html .frame-page-wrapper .form-item table tr.even .form-type-textfield{
+  max-width: 264px;
+}
+
+.frame-page-wrapper .form-item table tr.odd label,
+.frame-page-wrapper .form-item table tr.even label{
+  width: 5px;
+  height: 5px;
+  float: right;
+  padding: 18px 2px 0 0
+}
+
+form .field-multiple-table td.field-multiple-drag{
+  padding: 22px 7px 0 17px;
+}
+
+form .field-multiple-table td.field-multiple-drag a.tabledrag-handle{
+  padding-right: 0;
+  margin-right: 0;
+}
+
+*+html form .field-multiple-table td.field-multiple-drag a.tabledrag-handle{
+  margin-right: 20px !important;
 }
 
 .frame-page-wrapper .form-item .form-text{
@@ -215,12 +247,16 @@ table.sticky-header {
   background-image: -moz-linear-gradient(#f5f5f5, #eaeaea);
   background-image: -o-linear-gradient(#f5f5f5, #eaeaea);
   background-image: linear-gradient(#f5f5f5, #eaeaea);
-  margin: 0 0 5px;
+  margin: 5px 0;
+  -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
+  box-sizing: content-box;  
 }
 
 .frame-page-wrapper .form-item .description{
   font-size: 11px;
   clear: both;
+  padding-top: 5px;
 }
 
 .frame-page-wrapper .form-item .form-textarea{
@@ -316,11 +352,10 @@ table.sticky-header {
   text-transform: none;
 }
 .frame-page-wrapper .form-item table {
-  margin: 0 0 0 1px;
+  margin: 0 6px 0 1px;
 }
 .frame-page-wrapper .form-item table tr.even, .frame-page-wrapper .form-item table tr.odd {
-  border: 1px solid #A8A8A8;
-  background: #fefef8;
+  background: #f0efef;
 }
 .frame-page-wrapper .form-item .form-textarea {
   height: 130px;
@@ -380,4 +415,14 @@ table {
 
 tbody tr td {
   width: 100%;
+}
+
+div.error,
+div.warning,
+div.status,
+div.ok{
+  padding: 3px 6px;
+  font-size: 12px;
+  line-height: 18px;
+  width: 299px;
 }

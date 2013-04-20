@@ -336,7 +336,8 @@ function asset_widget_library() {
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.jscrollpane.min.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.ui.selectmenu.min.js' => array('weight' => 4),
       ASSET_WIDGET_MODULE_PATH . '/js/jquery.multiSelect.min.js' => array('weight' => 4),
-      ASSET_WIDGET_MODULE_PATH . '/js/asset-widget.js' => array('weight' => 5),
+      // Add our main script at the end to be sure that we add our Ajax.commands.
+      ASSET_WIDGET_MODULE_PATH . '/js/asset-widget.js' => array('weight' => 5, 'group' => JS_THEME),
     ),
     // Note that we add our css last, after all THEME styles to avoid overrides.
     'css' => array(
