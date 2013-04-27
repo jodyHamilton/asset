@@ -246,6 +246,7 @@ function emvideo_field_widget_form(&$form, &$form_state, $field, $instance, $lan
       '#type' => 'textarea',
       '#title' => check_plain($element['#title']),
       '#default_value' => $value,
+      '#description' => isset($element['#description']) ? $element['#description'] : '',
       '#format' => 1,
       '#required' => $element['#required'],
     );
