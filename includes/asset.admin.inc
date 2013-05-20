@@ -60,11 +60,11 @@ function asset_type_form($form, &$form_state, $asset_type, $op = 'edit') {
     $icons_options = $icons_options + $module_icons;
   }
 
-  $icons_options = array_keys($icons_options);
+  $icons_options_keys = array_keys($icons_options);
 
   $form['icons']['icon'] = array(
     '#type' => 'radios',
-    '#default_value' => $asset_type->icon ? $asset_type->icon : reset($icons_options),
+    '#default_value' => $asset_type->icon ? $asset_type->icon : reset($icons_options_keys),
     '#options' => $icons_options,
     '#title' => t('Button icon'),
   );

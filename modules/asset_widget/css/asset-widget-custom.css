@@ -191,8 +191,9 @@ body.not-front .assets-module .assets-module-inner .assets-content .tab-contents
 /*--end pager styles--*/
 /*--end rubik themes style fixes--*/
 
-.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .pager-container ul .pager-current {
-  color: #333;
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .pager-container ul .pager-current,
+.assets-module .assets-module-inner .assets-content .tab-contents .tab-contents-bottom .mid .tab .pager-container ul .pager-current span {
+  color: #6e6662;;
   text-shadow: white 0px 1px 0px;
 }
 
