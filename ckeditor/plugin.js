@@ -431,7 +431,6 @@ var Assets;
             // Fix for CKeditor 3 & Chrome and for CKeditor 4 && FF.
             if ((Assets.getCKeditorVersion() < 4 && CKEDITOR.env.webkit)
               || (Assets.getCKeditorVersion() >= 4 && CKEDITOR.env.gecko)) {
-              editor.focus();
 
               // Getting selection.
               var selected = editor.getSelection();
