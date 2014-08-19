@@ -21,3 +21,5 @@ files[] = "views/handlers/asset_views_handler_field_asset_link_insert.inc"
 files[] = "views/handlers/asset_views_handler_argument_asset_aid.inc"
 files[] = "views/handlers/asset_views_plugin_row_asset_view.inc"
 files[] = "theme/theme.inc"
+
+stylesheets[all][] = css/assets.css

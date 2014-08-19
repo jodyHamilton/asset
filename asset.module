@@ -13,13 +13,6 @@ define('ASSET_MODULE_CKEDITOR_PLUGIN_PATH', ASSET_MODULE_PATH . '/ckeditor');
 require_once (ASSET_MODULE_PATH . '/includes/asset.filters.inc');
 
 /**
- * Implements hook_init().
- */
-function asset_init() {
-  drupal_add_css(ASSET_MODULE_PATH . '/css/assets.css');
-}
-
-/**
  * Implements hook_entity_info().
  */
 function asset_entity_info() {
