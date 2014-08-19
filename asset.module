@@ -518,8 +518,8 @@ function _assets_get_icons() {
     if (is_dir($dir)) {
 
       foreach (scandir($dir) as $file_name) {
-        if (!in_array($file_name, array('.', '..'))) {
-          $file_path = $dir . $file_name;
+        $file_path = $dir . $file_name;
+        if (exif_imagetype($file_path)) {
 
           if (FALSE !== getimagesize($file_path)) {
             $icons[$file_name] = theme('image', array('path' => $file_path, 'width' => 18, 'height' => 18));
