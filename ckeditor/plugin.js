@@ -472,6 +472,7 @@ var Assets;
         editor.on('contentDom', function (evt) {
           editor.document.on('click', function (evt) {
             var element = evt.data.getTarget();
+            var original_element = element;
 
             while (element && !(element.type === CKEDITOR.NODE_ELEMENT && element.data('asset-cid'))) {
               element = element.getParent();
@@ -480,6 +481,9 @@ var Assets;
             if (element) {
               editor.getSelection().selectElement(element);
               Assets.select(element);
+              if (original_element.is('img')) {
+                evt.data.preventDefault(true);
+              }
             }
             else {
               Assets.deselect(element);
