@@ -147,6 +147,8 @@ function emvideo_field_formatter_settings_summary($field, $instance, $view_mode)
  * Implements hook_field_formatter_view().
  */
 function emvideo_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  global $is_https;
+
   $element = array();
 
   switch ($display['type']) {
@@ -173,6 +175,9 @@ function emvideo_field_formatter_view($entity_type, $entity, $field, $instance, 
 
         if (!empty($item['source']) && empty($output)) {
           $source = $item['source'];
+          if ($is_https) {
+            $source = preg_replace('/http:\/\//', 'https://', $source);
+          }
           $output .= '<object type="application/x-shockwave-flash" ';
           $output .= 'width="' . $display['settings']['width'] . '" height="' . $display['settings']['height'] . '" data="' . $source . '">' . "\n";
 
