@@ -38,7 +38,7 @@ function emvideo_ina_emvideo_parse($url) {
  * Implements hook_emvideo_emcode().
  */
 function emvideo_ina_emvideo_emcode($params) {
-  $output = '';
+  $output = FALSE;
 
   if (isset($params['provider']) && $params['provider'] == 'ina') {
     $width  = $params['width'];
