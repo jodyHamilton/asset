@@ -999,11 +999,17 @@ function assets_field_ui_display_overview_form_submit($form, &$form_state) {
  */
 function asset_form_ckeditor_admin_profile_form_alter(&$form, &$form_state) {
   $form['output']['enter_mode']['#default_value'] = 'br';
-  $form['#submit'][] = 'asset_ckeditor_admin_profile_form_submit';
+  $form['output']['enter_mode']['#attributes']['disabled'] = 'disabled';
+  if (!isset($form['#submit'])) {
+    $form['#submit'] = array('asset_ckeditor_admin_profile_form_submit');
+  }
+  else {
+    array_unshift($form['#submit'], 'asset_ckeditor_admin_profile_form_submit');
+  }
 }
 
 /**
- * Custom submit handler.
+ * Custom submit handler to force br enter mode.
  */
 function asset_ckeditor_admin_profile_form_submit($form, &$form_state) {
   if (!empty($form_state['values']['loadPlugins']['asset']) && ($form_state['values']['enter_mode'] != 'br')) {
