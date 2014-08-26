@@ -102,8 +102,7 @@ function asset_widget_element_info_alter(&$info) {
   // Don't process fields if current theme is not admin, access denied, inside widget frames, field settings form and different fields added by ajax.
   if (user_access('access search widget')
     && _asset_widget_is_admin_theme()
-    && !asset_widget_in_frame_form()
-    && !drupal_match_path(current_path(), 'admin/*')) {
+    && !asset_widget_in_frame_form()) {
 
     // Add callback for text fields with wysiwyg.
     if (module_exists('ckeditor') && isset($info['text_format'])) {
