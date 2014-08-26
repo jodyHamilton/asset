@@ -1,0 +1,8 @@
+name = Asset UUID
+description = Allow deploying asset blocks through Deploy and UUID modules.
+core = 7.x
+
+dependencies[] = asset
+dependencies[] = uuid
+
+package = "Media assets"
