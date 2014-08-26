@@ -38,6 +38,34 @@ assetWidget.allowDrop = false;
       assetWidget.initSlide();
     });
 
+    // On maximize event of any instance we should bind separate drop.
+    if (typeof(CKEDITOR) !== 'undefined' && CKEDITOR.instances) {
+      for (id in CKEDITOR.instances) {
+        var instance = CKEDITOR.instances[id];
+        $(instance.element.$).once(function () {
+          instance.on('maximize', function (evt) {
+            var $maximizedWrapper = $(evt.editor.element.$).parent().find('.cke_contents');
+            if ($maximizedWrapper.length) {
+              // On unmaximize we need to disable droppable as it overlap with regular drop area.
+              if (evt.data == CKEDITOR.TRISTATE_ON) {
+                if ($maximizedWrapper.hasClass('ui-droppable')) {
+                  $maximizedWrapper.droppable("enable");
+                }
+                else {
+                  assetWidget._initDrop($maximizedWrapper);
+                }
+              }
+              else {
+                $maximizedWrapper.droppable("disable");
+                // Remove default disable class to avoid any styling of disabled overlay.
+                $maximizedWrapper.removeClass('ui-state-disabled');
+              }
+            }
+          });
+        });
+      }
+    }
+
     // Initialize variable with empty function, it will be filled in initTooltips().
     assetWidget.tooltipsPositionCalc = function() {};
 
@@ -228,26 +256,26 @@ assetWidget.allowDrop = false;
   assetWidget.initDatepicker = function () {
     $('input[name=created]').once('asset-datepicker', function () {
       $(this).datepicker({
-        autoSize: true,
-        changeMonth: true,
-        changeYear: true,
-        autoPopUp: 'focus',
-        closeAtTop: false,
-        dateFormat: 'yy-mm-dd 00:00:00',
-        disabled: false,
-        firstDay: 1,
-        prevText: '',
-        nextText: '',
-        closeText: '',
-        showSpeed: 'slow',
-        buttonImageOnly: true,
-        beforeShow: function (input, inst) {
-          var $datepicker = inst.dpDiv;
-          // Set z-index to bigger value than widget have.
-          setTimeout(function () {
-            $datepicker.css('z-index', 30000);
-          }, 0);
-        }}
+          autoSize: true,
+          changeMonth: true,
+          changeYear: true,
+          autoPopUp: 'focus',
+          closeAtTop: false,
+          dateFormat: 'yy-mm-dd 00:00:00',
+          disabled: false,
+          firstDay: 1,
+          prevText: '',
+          nextText: '',
+          closeText: '',
+          showSpeed: 'slow',
+          buttonImageOnly: true,
+          beforeShow: function (input, inst) {
+            var $datepicker = inst.dpDiv;
+            // Set z-index to bigger value than widget have.
+            setTimeout(function () {
+              $datepicker.css('z-index', 30000);
+            }, 0);
+          }}
       );
     });
   };
@@ -351,11 +379,11 @@ assetWidget.allowDrop = false;
     // On reset button, just rebuild search tab.
     $context.find('.views-reset-button input, .no-results .button.button-back a')
       .once('asset-widget-reset-search', function () {
-      $(this).unbind().click(function (event) {
-        event.preventDefault();
-        assetWidget.getTabContent('search');
+        $(this).unbind().click(function (event) {
+          event.preventDefault();
+          assetWidget.getTabContent('search');
+        });
       });
-    });
 
     // Bind tooltips links.
     $context.find(".items-wrap .buttons .button-preview").once('asset-preview-tooltip-link', function () {
@@ -770,9 +798,9 @@ assetWidget.allowDrop = false;
         $formItem.find(".description").fadeIn(150);
         $formItem.addClass('form-item-tooltipped');
       }).blur(function () {
-        $formItem.find(".description").hide();
-        $formItem.removeClass('form-item-tooltipped');
-      });
+          $formItem.find(".description").hide();
+          $formItem.removeClass('form-item-tooltipped');
+        });
     });
   };
 
@@ -780,27 +808,29 @@ assetWidget.allowDrop = false;
    * Disable page scroll while cursor hover widget or tooltip.
    */
   assetWidget.disablePageScroll = function ($context) {
-    assetWidget.$widget.hover(
-      function () {
-        $context.bind('mousewheel DOMMouseScroll', function (e) {
-          // IE7, IE8, Chrome, Safari.
-          if (!e) {
-            e = window.event;
-          }
+    if (assetWidget.$widget) {
+      assetWidget.$widget.hover(
+        function () {
+          $context.bind('mousewheel DOMMouseScroll', function (e) {
+            // IE7, IE8, Chrome, Safari.
+            if (!e) {
+              e = window.event;
+            }
 
-          // Chrome, Safari, Firefox.
-          if (e.preventDefault) {
-            e.preventDefault();
-          }
+            // Chrome, Safari, Firefox.
+            if (e.preventDefault) {
+              e.preventDefault();
+            }
 
-          // IE7, IE8.
-          e.returnValue = false;
-        });
-      },
-      function () {
-        $context.unbind('mousewheel DOMMouseScroll');
-      }
-    );
+            // IE7, IE8.
+            e.returnValue = false;
+          });
+        },
+        function () {
+          $context.unbind('mousewheel DOMMouseScroll');
+        }
+      );
+    }
   }
 
   /**
@@ -918,16 +948,18 @@ assetWidget.allowDrop = false;
     assetWidget.initDrop($context);
 
     // Our widget could overlaps really droppable fields, to avoid bad dropping through widget, just do nothing.
-    assetWidget.$widget.once('asset-widget-droppable', function() {
-      $(this).droppable({
-        out: function() {
-          assetWidget.allowDrop = true;
-        },
-        over: function() {
-          assetWidget.allowDrop = false;
-        }
+    if (assetWidget.$widget) {
+      assetWidget.$widget.once('asset-widget-droppable', function() {
+        $(this).droppable({
+          out: function() {
+            assetWidget.allowDrop = true;
+          },
+          over: function() {
+            assetWidget.allowDrop = false;
+          }
+        });
       });
-    });
+    }
   };
 
   /**
@@ -935,71 +967,81 @@ assetWidget.allowDrop = false;
    */
   assetWidget.initDrop = function ($context) {
     $context.find('.match-field').parent().once('assets-drop', function () {
-      $(this).droppable({
-        iframeFix: true,
-        // Can't use accept method because we have only draggable item here.
-        // We need drop object to check it's asset type matching.
-        drop: function(event, ui) {
-          if (assetWidget.allowDrop) {
-            // Get value from view mode switcher.
-            var $viewModeContainer = ui.helper.prevObject.find('.size.sizes ul li.active');
-            if ($viewModeContainer.size()) {
-              var viewModeClass = $viewModeContainer.attr('class').match(/view-(\w+)/);
+      assetWidget._initDrop($(this));
+    });
+  };
 
-              if (viewModeClass) {
-                var viewMode = (viewModeClass[1] != null) ? viewModeClass[1] : null;
+  /**
+   * Helper to attach drop.
+   */
+  assetWidget._initDrop = function ($element) {
+    $element.droppable({
+      iframeFix: true,
+      // Can't use accept method because we have only draggable item here.
+      // We need drop object to check it's asset type matching.
+      drop: function(event, ui) {
+        if (assetWidget.allowDrop) {
+          // Get allowed types.
+          var matches = ui.draggable.attr('class').match(/match-([\w]+)/);
+          if (matches) {
+            var classMatch = matches[0] != null ? matches[0] : null;
 
-                if (viewMode) {
-                  // Get allowed types.
-                  var matches = ui.draggable.attr('class').match(/match-([\w]+)/);
-                  if (matches) {
-                    var classMatch = matches[0] != null ? matches[0] : null;
-                    var type = matches[1] != null ? matches[1] : null;
+            var $dropperWrapper = $(event.target);
+            // Special case for maximized WYSIWYG - we have another wrapper.
+            if (!$dropperWrapper.find('.match-field').size()) {
+              $dropperWrapper = $dropperWrapper.parents('.cke').parent();
+            }
 
-                    var $droppedField = $(event.target).find('.' + classMatch);
-                    if ($droppedField.size()) {
-                      var draggedAssetAid = ui.draggable.children().attr('class').match(/order-(\d+)/);
-                      draggedAssetAid = (draggedAssetAid && (draggedAssetAid[1] != null)) ? draggedAssetAid.pop() : null;
+            var $droppedField = $dropperWrapper.find('.' + classMatch);
+            if ($droppedField.size()) {
+              var draggedAssetAid = ui.draggable.children().attr('class').match(/order-(\d+)/);
+              draggedAssetAid = (draggedAssetAid && (draggedAssetAid[1] != null)) ? draggedAssetAid.pop() : null;
 
-                      if (draggedAssetAid) {
-                        // Drop to wysiwyg.
-                        if ($droppedField.is('textarea') && CKEDITOR && Assets) {
-                          var tag_id = [draggedAssetAid, type, new Date().getTime()].join(':');
-
-                          // @todo: Add support for align.
-                          var align = null;
-                          var html = Assets.getDataById(tag_id, viewMode, align);
-
-                          if (html && CKEDITOR && CKEDITOR.instances && CKEDITOR.instances[$droppedField.attr('id')]) {
-                            var editor = CKEDITOR.instances[$droppedField.attr('id')];
-                            var element = CKEDITOR.dom.element.createFromHtml(html);
-
-                            editor.insertElement(element);
-                          }
-                        }
-                        // Drop to entityreference.
-                        else {
-                          var settings = {
-                            url : Drupal.settings.basePath + 'ajax/asset-widget/drop',
-                            submit : {
-                              aid : draggedAssetAid,
-                              selector_id : $droppedField.attr('id')
-                            }
-                          };
-
-                          // Send AJAX request to fetch rendered entity or label.
-                          var ajax = new Drupal.ajax(false, false, settings);
-                          ajax.eventResponse(ajax, {});
-                        }
-                      }
+              if (draggedAssetAid) {
+                // Drop to wysiwyg.
+                if ($droppedField.is('textarea') && CKEDITOR && Assets) {
+                  // Get value from view mode switcher, or use full view mode as default.
+                  var viewMode = 'full';
+                  var $viewModeContainer = ui.helper.prevObject.find('.size.sizes ul li.active');
+                  if ($viewModeContainer.size()) {
+                    var viewModeClass = $viewModeContainer.attr('class').match(/view-(\w+)/);
+                    if (viewModeClass[1] != null) {
+                      viewMode = viewModeClass[1];
                     }
                   }
+                  var type = matches[1] != null ? matches[1] : null;
+                  var tag_id = [draggedAssetAid, type, new Date().getTime()].join(':');
+
+                  // @todo: Add support for align.
+                  var align = null;
+                  var html = Assets.getDataById(tag_id, viewMode, align);
+
+                  if (html && CKEDITOR && CKEDITOR.instances && CKEDITOR.instances[$droppedField.attr('id')]) {
+                    var editor = CKEDITOR.instances[$droppedField.attr('id')];
+                    var element = CKEDITOR.dom.element.createFromHtml(html);
+
+                    editor.insertElement(element);
+                  }
+                }
+                // Drop to entity reference.
+                else {
+                  var settings = {
+                    url : Drupal.settings.basePath + 'ajax/asset-widget/drop',
+                    submit : {
+                      aid : draggedAssetAid,
+                      selector_id : $droppedField.attr('id')
+                    }
+                  };
+
+                  // Send AJAX request to fetch rendered entity or label.
+                  var ajax = new Drupal.ajax(false, false, settings);
+                  ajax.eventResponse(ajax, {});
                 }
               }
             }
           }
         }
-      });
+      }
     });
   };
 
@@ -1016,9 +1058,10 @@ assetWidget.allowDrop = false;
    * Bind widget height adjusting.
    */
   assetWidget.initHeightAdjust = function ($context) {
-    if ($.contains($context, $('.assets-module'))
+    var contextDomElement = $context.get(0), assetWrapperDomElement = $('.assets-module').get(0);
+    if ($.contains(contextDomElement, assetWrapperDomElement)
       || $context.hasClass('assets-module')
-      || $.contains($('.assets-module'), $context)) {
+      || $.contains(assetWrapperDomElement, contextDomElement)) {
       var $windowHeight = $(window).height();
       var $doit;
       var $widgetHeight = 695;
