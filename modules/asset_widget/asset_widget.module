@@ -1019,3 +1019,32 @@ function asset_widget_preprocess_views_view_unformatted__asset_widget_search(&$v
     }
   }
 }
+
+/**
+ * Implements hook_field_widget_imagefield_crop_widget_form().
+ */
+function asset_widget_field_widget_imagefield_crop_widget_form_alter(&$elements, $form_state, $context) {
+  foreach ($elements as &$element) {
+    if (in_array('imagefield_crop_widget_process', $element['#process'])) {
+      $element['#process'][] = 'asset_widget_imagefield_crop_widget_process';
+    }
+  }
+}
+
+/**
+ * Custom process callback for imagecrop fields. Needed to reduce crop area size.
+ */
+function asset_widget_imagefield_crop_widget_process($element) {
+  if ($element['#attached']['js'] && !empty($element['#file']) && asset_widget_in_frame_form()) {
+    foreach ($element['#attached']['js'] as &$js_item) {
+      if (is_array($js_item) && $js_item['type'] == 'setting') {
+        foreach ($js_item['data']['imagefield_crop'] as &$field_setting) {
+          if (isset($field_setting['box'])) {
+            $field_setting['box']['box_width'] = $field_setting['box']['box_height'] = 300;
+          }
+        }
+      }
+    }
+  }
+  return $element;
+}

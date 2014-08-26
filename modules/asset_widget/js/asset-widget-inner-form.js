@@ -2,16 +2,15 @@
  * Script related to assets create/edit forms in case of in-frame rendering.
  */
 
+// Store JScroll instance for easy re-init.
+var assetFormJscrollInstance;
 (function ($) {
 
   if ($.fn.jScrollPane) {
-    // Store JScroll instance for easy re-init.
-    var jscrollInstance;
-
     // Re-init scroll, if available.
     var assetChildReinitScroll = function () {
-      if (jscrollInstance) {
-        jscrollInstance.reinitialise();
+      if (assetFormJscrollInstance) {
+        assetFormJscrollInstance.reinitialise();
       }
     };
 
@@ -77,12 +76,12 @@
                 });
                 isResizing = false;
 
-                if (jscrollInstance) {
-                  jscrollInstance.reinitialise();
+                if (assetFormJscrollInstance) {
+                  assetFormJscrollInstance.reinitialise();
                 }
                 else {
                   $container.jScrollPane({enableKeyboardNavigation: false});
-                  jscrollInstance = $container.data('jsp');
+                  assetFormJscrollInstance = $container.data('jsp');
                 }
               }
             }
