@@ -48,9 +48,12 @@
 
       setTimeout(function () {
         var thisOffset = $this.offset();
+        // Margin of body in common for admin_menu module, that's why we should respect it's value.
+        var $body = $('body');
+        var bodyTopOffset = $body.css('position') == 'relative' ? parseInt($body.css('margin-top')) : 0;
         $(action).css({
           opacity: 0,
-          top: thisOffset.top + 3 + 'px',
+          top: thisOffset.top - bodyTopOffset + 3 + 'px',
           left: thisOffset.left + thisWidth + 10 + 'px'
         }).animate({opacity: 1}, 500);
       }, 2500);
