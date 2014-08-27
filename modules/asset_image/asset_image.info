@@ -3,7 +3,7 @@ description = "Provides sample image asset"
 package = "Media assets"
 core = "7.x"
 
-dependencies[] = "asset"
+dependencies[] = asset
 dependencies[] = field_sql_storage
 dependencies[] = image
 dependencies[] = text
