@@ -215,6 +215,10 @@ function asset_permission() {
     'access assets overview' => array(
       'title' => t('Access the assets overview page'),
     ),
+    'access asset view page' => array(
+      'title' => t('Access asset view page'),
+      'description' => t('Has sense only with access content permission'),
+    ),
   );
 
   foreach (assets_get_types() as $asset) {
@@ -243,6 +247,13 @@ function asset_permission() {
  */
 function asset_creation_access($type) {
   return user_access("create asset with type $type");
+}
+
+/**
+ * Access callback for asset view page.
+ */
+function asset_access_view_page($asset) {
+  return user_access('access asset view page') && entity_access('view', 'asset', $asset);
 }
 
 /**
@@ -278,8 +289,8 @@ function asset_menu() {
   $items['admin/content/assets/view/%asset'] = array(
     'page callback'    => 'asset_view_asset',
     'page arguments'   => array(4),
-    'access callback' => 'entity_access',
-    'access arguments' => array('view', 'asset', 4),
+    'access callback' => 'asset_access_view_page',
+    'access arguments' => array(4),
     'theme callback' => 'asset_get_frontend_theme',
     'file' => 'includes/asset.admin.inc',
   );
