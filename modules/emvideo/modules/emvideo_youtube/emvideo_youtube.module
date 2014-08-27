@@ -9,7 +9,7 @@
  */
 function emvideo_youtube_emvideo_parse($url) {
   $matches = array();
-  if (preg_match('@^(?:https?\:\/\/)?(?:www\.)?youtu(?:|\.be|be\.com)(\/watch|\/embed|\/v/|\/)+((.*)?[\&\?]v=)?([^"\& ]+)@i', $url, $matches)) {
+  if (preg_match('@(?:https?\:\/\/)?(?:www\.)?youtu(?:|\.be|be\.com)(\/watch|\/embed|\/v/|\/)+((.*)?[\&\?]v=)?([^"\& ]+)@i', $url, $matches)) {
     $hosts = array(
       'i.ytimg.com',
       'i1.ytimg.com',
