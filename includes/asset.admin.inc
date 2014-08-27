@@ -634,7 +634,9 @@ function _asset_get_tag($tag_id, $view_mode = NULL, $align = NULL) {
     $asset_content = $asset->view($view_mode);
     $output = render($asset_content);
 
-    return array('tag' => $placeholder, 'content' => $output);
+    // trim() here is very important. Without trim,
+    // if template started with space - dom structure of response will contains empty text node.
+    return array('tag' => $placeholder, 'content' => trim($output));
   }
 }
 
