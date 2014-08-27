@@ -122,6 +122,7 @@ function _assets_set_field_value(&$asset, $field_name, $values) {
       // @todo: We should check the type of widget instead.
       case 'text':
       case 'text_long':
+      case 'list_test':
         if (!isset($asset->{$field_name}[$langcode])) {
           $asset->{$field_name}[$langcode] = array();
         }

@@ -419,6 +419,8 @@ function _assets_clean_fields(&$form, $options = array()) {
               switch ($info['type']) {
                 case 'text':
                 case 'text_long':
+                case 'list_boolean':
+                case 'list_text':
                   $field = &$form[$key][$form[$key]['#language']][$delta];
                   if ($multiple) {
                     $field = &$form[$key][$form[$key]['#language']][$delta]['value'];
@@ -431,11 +433,9 @@ function _assets_clean_fields(&$form, $options = array()) {
                   $value = (array) $options[$key];
 
                   if (!empty($value[$delta])) {
-                    continue;
+                    $field['#default_value'] = $value[$delta];
                   }
                 }
-
-                $field['#default_value'] = '';
                 continue;
               }
             }
@@ -450,6 +450,7 @@ function _assets_clean_fields(&$form, $options = array()) {
           unset($field);
 
           switch ($info['type']) {
+            case 'list_text':
             case 'text':
               $field = &$form[$key][$form[$key]['#language']];
               if ($multiple) {
@@ -463,11 +464,9 @@ function _assets_clean_fields(&$form, $options = array()) {
               $value = (array) $options[$key];
 
               if (!empty($value[$delta])) {
-                continue;
+                $field['#default_value'] = $value[$delta];
               }
             }
-
-            $field['#default_value'] = '';
             continue;
           }
         }
@@ -483,10 +482,11 @@ function _assets_clean_fields(&$form, $options = array()) {
  */
 function assets_override_form_submit(&$form, &$form_state) {
   $values = $form_state['values'];
+  $original_asset = clone asset_load($form['#entity']->aid, TRUE);
   $view_mode = isset($values['view_mode']) ? $values['view_mode'] : ASSET_DEFAULT_MODE;
   $alignment = isset($values['align']) ? $values['align'] : '';
   $asset = entity_ui_form_submit_build_entity($form, $form_state);
-  $placeholder = assets_get_placeholder($asset, array('mode' => $view_mode, 'align' => $alignment));
+  $placeholder = assets_get_placeholder($asset, array('mode' => $view_mode, 'align' => $alignment), $original_asset);
   $placeholder = addslashes($placeholder);
   $placeholder = str_replace("\r\n", '\n', $placeholder);
 

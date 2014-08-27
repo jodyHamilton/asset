@@ -541,7 +541,7 @@ function _assets_get_icons() {
  */
 function _assets_get_supported_field_types() {
   // @todo: Provide a hook.
-  return array('text', 'text_long');
+  return array('text', 'text_long', 'list_boolean', 'list_text');
 }
 
 /*
@@ -740,7 +740,7 @@ function asset_is_popup() {
 /**
  * Generates a placeholder for wysiwyg.
  */
-function assets_get_placeholder($asset, array $options = array()) {
+function assets_get_placeholder($asset, array $options = array(), $original_asset = NULL) {
   $type = $asset->type;
   $tag_array = array('[[asset:' . $type . ':' . $asset->aid . ' ');
   $fields = field_info_instances('asset', $type);
@@ -754,19 +754,27 @@ function assets_get_placeholder($asset, array $options = array()) {
 
       if (in_array($field_type, $supported_types)) {
         $values = field_get_items('asset', $asset, $field_name);
+        $original_values = NULL;
+        if (!empty($original_asset)) {
+          $original_values = field_get_items('asset', $original_asset, $field_name);
+        }
 
         if (is_array($values)) {
-          $field_values = array();
-          foreach ($values as $delta => $data) {
-            switch ($field_type) {
-              case 'text_long':
-              case 'text':
-                $field_values[$delta] = $data['value'];
-                break;
-            }
-          }
+          if ($values != $original_values) {
+            $field_values = array();
 
-          $options[$field_name] = $field_values;
+            foreach ($values as $delta => $data) {
+              switch ($field_type) {
+                case 'text_long':
+                case 'text':
+                case 'list_boolean':
+                case 'list_text':
+                  $field_values[$delta] = $data['value'];
+                  break;
+              }
+            }
+            $options[$field_name] = $field_values;
+          }
         }
       }
     }
