@@ -26,11 +26,9 @@
 }
 
 .show-preview-element {
-  position: absolute;
-  top: -9999px;
-  left: -9999px;
+  margin-left: 5px;
   background: url('../theme/images/preview-icon.png') no-repeat 0 0;
-  display: block;
+  display: inline-block;
   width: 15px;
   height: 15px;
   cursor: pointer;

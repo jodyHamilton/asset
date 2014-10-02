@@ -156,14 +156,13 @@ function emvideo_field_formatter_view($entity_type, $entity, $field, $instance, 
       foreach ($items as $delta => $item) {
 
         $output = '';
+        $params = array(
+          'source'   => $item['source'],
+          'provider' => $item['provider'],
+          'height'   => $display['settings']['height'],
+          'width'    => $display['settings']['width'],
+        );
         foreach (module_implements('emvideo_emcode') as $module) {
-          $params = array(
-            'source'   => $item['source'],
-            'provider' => $item['provider'],
-            'height'   => $display['settings']['height'],
-            'width'    => $display['settings']['width'],
-          );
-
           $output = module_invoke($module, 'emvideo_emcode', $params);
 
           if ($output !== FALSE) {

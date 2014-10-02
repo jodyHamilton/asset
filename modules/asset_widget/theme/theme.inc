@@ -58,8 +58,8 @@ function template_preprocess_asset_widget_edit_buttons(&$vars) {
       )
     );
 
-    // @todo after applying of custom perms patch, rework it.
-    if (user_access('administer assets')) {
+    // Note, we allowing edition only if creation allowed because if not - there is no tab in widget for it.
+    if (asset_creation_access($vars['asset']->type) && asset_edition_access($vars['asset']->type)) {
       $vars['edit_link'] = l(
         '<span class="ico"></span>' . t('Edit'),
         "admin/content/assets/manage/{$vars['asset']->aid}",
@@ -170,9 +170,9 @@ function template_preprocess_asset__image__widget_search(&$vars) {
 }
 
 /**
- * Preprocess variables for asset--image--widget-search.tpl.php.
+ * Preprocess variables for asset--video--widget-search.tpl.php.
  *
- * @see asset--image--widget-search.tpl.php
+ * @see asset--image--video-search.tpl.php
  */
 function template_preprocess_asset__video__widget_search(&$vars) {
   // Listing content.
@@ -210,9 +210,9 @@ function template_preprocess_asset__video__widget_search(&$vars) {
 }
 
 /**
- * Preprocess variables for asset--image--widget-search.tpl.php.
+ * Preprocess variables for asset--audio--widget-search.tpl.php.
  *
- * @see asset--image--widget-search.tpl.php
+ * @see asset--audio--widget-search.tpl.php
  */
 function template_preprocess_asset__audio__widget_search(&$vars) {
   $audio = field_get_items('asset', $vars['asset'], 'field_asset_audio');
@@ -222,9 +222,9 @@ function template_preprocess_asset__audio__widget_search(&$vars) {
 }
 
 /**
- * Preprocess variables for asset--image--widget-search.tpl.php.
+ * Preprocess variables for asset--document--widget-search.tpl.php.
  *
- * @see asset--image--widget-search.tpl.php
+ * @see asset--document--widget-search.tpl.php
  */
 function template_preprocess_asset__document__widget_search(&$vars) {
   $description = field_get_items('asset', $vars['asset'], 'field_asset_document_desc');
@@ -245,17 +245,17 @@ function template_preprocess_asset__document__widget_search(&$vars) {
 }
 
 /**
- * Preprocess variables for asset--image--widget-search.tpl.php.
+ * Preprocess variables for asset--free_html--widget-search.tpl.php.
  *
- * @see asset--image--widget-search.tpl.php
+ * @see asset--free_html--widget-search.tpl.php
  */
 function template_preprocess_asset__free_html__widget_search(&$vars) {
 }
 
 /**
- * Preprocess variables for asset--image--widget-search.tpl.php.
+ * Preprocess variables for asset--gallery--widget-search.tpl.php.
  *
- * @see asset--image--widget-search.tpl.php
+ * @see asset--gallery--widget-search.tpl.php
  */
 function template_preprocess_asset__gallery__widget_search(&$vars) {
   // Render first element.

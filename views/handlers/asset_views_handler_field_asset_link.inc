@@ -45,4 +45,16 @@ class asset_views_handler_field_asset_link extends views_handler_field_entity {
       return $this->render_link($entity, $values);
     }
   }
+
+  /**
+   * Basic link builder.
+   */
+  function render_link($asset, $values) {
+    if (asset_access_view_page($asset)) {
+      $this->options['alter']['make_link'] = TRUE;
+      $this->options['alter']['path'] = "admin/content/assets/view/$asset->aid";
+      $text = !empty($this->options['text']) ? $this->options['text'] : t('view');
+      return $text;
+    }
+  }
 }

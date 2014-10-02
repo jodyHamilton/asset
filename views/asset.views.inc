@@ -49,5 +49,13 @@ function asset_views_plugins() {
         'base' => array('asset'),
       ),
     ),
+    'access' => array(
+      'asset_insert_in_wysiwyg' => array(
+        'title' => t('Access to search & insert assets'),
+        'help' => t('Check several permissions to access to search assets and insert into WYSIWYG.'),
+        'handler' => 'asset_views_plugin_access_asset_insert_in_wysiwyg',
+        'uses options' => FALSE,
+      ),
+    ),
   );
 }

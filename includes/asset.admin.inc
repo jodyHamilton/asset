@@ -152,7 +152,7 @@ function asset_base_form($form, &$form_state, $asset, $op = 'edit') {
     '#weight' => 5,
   );
 
-  if (!empty($asset->aid) && user_access('administer assets')) {
+  if (!empty($asset->aid) && asset_delete_access($asset->type)) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
@@ -171,7 +171,9 @@ function asset_base_form_submit($form, &$form_state) {
   $asset = entity_ui_form_submit_build_entity($form, $form_state);
   $asset->save();
   $form_state['asset'] = $asset;
-  $form_state['redirect'] = 'admin/content/assets';
+  // @TODO: Normally we need to ensure that redirect page accessible to avoid 403 redirects within frame forms i.e.
+  // Better to redirect to same page with Get param and not to HP or etc. See assetWidget.getTabAsyncContent() in asset-widget.js
+  $form_state['redirect'] = user_access('administer assets') ? 'admin/content/assets' : '';
 }
 
 /**
@@ -223,6 +225,7 @@ function assets_add_page() {
  * Returns an asset submission form.
  */
 function assets_add($type) {
+  // @todo: We need to remove any direct creation of Asset class instances and use entity_create() instead.
   $asset = new Asset(array('type' => $type));
   $form = entity_ui_get_form('asset', $asset, 'add');
 
@@ -316,9 +319,9 @@ function _assets_wysiwyg_fields(&$form, $asset, $options) {
  * Page callback for wysiwyg form.
  */
 function assets_wysiwyg_form($form, &$form_state, $op, $asset, $mode = ASSET_DEFAULT_MODE, $align = '') {
+  // In case of add operation we have only type name, but on edit we will have whole entity.
   if ($op == 'add') {
-    $type = drupal_substr($asset, 6);
-    $asset = new Asset(array('type' => $type));
+    $asset = new Asset(array('type' => $asset));
   }
 
   $form_state['entity_type'] = 'asset';

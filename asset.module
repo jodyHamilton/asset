@@ -168,27 +168,27 @@ function assets_type_entity_access_callback($op, $type = NULL, $account = NULL) 
 /**
  * Access callback for the entity API.
  */
-function assets_entity_access_callback($op, $type = NULL, $account = NULL) {
+function assets_entity_access_callback($op, $entity = NULL, $account = NULL) {
   switch ($op) {
     case 'view':
-      return empty($type)
+      return empty($entity)
         // View assets list.
-        ? user_access('access assets overview', $account)
+        ? user_access('administer assets', $account)
         // View separate asset.
         : user_access('access content', $account);
       break;
 
     case 'update':
     case 'edit':
-      return !empty($type->type)
-        ? user_access("edit asset with type $type->type", $account)
+      return !empty($entity->type)
+        ? asset_edition_access($entity->type, $account)
         // Invalid type.
         : FALSE;
       break;
 
     case 'delete':
-      return !empty($type->type)
-        ? user_access("delete asset with type $type->type", $account)
+      return !empty($entity->type)
+        ? asset_delete_access($entity->type, $account)
         // Invalid type.
         : FALSE;
       break;
@@ -212,12 +212,14 @@ function asset_permission() {
       'title' => t('Administer assets'),
       'description' => t('Create, edit and delete asset entities'),
     ),
-    'access assets overview' => array(
-      'title' => t('Access the assets overview page'),
-    ),
     'access asset view page' => array(
       'title' => t('Access asset view page'),
       'description' => t('Has sense only with access content permission'),
+    ),
+    // We could not simply delete permission because users could rely on it features and etc in old versions of module.
+    'access assets overview' => array(
+      'title' => t('Access the assets overview page'),
+      'description' => t('DEPRECATED! Should not be used.'),
     ),
   );
 
@@ -245,8 +247,39 @@ function asset_permission() {
 /**
  * Check what user have access to create asset with given type.
  */
-function asset_creation_access($type) {
-  return user_access("create asset with type $type");
+function asset_creation_access($type, $account = NULL) {
+  return user_access('administer assets', $account) || user_access("create asset with type $type", $account);
+}
+
+/**
+ * Check what user have access to edit asset with given type.
+ */
+function asset_edition_access($type, $account = NULL) {
+  $type = is_object($type) && $type->type ? $type->type : $type;
+  return user_access('administer assets', $account) || user_access("edit asset with type $type", $account);
+}
+
+/**
+ * Check what user have access to delete asset with given type.
+ */
+function asset_delete_access($type, $account = NULL) {
+  return user_access('administer assets') || user_access("delete asset with type $type", $account);
+}
+
+/**
+ * Check what user have access to insert assets into WYSIWYG body.
+ */
+function asset_insert_asset_access($account = NULL) {
+  return user_access('administer assets', $account)
+  // We user has access to search widget - he should be available to insert assets somewhere.
+  || (module_exists('asset_widget') && user_access('access search widget', $account));
+}
+
+/**
+ * Wrapper for get_access_callback() in custom permission handler.
+ */
+function asset_insert_asset_views_access($account = NULL) {
+  return asset_insert_asset_access() || user_access('access all views', $account);
 }
 
 /**
@@ -301,7 +334,8 @@ function asset_menu() {
     'title arguments' => array(3),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('assets_wysiwyg_form', 'add', 3),
-    'access arguments' => array('administer assets'),
+    'access callback' => 'asset_creation_access',
+    'access arguments' => array(3),
     'type' => MENU_CALLBACK,
     'file' => 'includes/asset.admin.inc',
   );
@@ -310,7 +344,8 @@ function asset_menu() {
     'title' => 'Edit asset',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('assets_wysiwyg_form', 'edit', 3, 4, 5),
-    'access arguments' => array('administer assets'),
+    'access callback' => 'asset_edition_access',
+    'access arguments' => array(3),
     'type' => MENU_CALLBACK,
     'file' => 'includes/asset.admin.inc',
   );
@@ -319,7 +354,8 @@ function asset_menu() {
     'title' => 'Override asset',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('assets_override_form'),
-    'access arguments' => array('administer assets'),
+    // For now if user has access to insert he will has access to override.
+    'access callback' => 'asset_insert_asset_access',
     'type' => MENU_CALLBACK,
     'file' => 'includes/asset.admin.inc',
   );
@@ -328,7 +364,7 @@ function asset_menu() {
     'theme callback' => 'asset_get_frontend_theme',
     'page callback' => '_asset_get_tag',
     'page arguments' => array(3, 4, 5),
-    'access arguments' => array('administer assets'),
+    'access callback' => 'asset_insert_asset_access',
     'type' => MENU_CALLBACK,
     'file' => 'includes/asset.admin.inc',
     'delivery callback' => 'asset_json_delivery',
@@ -339,7 +375,8 @@ function asset_menu() {
     'theme callback' => 'asset_get_frontend_theme',
     'page callback' => 'assets_get_content',
     'page arguments' => array(3),
-    'access arguments' => array('administer assets'),
+    // For now if user has access to insert he will has access to view it within WYSIWYG.
+    'access callback' => 'asset_insert_asset_access',
     'type' => MENU_CALLBACK,
     'file' => 'includes/asset.admin.inc',
   );
@@ -589,8 +626,7 @@ function asset_ckeditor_plugin() {
     ),
   );
 
-  $types = assets_get_types();
-  foreach ($types as $type) {
+  foreach (assets_get_types() as $type) {
     $plugins[$plugin_name]['buttons']['asset_' . $type->type] = array();
     $plugins[$plugin_name]['buttons']['asset_' . $type->type]['label'] = t('Asset') . ': ' . $type->name;
     $plugins[$plugin_name]['buttons']['asset_' . $type->type]['icon'] = 'buttons/' . $type->icon;
@@ -1125,20 +1161,31 @@ function assets_pre_render_text_format($element) {
     $view_modes = $entity_info['view modes'];
     $config = array();
 
-    foreach ($asset_types as $type) {
+    $unavailable_creation_buttons = array();
+    foreach ($asset_types as $name => $type_info) {
       $asset_type_params = array();
-      $wysiwyg_modes = _assets_get_wysiwyg_modes($type->type);
+      $wysiwyg_modes = _assets_get_wysiwyg_modes($name);
 
       $modes = array();
       foreach ($wysiwyg_modes as $view_mode_name) {
         $modes[$view_mode_name] = $view_modes[$view_mode_name]['label'];
       }
 
-      $asset_type_params['name'] = $type->name;
-      $asset_type_params['icon'] = $type->icon;
-      $asset_type_params['fields'] = _assets_get_overridable_fields($type->type);
+      $asset_type_params['name'] = $type_info->name;
+      $asset_type_params['icon'] = $type_info->icon;
+      $asset_type_params['fields'] = _assets_get_overridable_fields($name);
       $asset_type_params['modes'] = $modes;
-      $config[$type->type] = $asset_type_params;
+      $asset_type_params['accessEdit'] = asset_edition_access($name);
+      $config[$name] = $asset_type_params;
+      if (!asset_creation_access($name)) {
+        $unavailable_creation_buttons[] = 'asset_' . $name;
+      }
+    }
+
+    // Pass set of buttons to be hidden because of permissions.
+    $config['removeButtons'] = $unavailable_creation_buttons;
+    if (!asset_insert_asset_access()) {
+      $config['removeButtons'][] = 'assetSearch';
     }
 
     drupal_add_js(array('ckeditor' => array('plugins' => array('asset' => $config))), 'setting');

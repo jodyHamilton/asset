@@ -21,6 +21,7 @@ function asset_widget_menu() {
     'access arguments' => array('access search widget'),
     'type' => MENU_CALLBACK,
     'delivery callback' => 'ajax_deliver',
+    'theme callback' => 'ajax_base_page_theme',
   );
 
   $items['ajax/asset-widget/drop'] = array(
@@ -32,6 +33,7 @@ function asset_widget_menu() {
     'access arguments' => array('access search widget'),
     'type' => MENU_CALLBACK,
     'delivery callback' => 'ajax_deliver',
+    'theme callback' => 'ajax_base_page_theme',
   );
 
   return $items;
@@ -41,22 +43,10 @@ function asset_widget_menu() {
  * Implements hook_init().
  */
 function asset_widget_init() {
-  // Add special setting to detect ih-frame forms.
+  // Add special setting to detect in-frame forms.
   if (asset_widget_in_frame_form()) {
     drupal_add_js(array('assetWidget' => array('assetFrame' => TRUE)), 'setting');
   }
-}
-
-/**
- * Implements hook_admin_paths().
- */
-function asset_widget_admin_paths() {
-  $paths = array(
-    'ajax/asset-widget/get/tab' => TRUE,
-    'ajax/asset-widget/drop' => TRUE,
-  );
-
-  return $paths;
 }
 
 /**
@@ -99,7 +89,7 @@ function asset_widget_add_to_page($set = NULL) {
  * Implements hook_element_info_alter().
  */
 function asset_widget_element_info_alter(&$info) {
-  // Don't process fields if current theme is not admin, access denied, inside widget frames, field settings form and different fields added by ajax.
+  // Don't process fields if current theme is not admin, access denied or outside of asset widget form frames, field settings form and different fields added by ajax.
   if (user_access('access search widget')
     && _asset_widget_is_admin_theme()
     && !asset_widget_in_frame_form()) {
@@ -143,7 +133,7 @@ function asset_widget_pre_render_contextual($element) {
 }
 
 /**
- * Helper function to determine that current theme is admin theme.
+ * Helper function to determine if current theme is admin theme.
  */
 function _asset_widget_is_admin_theme() {
   global $theme_key;
@@ -420,7 +410,7 @@ function asset_widget_entity_info_alter(&$entity_info) {
  */
 function asset_widget_form_alter(&$form, &$form_state, $form_id) {
   // Affect edit forms in asset widget iframes.
-  if (!empty($form_id) && preg_match('/asset_edit_.*_form$/', $form_id) && !empty($_GET['asset_frame'])) {
+  if (!empty($form_id) && preg_match('/asset_edit_.*_form$/', $form_id) && asset_widget_in_frame_form()) {
     if (isset($form['actions']['delete']['#submit'])) {
       $form['actions']['delete']['#submit'][] = 'asset_widget_base_form_submit_delete';
     }
@@ -432,8 +422,12 @@ function asset_widget_form_alter(&$form, &$form_state, $form_id) {
  */
 function asset_widget_base_form_submit_delete($form, &$form_state) {
   if (!empty($form_state['redirect'])) {
-    if (($url = drupal_parse_url($form_state['redirect'])) && !empty($_GET['asset_frame'])) {
+    if (($url = drupal_parse_url($form_state['redirect'])) && asset_widget_in_frame_form()) {
+      // Pass asset_frame to further actions.
       $url['query']['asset_frame'] = $_GET['asset_frame'];
+      if (isset($_GET['render'])) {
+        $url['query']['render'] = $_GET['render'];
+      }
       $form_state['redirect'] = array(
         $url['path'],
         array(
@@ -468,25 +462,24 @@ function asset_widget_get_tabs_info($tab_id = FALSE) {
       ),
     );
 
-    // @todo after applying of custom perms patch, rework it.
-    if (user_access('administer assets')) {
-      // Provide separate tab with form for each type, sorted by Asset weight.
-      $types = array();
-      foreach (assets_get_types() as $type) {
-        $types[$type->type]['weight'] = intval($type->weight);
-        $types[$type->type]['title'] = $type->name;
+    // Provide separate tab with form for each type, sorted by Asset weight.
+    $types = array();
+    foreach (assets_get_types() as $name => $type_info) {
+      if (asset_creation_access($name)) {
+        $types[$name]['weight'] = intval($type_info->weight);
+        $types[$name]['title'] = $type_info->name;
       }
-      uasort($types, 'drupal_sort_weight');
+    }
+    uasort($types, 'drupal_sort_weight');
 
-      foreach ($types as $name => $type) {
-        $tabs_info[$name] = array(
-          'title' => $type['title'],
-          'content_callback' => 'asset_widget_get_asset_form',
-          'arguments' => array('type'),
-          'defaults' => array('type' => $name),
-          'classes' => array('async', 'refresh-content'),
-        );
-      }
+    foreach ($types as $name => $type) {
+      $tabs_info[$name] = array(
+        'title' => $type['title'],
+        'content_callback' => 'asset_widget_get_asset_form',
+        'arguments' => array('type'),
+        'defaults' => array('type' => $name),
+        'classes' => array('async', 'refresh-content'),
+      );
     }
 
     // Allow to modify set of tabs.

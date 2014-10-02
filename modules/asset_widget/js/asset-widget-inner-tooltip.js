@@ -13,7 +13,12 @@
       // Hack, set wrapper height to object height.
       // It's needed because FF can't calculate proper height() in case of video asset.
       var $object = $context.find('object');
-      if ($object.size()) {
+
+      // First we try to get height attribute.
+      if ($object.attr('height')) {
+        $object.parent().height($object.attr('height'));
+      }
+      else if ($object.size()) {
         $object.parent().height($object.height());
       }
 

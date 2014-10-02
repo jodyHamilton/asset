@@ -91,6 +91,9 @@ class asset_views_handler_field_asset extends views_handler_field {
             $view_mode = check_plain($this->options['asset_tooltip']);
             $this->options['alter']['link_class'] = 'asset-tooltip';
             $this->options['alter']['rel'] = 'assets/tooltip/' . $this->get_value($values, 'aid') . '/' . $view_mode;
+
+            $this->options['alter']['alter_text'] = TRUE;
+            $this->options['alter']['text'] = $data . '<span class="show-preview-element"></span>';
           }
         }
         else {

@@ -143,10 +143,11 @@ assetWidget.allowDrop = false;
 
       var $frame = $('<iframe />')
         .attr({
-          'src': Drupal.settings.basePath + src + '?asset_frame=true',
+          // We are passing both options to invoke asset_preprocess_page() and asset_widget regular processing.
+          src: Drupal.settings.basePath + src + '?asset_frame=true&render=popup',
           // Set frame size depending from current widget size.
-          'width': $parent.width() - 20,
-          'height': $parent.height()
+          width: $parent.width() - 20,
+          height: $parent.height()
         });
 
       $frame.load(function () {
@@ -256,26 +257,26 @@ assetWidget.allowDrop = false;
   assetWidget.initDatepicker = function () {
     $('input[name=created]').once('asset-datepicker', function () {
       $(this).datepicker({
-          autoSize: true,
-          changeMonth: true,
-          changeYear: true,
-          autoPopUp: 'focus',
-          closeAtTop: false,
-          dateFormat: 'yy-mm-dd 00:00:00',
-          disabled: false,
-          firstDay: 1,
-          prevText: '',
-          nextText: '',
-          closeText: '',
-          showSpeed: 'slow',
-          buttonImageOnly: true,
-          beforeShow: function (input, inst) {
-            var $datepicker = inst.dpDiv;
-            // Set z-index to bigger value than widget have.
-            setTimeout(function () {
-              $datepicker.css('z-index', 30000);
-            }, 0);
-          }}
+        autoSize: true,
+        changeMonth: true,
+        changeYear: true,
+        autoPopUp: 'focus',
+        closeAtTop: false,
+        dateFormat: 'yy-mm-dd 00:00:00',
+        disabled: false,
+        firstDay: 1,
+        prevText: '',
+        nextText: '',
+        closeText: '',
+        showSpeed: 'slow',
+        buttonImageOnly: true,
+        beforeShow: function (input, inst) {
+          var $datepicker = inst.dpDiv;
+          // Set z-index to bigger value than widget have.
+          setTimeout(function () {
+            $datepicker.css('z-index', 30000);
+          }, 0);
+        }}
       );
     });
   };
@@ -379,11 +380,11 @@ assetWidget.allowDrop = false;
     // On reset button, just rebuild search tab.
     $context.find('.views-reset-button input, .no-results .button.button-back a')
       .once('asset-widget-reset-search', function () {
-        $(this).unbind().click(function (event) {
-          event.preventDefault();
-          assetWidget.getTabContent('search');
-        });
+      $(this).unbind().click(function (event) {
+        event.preventDefault();
+        assetWidget.getTabContent('search');
       });
+    });
 
     // Bind tooltips links.
     $context.find(".items-wrap .buttons .button-preview").once('asset-preview-tooltip-link', function () {
@@ -414,7 +415,7 @@ assetWidget.allowDrop = false;
         var aid = idParts.pop();
         var type = idParts.pop();
 
-        if (aid) {
+        if (aid && type) {
           assetWidget.hideTooltips();
           assetWidget.getTabAsyncContent(type, {aid: aid});
           assetWidget.gotoTabById(type, true);
@@ -648,9 +649,9 @@ assetWidget.allowDrop = false;
                   // @todo: Add js caching for last 5-10 frames.
                   var $frame = $('<iframe />')
                     .attr({
-                      'src': Drupal.settings.basePath + 'assets/tooltip/' + assetAid + '/' + viewMode+ '?asset_widget_tooltip=true',
-                      'frameBorder' : 0,
-                      'allowtransparency' : true
+                      src: Drupal.settings.basePath + 'assets/tooltip/' + assetAid + '/' + viewMode+ '?asset_widget_tooltip=true',
+                      frameborder: 0,
+                      allowtransparency: true
                     });
 
                   // To avoid white flash from iframe, hide it before loading.
@@ -798,9 +799,9 @@ assetWidget.allowDrop = false;
         $formItem.find(".description").fadeIn(150);
         $formItem.addClass('form-item-tooltipped');
       }).blur(function () {
-          $formItem.find(".description").hide();
-          $formItem.removeClass('form-item-tooltipped');
-        });
+        $formItem.find(".description").hide();
+        $formItem.removeClass('form-item-tooltipped');
+      });
     });
   };
 
@@ -1019,8 +1020,7 @@ assetWidget.allowDrop = false;
                   if (html && CKEDITOR && CKEDITOR.instances && CKEDITOR.instances[$droppedField.attr('id')]) {
                     var editor = CKEDITOR.instances[$droppedField.attr('id')];
                     var element = CKEDITOR.dom.element.createFromHtml(html);
-
-                    editor.insertElement(element);
+                    Assets.insertAssetInEditor(editor, element);
                   }
                 }
                 // Drop to entity reference.

@@ -6,30 +6,26 @@
   Drupal.assets = Drupal.assets || {};
   Drupal.assets.initTooltips = function () {
     var resize = 0;
-    $('.show-preview-element').remove();
 
     $('.asset-tooltip').each(function () {
       var $this = $(this),
         $image = $this.find('img'),
         action = null;
 
+      // Prevent double event processing, that cause tooltip hide.
+      if ($this.hasClass('processed')) {
+        return;
+      }
+
       if ($image.length) {
-        // Prevent double event processing, that cause tooltip hide.
-        if ($this.hasClass('processed')) {
-          return;
-        }
         action = $this[0];
         $(action).addClass('show-preview-element-image');
       }
       else {
-        action = document.createElement('span');
-        $(action).addClass('show-preview-element');
-        $('body').append(action);
+        action = this;
       }
 
       $this.addClass('processed');
-
-      var thisWidth = parseInt($this.width());
 
       var hideAllPreviewElements = function () {
         $('.already-open').removeClass('already-open');
@@ -45,18 +41,6 @@
           }
         });
       };
-
-      setTimeout(function () {
-        var thisOffset = $this.offset();
-        // Margin of body in common for admin_menu module, that's why we should respect it's value.
-        var $body = $('body');
-        var bodyTopOffset = $body.css('position') == 'relative' ? parseInt($body.css('margin-top')) : 0;
-        $(action).css({
-          opacity: 0,
-          top: thisOffset.top - bodyTopOffset + 3 + 'px',
-          left: thisOffset.left + thisWidth + 10 + 'px'
-        }).animate({opacity: 1}, 500);
-      }, 2500);
 
       $(action).bind('click', function () {
         var $thisItem = $(this),
@@ -119,14 +103,6 @@
       });
 
       $(window).resize(function () {
-        var thisWidth = parseInt($this.width()),
-          thisOffset = $this.offset();
-
-        $(action).css({
-          top: thisOffset.top + 3 + 'px',
-          left: thisOffset.left + thisWidth + 10 + 'px'
-        });
-
         if ($('body').hasClass('first-resize') && resize) {
           hideAllPreviewElements();
         }
@@ -141,7 +117,7 @@
 
   Drupal.behaviors.assetsTooltip = {
     attach: function (context) {
-      setTimeout(Drupal.assets.initTooltips, 2500);
+      Drupal.assets.initTooltips();
     }
   }
 })(jQuery);

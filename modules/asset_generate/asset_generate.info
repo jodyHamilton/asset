@@ -1,7 +1,6 @@
 name = Asset generate
 description = Support devel generate for assets
+package = Media assets
 core = 7.x
 dependencies[] = asset
 dependencies[] = devel_generate
-
-package = "Media assets"

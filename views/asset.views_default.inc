@@ -25,8 +25,7 @@ function asset_views_default_views() {
   $handler->display->display_options['title'] = 'Media assets library';
   $handler->display->display_options['use_more_text'] = '';
   $handler->display->display_options['link_display'] = 'custom_url';
-  $handler->display->display_options['access']['type'] = 'perm';
-  $handler->display->display_options['access']['perm'] = 'administer assets';
+  $handler->display->display_options['access']['type'] = 'asset_insert_in_wysiwyg';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;
