@@ -1008,6 +1008,9 @@ var Assets;
                 return element;
               }
             }
+          },
+          {
+            applyToAll: true
           });
         }
       }
