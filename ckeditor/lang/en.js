@@ -7,5 +7,8 @@ CKEDITOR.plugins.setLang('asset', 'en', {
   assets_paste: 'Paste asset',
   assets_error_paste: 'Error occurred during paste operation',
   assets_nl_before: 'New line above',
-  assets_nl_after: 'New line below'
+  assets_nl_after: 'New line below',
+  assets_title: 'Media Assets',
+  assets_label: 'Add a media asset',
+  assets_label_search: 'Choose an asset from the library'
 });

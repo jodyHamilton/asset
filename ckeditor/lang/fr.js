@@ -7,5 +7,8 @@ CKEDITOR.plugins.setLang('asset', 'fr', {
   assets_paste: 'Coller un média',
   assets_error_paste: 'Une erreur s\'est produite pendant l\'opération coller',
   assets_nl_before: 'Nouvelle ligne ci-dessus',
-  assets_nl_after: 'Nouvelle ligne ci-dessous'
+  assets_nl_after: 'Nouvelle ligne ci-dessous',
+  assets_title: 'Actifs des médias',
+  assets_label: 'Ajouter un atout médiatique',
+  assets_label_search: 'Choisissez un atout de la bibliothèque'
 });

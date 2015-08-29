@@ -171,13 +171,13 @@ var Assets;
     dialog: function (editor, type) {
       return function () {
         return {
-          title: 'Media Assets',
+          title: Assets.getTranslatedString(editor, 'assets_title'),
           minWidth: 800,
           minHeight: 600,
           contents: [
             {
               id: 'asset_frame',
-              label: 'Add a media asset',
+              label: Assets.getTranslatedString(editor, 'assets_label'),
               expand: true,
               elements: [
                 {
@@ -216,15 +216,15 @@ var Assets;
       });
     },
 
-    searchDialog: function () {
+    searchDialog: function (editor) {
       return {
-        title: 'Media Assets',
+        title: Assets.getTranslatedString(editor, 'assets_title'),
         minWidth: 800,
         minHeight: 600,
         contents: [
           {
             id: 'asset_frame',
-            label: 'Choose an asset from the library',
+            label: Assets.getTranslatedString(editor, 'assets_label_search'),
             expand: true,
             elements: [
               {
