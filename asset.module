@@ -560,10 +560,11 @@ function _assets_get_icons() {
 
       foreach (scandir($dir) as $file_name) {
         $file_path = $dir . $file_name;
-        if (exif_imagetype($file_path)) {
-
-          if (FALSE !== getimagesize($file_path)) {
-            $icons[$file_name] = theme('image', array('path' => $file_path, 'width' => 18, 'height' => 18));
+        if (is_file($file_path)) {
+          if (exif_imagetype($file_path)) {
+            if (FALSE !== getimagesize($file_path)) {
+              $icons[$file_name] = theme('image', array('path' => $file_path, 'width' => 18, 'height' => 18));
+            }
           }
         }
       }
