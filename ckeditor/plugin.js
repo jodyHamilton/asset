@@ -182,7 +182,7 @@ var Assets;
               elements: [
                 {
                   type: 'iframe',
-                  src: Drupal.settings.basePath + 'admin/assets/add/' + type + '/?render=popup',
+                  src: Drupal.settings.basePath + Drupal.settings.pathPrefix + 'admin/assets/add/' + type + '/?render=popup',
                   width: '100%',
                   height: '100%'
                 }
@@ -229,7 +229,7 @@ var Assets;
             elements: [
               {
                 type: 'iframe',
-                src: Drupal.settings.basePath + 'admin/assets/search?render=popup',
+                src: Drupal.settings.basePath + Drupal.settings.pathPrefix + 'admin/assets/search?render=popup',
                 width: '100%',
                 height: '100%',
                 id: 'asset_frame_iframe',
@@ -349,7 +349,7 @@ var Assets;
       var content = '', tagmatches = [], time, tagId;
       $.ajax({
         type: "POST",
-        url: Drupal.settings.basePath + 'admin/assets/get',
+        url: Drupal.settings.basePath + Drupal.settings.pathPrefix + 'admin/assets/get',
         data: {tag: tag},
         async: false,
         success: function (asset_content) {
@@ -382,7 +382,7 @@ var Assets;
         $.ajax({
           type: "POST",
           dataType: "json",
-          url: Drupal.settings.basePath + 'admin/assets/tag/' + tagId + '/' + viewMode + '/' + align,
+          url: Drupal.settings.basePath + Drupal.settings.pathPrefix + 'admin/assets/tag/' + tagId + '/' + viewMode + '/' + align,
           async: false,
           success: function (data) {
             tag = data.tag.replace(/\\"/g, '"');
@@ -448,7 +448,7 @@ var Assets;
         if (Assets.outdated) {
           $.ajax({
             type: "POST",
-            url: Drupal.settings.basePath + 'admin/assets/get/' + tag_id,
+            url: Drupal.settings.basePath + Drupal.settings.pathPrefix + 'admin/assets/get/' + tag_id,
             data: {
               tag: tag
             },
@@ -699,7 +699,7 @@ var Assets;
             Assets.outdated = element;
             tag_id = element.data('asset-cid');
             tag = encodeURIComponent(tagCache[tag_id].tag);
-            src = Drupal.settings.basePath + 'admin/assets/override?render=popup&tag=' + tag;
+            src = Drupal.settings.basePath + Drupal.settings.pathPrefix + 'admin/assets/override?render=popup&tag=' + tag;
             Assets.openDialog(editor, 'asset_' + Assets.parseId(tag_id, 'type'), src, element);
           }
         });
@@ -720,7 +720,7 @@ var Assets;
 
             execFn = function (type, assetType) {
               return function (editor) {
-                Assets.openDialog(editor, type, Drupal.settings.basePath + 'admin/assets/add/' + assetType + '/?render=popup', null);
+                Assets.openDialog(editor, type, Drupal.settings.basePath + Drupal.settings.pathPrefix + 'admin/assets/add/' + assetType + '/?render=popup', null);
               };
             };
 
@@ -781,7 +781,7 @@ var Assets;
               Assets.outdated = element;
               tag_id = element.data('asset-cid');
               tag = encodeURIComponent(tagCache[tag_id].tag);
-              src = Drupal.settings.basePath + 'admin/assets/override?render=popup&tag=' + tag;
+              src = Drupal.settings.basePath + Drupal.settings.pathPrefix + 'admin/assets/override?render=popup&tag=' + tag;
               Assets.openDialog(editor, 'asset_' + Assets.parseId(tag_id, 'type'), src, element);
             }
           },
@@ -798,7 +798,7 @@ var Assets;
               var tag_id = element.data('asset-cid');
               var params = Assets.getTagData(tagCache[tag_id].tag);
               var src = [
-                Drupal.settings.basePath + 'admin/assets/edit',
+                Drupal.settings.basePath + Drupal.settings.pathPrefix + 'admin/assets/edit',
                 params.aid,
                 params.mode,
                 params.align,
