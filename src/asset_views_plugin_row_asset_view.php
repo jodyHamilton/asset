@@ -1,8 +1,5 @@
 <?php
-/**
- * @file
- * Row style plugin for displaying the results as assets.
- */
+namespace Drupal\asset;
 
 /**
  * Plugin class for displaying Views results with entity_view.

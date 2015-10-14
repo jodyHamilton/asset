@@ -30,15 +30,24 @@ function template_preprocess_asset_widget_wrapper(&$vars) {
   }
   $vars['tabs_count'] = count($vars['tab_links']);
 
-  $vars['loader'] = theme(
-    'image',
-    array(
-      'path' => ASSET_WIDGET_MODULE_PATH . '/images/content/loader.gif' ,
-      'attributes' => array(
-        'alt' => t('Loading...'),
-      ),
-    )
-  );
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $vars['loader'] = theme(
+//     'image',
+//     array(
+//       'path' => ASSET_WIDGET_MODULE_PATH . '/images/content/loader.gif' ,
+//       'attributes' => array(
+//         'alt' => t('Loading...'),
+//       ),
+//     )
+//   );
+
 }
 
 /**
@@ -48,30 +57,25 @@ function template_preprocess_asset_widget_wrapper(&$vars) {
  */
 function template_preprocess_asset_widget_edit_buttons(&$vars) {
   if (!empty($vars['asset'])) {
-    $vars['preview_link'] = l(
-      '<span class="ico"></span>' . t('Preview'),
-      "javascript: void(0)",
-      array(
-        'html' => TRUE,
-        // To leave raw href.
-        'external' => TRUE,
-      )
-    );
+    $vars['preview_link'] = \Drupal::l('<span class="ico"></span>' . t('Preview'), \Drupal\Core\Url::fromUri("javascript: void(0)"));
 
     // Note, we allowing edition only if creation allowed because if not - there is no tab in widget for it.
     if (asset_creation_access($vars['asset']->type) && asset_edition_access($vars['asset']->type)) {
-      $vars['edit_link'] = l(
-        '<span class="ico"></span>' . t('Edit'),
-        "admin/content/assets/manage/{$vars['asset']->aid}",
-        array(
-          'html' => TRUE,
-          'attributes' => array(
-            'id' => 'aid-' . $vars['asset']->type . '-' . $vars['asset']->aid,
-            'target' => '_blank',
-            'class' => 'asset-widget-modify-asset',
-          ),
-        )
-      );
+      // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $vars['edit_link'] = l(
+//         '<span class="ico"></span>' . t('Edit'),
+//         "admin/content/assets/manage/{$vars['asset']->aid}",
+//         array(
+//           'html' => TRUE,
+//           'attributes' => array(
+//             'id' => 'aid-' . $vars['asset']->type . '-' . $vars['asset']->aid,
+//             'target' => '_blank',
+//             'class' => 'asset-widget-modify-asset',
+//           ),
+//         )
+//       );
+
     }
   }
 }
@@ -101,14 +105,32 @@ function template_preprocess_asset__widget_search(&$vars) {
     $preprocess($vars);
   }
 
-  $vars['buttons'] = theme(
-    'asset_widget_edit_buttons',
-    array(
-      'asset' => $vars['asset'],
-    )
-  );
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $vars['buttons'] = theme(
+//     'asset_widget_edit_buttons',
+//     array(
+//       'asset' => $vars['asset'],
+//     )
+//   );
 
-  $vars['view_mode_switch'] = theme('asset_widget_view_mode_switch_block', array('asset' => $vars['asset']));
+
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $vars['view_mode_switch'] = theme('asset_widget_view_mode_switch_block', array('asset' => $vars['asset']));
+
 }
 
 /**
@@ -120,52 +142,34 @@ function template_preprocess_asset__image__widget_search(&$vars) {
   // Listing content.
   $image = field_get_items('asset', $vars['asset'], 'field_asset_image');
   if (!empty($image[0]['uri'])) {
-    $vars['media_field'] = field_view_value(
-      'asset',
-      $vars['asset'],
-      'field_asset_image',
-      $image[0],
-      array(
+    $vars['media_field'] = $image[0]->view(array(
         'type' => 'image',
         'settings' => array(
           'image_style' => 'asset_image_widget_search',
           'image_link' => '',
         ),
-      )
-    );
+      ));
   }
 
   $description = field_get_items('asset', $vars['asset'], 'field_asset_image_description');
   if (!empty($description[0]['value'])) {
-    $vars['short_description'] = field_view_value(
-      'asset',
-      $vars['asset'],
-      'field_asset_image_description',
-      $description[0],
-      array(
+    $vars['short_description'] = $description[0]->view(array(
         'type' => 'text_trimmed',
         'settings' => array(
           'trim_length' => '120',
         ),
-      )
-    );
+      ));
   }
 
   // @todo: change wrapper for copyright in template.
   $copyright = field_get_items('asset', $vars['asset'], 'field_asset_image_copyright');
   if (!empty($copyright[0]['value'])) {
-    $vars['short_copyright'] = field_view_value(
-      'asset',
-      $vars['asset'],
-      'field_asset_image_copyright',
-      $copyright[0],
-      array(
+    $vars['short_copyright'] = $copyright[0]->view(array(
         'type' => 'text_trimmed',
         'settings' => array(
           'trim_length' => '30',
         ),
-      )
-    );
+      ));
   }
 }
 
@@ -178,34 +182,22 @@ function template_preprocess_asset__video__widget_search(&$vars) {
   // Listing content.
   $video = field_get_items('asset', $vars['asset'], 'field_asset_video_file');
   if (!empty($video[0]['snapshot'])) {
-    $vars['media_field'] = field_view_value(
-      'asset',
-      $vars['asset'],
-      'field_asset_video_file',
-      $video[0],
-      array(
+    $vars['media_field'] = $video[0]->view(array(
         'type' => 'emvideo_snapshot',
         'settings' => array(
           'width' => '100',
         ),
-      )
-    );
+      ));
   }
 
   $description = field_get_items('asset', $vars['asset'], 'field_asset_video_desc');
   if (!empty($description[0]['value'])) {
-    $vars['short_description'] = field_view_value(
-      'asset',
-      $vars['asset'],
-      'field_asset_video_desc',
-      $description[0],
-      array(
+    $vars['short_description'] = $description[0]->view(array(
         'type' => 'text_trimmed',
         'settings' => array(
           'trim_length' => '140',
         ),
-      )
-    );
+      ));
   }
 }
 
@@ -217,7 +209,7 @@ function template_preprocess_asset__video__widget_search(&$vars) {
 function template_preprocess_asset__audio__widget_search(&$vars) {
   $audio = field_get_items('asset', $vars['asset'], 'field_asset_audio');
   if (!empty($audio[0]['fid']) && !empty($audio[0]['description'])) {
-    $vars['short_description'] = truncate_utf8($audio[0]['description'], '140');
+    $vars['short_description'] = \Drupal\Component\Utility\Unicode::truncate($audio[0]['description'], '140');
   }
 }
 
@@ -229,18 +221,12 @@ function template_preprocess_asset__audio__widget_search(&$vars) {
 function template_preprocess_asset__document__widget_search(&$vars) {
   $description = field_get_items('asset', $vars['asset'], 'field_asset_document_desc');
   if (!empty($description[0]['value'])) {
-    $vars['short_description'] = field_view_value(
-      'asset',
-      $vars['asset'],
-      'field_asset_document_desc',
-      $description[0],
-      array(
+    $vars['short_description'] = $description[0]->view(array(
         'type' => 'text_trimmed',
         'settings' => array(
           'trim_length' => '140',
         ),
-      )
-    );
+      ));
   }
 }
 
@@ -263,36 +249,24 @@ function template_preprocess_asset__gallery__widget_search(&$vars) {
   if (!empty($image_assets[0]['target_id']) && ($asset = asset_load($image_assets[0]['target_id']))) {
     $image = field_get_items('asset', $asset, 'field_asset_image');
     if (!empty($image[0]['uri'])) {
-      $vars['media_field'] = field_view_value(
-        'asset',
-        $asset,
-        'field_asset_image',
-        $image[0],
-        array(
+      $vars['media_field'] = $image[0]->view(array(
           'type' => 'image',
           'settings' => array(
             'image_style' => 'asset_image_widget_search',
             'image_link' => '',
           ),
-        )
-      );
+        ));
     }
   }
 
   $description = field_get_items('asset', $vars['asset'], 'field_asset_gallery_desc');
   if (!empty($description[0]['value'])) {
-    $vars['short_description'] = field_view_value(
-      'asset',
-      $vars['asset'],
-      'field_asset_gallery_desc',
-      $description[0],
-      array(
+    $vars['short_description'] = $description[0]->view(array(
         'type' => 'text_trimmed',
         'settings' => array(
           'trim_length' => '140',
         ),
-      )
-    );
+      ));
   }
 }
 
@@ -301,8 +275,17 @@ function template_preprocess_asset__gallery__widget_search(&$vars) {
  * @see asset-widget-asset-form-page.tpl.php
  */
 function template_preprocess_asset_widget_asset_form_page(&$vars) {
-  $vars['title'] = drupal_get_title();
-  $vars['messages'] = $vars['page']['#show_messages'] ? theme('status_messages') : '';
+  $vars['title'] = \Drupal::service('title_resolver')->getTitle(\Drupal::request(), \Drupal::routeMatch()->getRouteObject());
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $vars['messages'] = $vars['page']['#show_messages'] ? theme('status_messages') : '';
+
 }
 
 /**

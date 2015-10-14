@@ -1,0 +1,14 @@
+asset_tooltip:
+  title: 'Asset tooltip library'
+  version: '1.0'
+  js:
+    ASSET_MODULE_PATH/js/asset-tooltip.js: {  }
+  css:
+    ASSET_MODULE_PATH/css/asset-tooltip.css: {  }
+asset_tooltip_inner:
+  title: 'Asset tooltip library for iframe'
+  version: '1.0'
+  js:
+    ASSET_MODULE_PATH/js/asset-tooltip-inner.js: {  }
+  css:
+    ASSET_MODULE_PATH/css/asset-tooltip-inner.css: {  }

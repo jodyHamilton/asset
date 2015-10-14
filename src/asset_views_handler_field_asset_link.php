@@ -1,8 +1,5 @@
 <?php
-/**
- * @file
- * Field handler to present a library button.
- */
+namespace Drupal\asset;
 
 /**
  * Field handler to present a link to the entity.

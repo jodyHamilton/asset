@@ -1,8 +1,5 @@
 <?php
-/**
- * @file
- * Definition of views_plugin_exposed_form_asset_widget.
- */
+namespace Drupal\asset;
 
 /**
  * Exposed form plugin that provides an specific exposed form for asset widget.

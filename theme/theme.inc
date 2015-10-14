@@ -15,12 +15,12 @@ function template_preprocess_asset_wrapper(&$vars) {
   $base = 'asset_wrapper';
 
   $classes_array = $vars['classes_array'];
-  $classes_array[] = drupal_html_class('asset');
-  $classes_array[] = drupal_html_class("aid-$asset->aid");
-  $classes_array[] = drupal_html_class('asset-' . $element['#bundle']);
+  $classes_array[] = \Drupal\Component\Utility\Html::getClass('asset');
+  $classes_array[] = \Drupal\Component\Utility\Html::getClass("aid-$asset->aid");
+  $classes_array[] = \Drupal\Component\Utility\Html::getClass('asset-' . $element['#bundle']);
 
   if (isset($asset->in_editor) && $asset->in_editor) {
-    $classes_array[] = drupal_html_class('editor');
+    $classes_array[] = \Drupal\Component\Utility\Html::getClass('editor');
     $base = 'asset_editor_wrapper';
     $vars['attributes_array']['contenteditable'] = 'false';
     $vars['attributes_array']['data-cke-editable'] = 'false';
@@ -33,7 +33,7 @@ function template_preprocess_asset_wrapper(&$vars) {
   if ($view_mode !== ASSET_DEFAULT_MODE) {
     $options = !empty($asset->asset_options) && is_array($asset->asset_options) ? $asset->asset_options : array();
     if (!empty($options['align']) && in_array($options['align'], array('', 'center', 'left', 'right'), TRUE)) {
-      $classes_array[] = drupal_html_class('asset-align-' . $options['align']);
+      $classes_array[] = \Drupal\Component\Utility\Html::getClass('asset-align-' . $options['align']);
     }
   }
 

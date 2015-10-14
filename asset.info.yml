@@ -1,0 +1,10 @@
+name: Asset
+description: 'Provides entity based media assets'
+package: 'Media assets'
+core: 8.x
+dependencies:
+  - field_ui
+stylesheets:
+  all:
+    - css/assets.css
+type: module

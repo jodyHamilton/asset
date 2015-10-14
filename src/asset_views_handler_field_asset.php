@@ -1,8 +1,5 @@
 <?php
-/**
- * @file
- * Contains the basic asset field handler.
- */
+namespace Drupal\asset;
 
 /**
  * Field handler to provide simple renderer that allows linking to an asset.

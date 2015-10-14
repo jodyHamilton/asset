@@ -104,7 +104,7 @@ function asset_entity_info() {
   }
 
   // Support entity cache module.
-  if (module_exists('entitycache')) {
+  if (\Drupal::moduleHandler()->moduleExists('entitycache')) {
     $return['asset']['field cache'] = FALSE;
     $return['asset']['entity cache'] = TRUE;
   }
@@ -162,7 +162,7 @@ function asset_type_get_names() {
  * Access callback for the entity API.
  */
 function assets_type_entity_access_callback($op, $type = NULL, $account = NULL) {
-  return user_access('administer asset types', $account);
+  return $account->hasPermission('administer asset types');
 }
 
 /**
@@ -173,9 +173,9 @@ function assets_entity_access_callback($op, $entity = NULL, $account = NULL) {
     case 'view':
       return empty($entity)
         // View assets list.
-        ? user_access('administer assets', $account)
+        ? $account->hasPermission('administer assets')
         // View separate asset.
-        : user_access('access content', $account);
+        : $account->hasPermission('access content');
       break;
 
     case 'update':
@@ -194,7 +194,7 @@ function assets_entity_access_callback($op, $entity = NULL, $account = NULL) {
       break;
 
     default:
-      return user_access('administer assets', $account);
+      return $account->hasPermission('administer assets');
       break;
   }
 }
@@ -248,7 +248,7 @@ function asset_permission() {
  * Check what user have access to create asset with given type.
  */
 function asset_creation_access($type, $account = NULL) {
-  return user_access('administer assets', $account) || user_access("create asset with type $type", $account);
+  return $account->hasPermission('administer assets') || $account->hasPermission("create asset with type $type");
 }
 
 /**
@@ -256,42 +256,50 @@ function asset_creation_access($type, $account = NULL) {
  */
 function asset_edition_access($type, $account = NULL) {
   $type = is_object($type) && $type->type ? $type->type : $type;
-  return user_access('administer assets', $account) || user_access("edit asset with type $type", $account);
+  return $account->hasPermission('administer assets') || $account->hasPermission("edit asset with type $type");
 }
 
 /**
  * Check what user have access to delete asset with given type.
  */
 function asset_delete_access($type, $account = NULL) {
-  return user_access('administer assets') || user_access("delete asset with type $type", $account);
+  return \Drupal::currentUser()->hasPermission('administer assets') || $account->hasPermission("delete asset with type $type");
 }
 
 /**
  * Check what user have access to insert assets into WYSIWYG body.
  */
 function asset_insert_asset_access($account = NULL) {
-  return user_access('administer assets', $account)
+  return $account->hasPermission('administer assets')
   // We user has access to search widget - he should be available to insert assets somewhere.
-  || (module_exists('asset_widget') && user_access('access search widget', $account));
+  || (\Drupal::moduleHandler()->moduleExists('asset_widget') && $account->hasPermission('access search widget'));
 }
 
 /**
  * Wrapper for get_access_callback() in custom permission handler.
  */
 function asset_insert_asset_views_access($account = NULL) {
-  return asset_insert_asset_access() || user_access('access all views', $account);
+  return asset_insert_asset_access() || $account->hasPermission('access all views');
 }
 
 /**
  * Access callback for asset view page.
  */
 function asset_access_view_page($asset) {
-  return user_access('access asset view page') && entity_access('view', 'asset', $asset);
+  return \Drupal::currentUser()->hasPermission('access asset view page') && entity_access('view', 'asset', $asset);
 }
 
 /**
- * Implements hook_menu().
+ * @FIXME
+ * This implementation of hook_menu() cannot be automatically converted because
+ * it contains logic (i.e., branching statements, function calls, object
+ * instantiation, etc.) You will need to convert it manually. Sorry!
+ *
+ * For more information on how to convert hook_menu() to Drupal 8's new routing
+ * and linking systems, see https://api.drupal.org/api/drupal/core%21includes%21menu.inc/group/menu/8
  */
+
+
 function asset_menu() {
   $items = array();
 
@@ -408,7 +416,7 @@ function asset_menu() {
  */
 function asset_json_delivery($page_callback_result) {
   if (!empty($page_callback_result['tag']) && !empty($page_callback_result['content'])) {
-    print drupal_json_encode(
+    print \Drupal\Component\Serialization\Json::encode(
       array(
         'tag' => $page_callback_result['tag'],
         'content' => $page_callback_result['content'],
@@ -423,7 +431,14 @@ function asset_json_delivery($page_callback_result) {
 function asset_menu_local_tasks_alter(&$data, $router_item, $root_path) {
   // Add action link to 'admin/content/assets/add' on 'admin/content/assets' page.
   if ($root_path == 'admin/content/assets') {
-    $item = menu_get_item('admin/content/assets/add');
+    // @FIXME
+// menu_get_item() has been removed. To retrieve route information, use the
+// RouteMatch object, which you can retrieve by calling \Drupal::routeMatch().
+// 
+// 
+// @see https://www.drupal.org/node/2203305
+// $item = menu_get_item('admin/content/assets/add');
+
     if ($item['access']) {
       $data['actions']['output'][] = array(
         '#theme' => 'menu_local_action',
@@ -434,8 +449,33 @@ function asset_menu_local_tasks_alter(&$data, $router_item, $root_path) {
 }
 
 /**
- * Implements hook_menu_alter().
+ * @FIXME
+ * hook_menu_alter() is gone in Drupal 8. You will have to port its
+ * functionality manually. The are several mechanisms for this:
+ *
+ * To alter routes, you must implement a route subscriber class. An empty one
+ * has been generated for you in src/Routing/RouteSubscriber.php.
+ *
+ * To alter menu link definitions, see hook_menu_links_discovered_alter(). An
+ * empty implementation has been created at the end of this file.
+ *
+ * To alter local task definitions, see hook_menu_local_tasks_alter(). An
+ * empty implementation has been created for you at the end of this file.
+ *
+ * To alter local actions, see hook_menu_local_actions_alter(). An
+ * empty implementation has been created for you at the end of this file.
+ *
+ * Contextual links are altered during rendering only. See
+ * hook_contextual_links_view_alter(). An empty implementation has been
+ * created for you at the end of this file.
+ *
+ * @see https://www.drupal.org/node/2118147#alter
+ * @see https://api.drupal.org/api/drupal/core%21modules%21system%21system.api.php/function/hook_menu_links_discovered_alter/8
+ * @see https://api.drupal.org/api/drupal/core%21modules%21system%21system.api.php/function/hook_menu_local_tasks_alter/8
+ * @see https://api.drupal.org/api/drupal/core%21modules%21system%21system.api.php/function/hook_menu_local_actions_alter/8
+ * @see https://api.drupal.org/api/drupal/core%21modules%21contextual%21contextual.api.php/function/hook_contextual_links_view_alter/8
  */
+
 function asset_menu_alter(&$menu) {
   // Make view page link viewable both as normal item and local task on "admin/content" page.
   if (isset($menu['admin/content/assets'])) {
@@ -488,7 +528,7 @@ function asset_load($aid, $reset = FALSE) {
  * @see asset_load_by_type()
  */
 function asset_load_multiple($aids = array(), $conditions = array(), $reset = FALSE) {
-  return entity_load('asset', $aids, $conditions, $reset);
+  return \Drupal::entityManager()->getStorage('asset')->loadByProperties($conditions);
 }
 
 /**
@@ -563,7 +603,16 @@ function _assets_get_icons() {
         if (is_file($file_path)) {
           if (exif_imagetype($file_path)) {
             if (FALSE !== getimagesize($file_path)) {
-              $icons[$file_name] = theme('image', array('path' => $file_path, 'width' => 18, 'height' => 18));
+              // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $icons[$file_name] = theme('image', array('path' => $file_path, 'width' => 18, 'height' => 18));
+
             }
           }
         }
@@ -633,7 +682,7 @@ function asset_ckeditor_plugin() {
     $plugins[$plugin_name]['buttons']['asset_' . $type->type]['icon'] = 'buttons/' . $type->icon;
   }
 
-  if (module_exists('views')) {
+  if (\Drupal::moduleHandler()->moduleExists('views')) {
     $plugins[$plugin_name]['buttons']['assetSearch'] = array(
       'label' => t('Assets library'),
       'icon' => 'search.png',
@@ -650,9 +699,9 @@ function asset_ckeditor_plugin() {
  */
 function asset_preprocess_page(&$variables) {
   if (asset_is_popup()) {
-    module_invoke_all('suppress');
+    \Drupal::moduleHandler()->invokeAll('suppress');
 
-    foreach (element_children($variables['page']) as $key) {
+    foreach (\Drupal\Core\Render\Element::children($variables['page']) as $key) {
       if ($key != 'content') {
         unset($variables['page'][$key]);
       }
@@ -730,16 +779,16 @@ function asset_preprocess_html(&$variables) {
  * Implements hook_page_alter().
  */
 function asset_page_alter(&$page) {
-  global $theme_key;
+  $theme_key = \Drupal::theme()->getActiveTheme()->getName();
 
   $tooltip = asset_is_tooltip();
   $popup = asset_is_popup();
 
   if ($popup || $tooltip) {
     drupal_set_breadcrumb(array());
-    module_invoke_all('suppress');
+    \Drupal::moduleHandler()->invokeAll('suppress');
 
-    foreach (element_children($page) as $key) {
+    foreach (\Drupal\Core\Render\Element::children($page) as $key) {
       if ($key != 'content') {
         unset($page[$key]);
       }
@@ -748,13 +797,34 @@ function asset_page_alter(&$page) {
     if ($tooltip) {
       // Add specific theme and library for tooltip iframes.
       $page['#theme'] = 'asset_tooltip';
-      drupal_add_library('asset', 'asset_tooltip_inner');
+      // @FIXME
+// The Assets API has totally changed. CSS, JavaScript, and libraries are now
+// attached directly to render arrays using the #attached property.
+// 
+// 
+// @see https://www.drupal.org/node/2169605
+// @see https://www.drupal.org/node/2408597
+// drupal_add_library('asset', 'asset_tooltip_inner');
+
     }
     // Add css in seven theme for popup.
     elseif ($popup) {
-      $admin_theme = variable_get('admin_theme', 'seven');
+      // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// $admin_theme = variable_get('admin_theme', 'seven');
+
       if ($theme_key == $admin_theme && ($admin_theme == 'seven')) {
-        drupal_add_css(ASSET_MODULE_PATH . '/css/asset-popup-inner-form.css');
+        // @FIXME
+// The Assets API has totally changed. CSS, JavaScript, and libraries are now
+// attached directly to render arrays using the #attached property.
+// 
+// 
+// @see https://www.drupal.org/node/2169605
+// @see https://www.drupal.org/node/2408597
+// drupal_add_css(ASSET_MODULE_PATH . '/css/asset-popup-inner-form.css');
+
       }
     }
   }
@@ -817,7 +887,7 @@ function assets_get_placeholder($asset, array $options = array(), $original_asse
     }
   }
 
-  $tag_array[] = drupal_json_encode($options);
+  $tag_array[] = \Drupal\Component\Serialization\Json::encode($options);
   $tag_array[] = ']]';
 
   return implode('', $tag_array);
@@ -962,7 +1032,12 @@ function asset_views_api() {
  * Helper function to get front theme.
  */
 function asset_get_frontend_theme() {
-  return variable_get('theme_default', 'bartik');
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// return variable_get('theme_default', 'bartik');
+
 }
 
 /**
@@ -975,7 +1050,7 @@ function asset_form_views_exposed_form_alter(&$form, &$form_state) {
   // @see views_exposed_form().
   if (asset_is_popup()) {
     $destination = drupal_get_destination();
-    $destination = drupal_parse_url($destination['destination']);
+    $destination = \Drupal\Component\Utility\UrlHelper::parse($destination['destination']);
 
     $form_state['redirect'] = array(
       'path' => $destination['path'],
@@ -1008,7 +1083,7 @@ function asset_form_field_ui_display_overview_form_alter(&$form, &$form_state) {
       );
 
       $options = array();
-      $entity_info = entity_get_info('asset');
+      $entity_info = \Drupal::entityManager()->getDefinition('asset');
       $view_modes = $entity_info['view modes'];
 
       unset($view_modes['tooltip']);
@@ -1077,7 +1152,12 @@ function asset_ckeditor_admin_profile_form_submit($form, &$form_state) {
  * Helper function to get wysiwyg modes.
  */
 function _assets_get_wysiwyg_modes($bundle) {
-  $settings = variable_get('assets_wysiwyg_modes', array());
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// $settings = variable_get('assets_wysiwyg_modes', array());
+
   return isset($settings[$bundle]) ? $settings[$bundle] : array();
 }
 
@@ -1085,16 +1165,31 @@ function _assets_get_wysiwyg_modes($bundle) {
  * Helper function to set wysiwyg modes.
  */
 function assets_set_wysiwyg_modes($bundle, $settings) {
-  $current_settings = variable_get('assets_wysiwyg_modes', array());
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// $current_settings = variable_get('assets_wysiwyg_modes', array());
+
   $current_settings[$bundle] = $settings;
-  variable_set('assets_wysiwyg_modes', $current_settings);
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// variable_set('assets_wysiwyg_modes', $current_settings);
+
 }
 
 /**
  * Get default wysiwyg mode by bundle.
  */
 function _assets_get_default_wysiwyg_mode($bundle) {
-  $settings = variable_get('assets_default_wysiwyg_modes', array());
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// $settings = variable_get('assets_default_wysiwyg_modes', array());
+
   return isset($settings[$bundle]) ? $settings[$bundle] : array();
 }
 
@@ -1102,9 +1197,19 @@ function _assets_get_default_wysiwyg_mode($bundle) {
  * Set default wysiwyg mode by bundle.
  */
 function assets_set_default_wysiwyg_mode($bundle, $settings) {
-  $current_settings = variable_get('assets_default_wysiwyg_modes', array());
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// $current_settings = variable_get('assets_default_wysiwyg_modes', array());
+
   $current_settings[$bundle] = $settings;
-  variable_set('assets_default_wysiwyg_modes', $current_settings);
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// variable_set('assets_default_wysiwyg_modes', $current_settings);
+
 }
 
 /**
@@ -1126,7 +1231,7 @@ function _assets_form_page_title($type) {
  * Helper to get asset form action title.
  */
 function _assets_form_action_title($op, $entity_type) {
-  if ($info = entity_get_info($entity_type)) {
+  if ($info = \Drupal::entityManager()->getDefinition($entity_type)) {
     switch ($op) {
       case 'add':
         return t('Add @label', array('@label' => $info['label']));
@@ -1158,7 +1263,7 @@ function assets_pre_render_text_format($element) {
   if (isset($element['#format']) && ($init === FALSE)) {
     $init = TRUE;
     $asset_types = assets_get_types();
-    $entity_info = entity_get_info('asset');
+    $entity_info = \Drupal::entityManager()->getDefinition('asset');
     $view_modes = $entity_info['view modes'];
     $config = array();
 
@@ -1189,7 +1294,15 @@ function assets_pre_render_text_format($element) {
       $config['removeButtons'][] = 'assetSearch';
     }
 
-    drupal_add_js(array('ckeditor' => array('plugins' => array('asset' => $config))), 'setting');
+    // @FIXME
+// The Assets API has totally changed. CSS, JavaScript, and libraries are now
+// attached directly to render arrays using the #attached property.
+// 
+// 
+// @see https://www.drupal.org/node/2169605
+// @see https://www.drupal.org/node/2408597
+// drupal_add_js(array('ckeditor' => array('plugins' => array('asset' => $config))), 'setting');
+
   }
 
   return $element;
@@ -1202,3 +1315,18 @@ function asset_asset_presave($asset) {
   $asset->changed = REQUEST_TIME;
   return $asset;
 }
+
+/**
+ * Implements hook_menu_links_discovered_alter().
+ */
+function asset_menu_links_discovered_alter(array &$links) {}
+
+/**
+ * Implements hook_menu_local_actions_alter().
+ */
+function asset_menu_local_actions_alter(array &$local_actions) {}
+
+/**
+ * Implements hook_contextual_links_view_alter().
+ */
+function asset_contextual_links_view_alter(array &$element, array $items) {}

@@ -11,11 +11,11 @@
   </strong>
 
   <div class="content"<?php print $content_attributes; ?>><?php
-    $img_keys = element_children($content['field_asset_gallery_images']);
+    $img_keys = \Drupal\Core\Render\Element::children($content['field_asset_gallery_images']);
     $class = '';
     foreach ($img_keys as $key) {
       if (!empty($content['field_asset_gallery_images'][$key])) {
-        $a_tag_part = drupal_render($content['field_asset_gallery_images'][$key]);
+        $a_tag_part = \Drupal::service("renderer")->render($content['field_asset_gallery_images'][$key]);
         if (!empty($a_tag_part)) {
           $out = '<a' . $class . ' rel="lightbox[' . $title . ']' . $a_tag_part;
           $class = ' class="lightbox_hide_image"';

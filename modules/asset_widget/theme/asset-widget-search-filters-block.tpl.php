@@ -23,7 +23,7 @@
           <?php if ($i == 1) $classes[] = 'first'; ?>
           <?php if ($i == $count) $classes[] = 'last'; ?>
           <li<?php if (!empty($classes)) print ' class="' . implode(' ', $classes) . '"'; ?>>
-            <a href="javascript: void(0)"><?php print check_plain($label); ?></a>
+            <a href="javascript: void(0)"><?php print \Drupal\Component\Utility\SafeMarkup::checkPlain($label); ?></a>
           </li>
           <?php $i++; ?>
           <?php endforeach; ?>
@@ -38,10 +38,10 @@
             </div>
             <?php foreach ($search_params as $field => $value): ?>
             <div class="title inner-el">
-              <?php print t(drupal_ucfirst($field)) . ' : '; ?>
+              <?php print t(\Drupal\Component\Utility\Unicode::ucfirst($field)) . ' : '; ?>
             </div>
             <div class="descrip inner-el">
-              <?php print check_plain($value); ?>
+              <?php print \Drupal\Component\Utility\SafeMarkup::checkPlain($value); ?>
             </div>
             <?php endforeach; ?>
           </div>

@@ -30,7 +30,7 @@ class Asset extends Entity {
 
     parent::__construct($values, 'asset');
     if (!isset($this->uid)) {
-      $this->uid = $GLOBALS['user']->uid;
+      $this->uid = \Drupal::currentUser()->uid;
     }
     if (!isset($this->created)) {
       $this->created = REQUEST_TIME;

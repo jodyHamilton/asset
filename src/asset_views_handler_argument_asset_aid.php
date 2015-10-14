@@ -1,8 +1,5 @@
 <?php
-/**
- * @file
- * Provide node aid argument handler.
- */
+namespace Drupal\asset;
 
 /**
  * Argument handler to accept an asset id.

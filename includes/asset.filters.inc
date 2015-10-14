@@ -114,7 +114,7 @@ function _assets_set_field_value(&$asset, $field_name, $values) {
     $langcode = field_language('asset', $asset, $field_name);
 
     if (!$langcode) {
-      $langcode = LANGUAGE_NONE;
+      $langcode = \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED;
     }
 
     $field_type = $overridden_fields[$field_name]['type'];
@@ -135,7 +135,7 @@ function _assets_set_field_value(&$asset, $field_name, $values) {
             $safe_value = check_markup($value, $asset->{$field_name}[$langcode][$delta]['format']);
           }
           else {
-            $safe_value = check_plain($value);
+            $safe_value = \Drupal\Component\Utility\SafeMarkup::checkPlain($value);
           }
           $asset->{$field_name}[$langcode][$delta]['value'] = $value;
           $asset->{$field_name}[$langcode][$delta]['safe'] = $safe_value;

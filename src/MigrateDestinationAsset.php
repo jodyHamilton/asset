@@ -1,18 +1,5 @@
 <?php
-/**
- * @file
- * Asset Migrate integration.
- */
-
-/*
- * Implements hook_migrate_api().
- *
- * We have to implement hook_migrate_api(), setting the API level to 2, for
- * our migration classes to be recognized by the Migrate module.
- */
-function asset_migrate_api() {
-  return array('api' => 2);
-}
+namespace Drupal\asset;
 
 /**
  * Destination class implementing migration into assets.

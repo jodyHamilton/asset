@@ -162,11 +162,13 @@ function asset_schema() {
  */
 function asset_install() {
   // Increase the module weight.
-  db_update('system')
-    ->fields(array('weight' => 1))
-    ->condition('type', 'module')
-    ->condition('name', 'asset')
-    ->execute();
+  // @FIXME
+// db_update('system')
+//     ->fields(array('weight' => 1))
+//     ->condition('type', 'module')
+//     ->condition('name', 'asset')
+//     ->execute();
+
 }
 
 /**

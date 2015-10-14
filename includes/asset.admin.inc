@@ -173,7 +173,7 @@ function asset_base_form_submit($form, &$form_state) {
   $form_state['asset'] = $asset;
   // @TODO: Normally we need to ensure that redirect page accessible to avoid 403 redirects within frame forms i.e.
   // Better to redirect to same page with Get param and not to HP or etc. See assetWidget.getTabAsyncContent() in asset-widget.js
-  $form_state['redirect'] = user_access('administer assets') ? 'admin/content/assets' : '';
+  $form_state['redirect'] = \Drupal::currentUser()->hasPermission('administer assets') ? 'admin/content/assets' : '';
 }
 
 /**
@@ -201,7 +201,14 @@ function asset_base_form_submit_delete(&$form, &$form_state) {
  * Page callback for asset add page.
  */
 function assets_add_page() {
-  $item = menu_get_item();
+  // @FIXME
+// menu_get_item() has been removed. To retrieve route information, use the
+// RouteMatch object, which you can retrieve by calling \Drupal::routeMatch().
+// 
+// 
+// @see https://www.drupal.org/node/2203305
+// $item = menu_get_item();
+
   $content = system_admin_menu_block($item);
 
   if (isset($_GET['destination'])) {
@@ -218,7 +225,16 @@ function assets_add_page() {
     drupal_goto($item['href']);
   }
 
-  return theme('node_add_list', array('content' => $content));
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// return theme('node_add_list', array('content' => $content));
+
 }
 
 /**
@@ -230,8 +246,15 @@ function assets_add($type) {
   $form = entity_ui_get_form('asset', $asset, 'add');
 
   // Due to dummy  usage of entity->label instead of entity_label() in entity API.
-  $label = drupal_strtolower(entity_label('asset', $asset));
-  drupal_set_title(t("Add $label"), PASS_THROUGH);
+  $label = \Drupal\Component\Utility\Unicode::strtolower($asset->label());
+  // @FIXME
+// drupal_set_title() has been removed. There are now a few ways to set the title
+// dynamically, depending on the situation.
+// 
+// 
+// @see https://www.drupal.org/node/2067859
+// drupal_set_title(t("Add $label"), PASS_THROUGH);
+
 
   return $form;
 }
@@ -402,14 +425,14 @@ function assets_override_form($form, &$form_state) {
  * Helper function.
  */
 function _assets_clean_fields(&$form, $options = array()) {
-  $containers = element_children($form);
+  $containers = \Drupal\Core\Render\Element::children($form);
   $supported_types = _assets_get_supported_field_types();
 
   foreach ($containers as $key) {
     if (isset($form[$key]) && $form[$key]) {
       $elements = $form[$key][$form[$key]['#language']];
       $multiple = isset($elements['#cardinality']) && ($elements['#cardinality'] > 1 || $elements['#cardinality']) == FIELD_CARDINALITY_UNLIMITED;
-      $children = element_children($elements);
+      $children = \Drupal\Core\Render\Element::children($elements);
 
       if (!empty($children)) {
         foreach ($children as $delta) {
@@ -613,7 +636,12 @@ function _asset_get_tag($tag_id, $view_mode = NULL, $align = NULL) {
 
   if ($asset) {
     if (empty($view_mode) || ($view_mode == 'default')) {
-      $view_modes = variable_get('assets_default_wysiwyg_modes', array());
+      // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// $view_modes = variable_get('assets_default_wysiwyg_modes', array());
+
 
       if (!empty($view_modes[$asset->type])) {
         $view_mode = $view_modes[$asset->type];

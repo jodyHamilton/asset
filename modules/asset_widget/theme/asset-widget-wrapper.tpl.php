@@ -32,7 +32,16 @@
       </div>
       <?php if (!empty($tab_links)): ?>
         <div class="tab-links">
-          <?php print theme('links', array('links' => $tab_links)); ?>
+          <?php // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// print theme('links', array('links' => $tab_links));
+ ?>
           <div class="mask"></div>
         </div>
       <?php endif; ?>
