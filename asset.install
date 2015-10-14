@@ -59,6 +59,8 @@ function asset_schema() {
     'indexes' => array(
       'asset_type' => array(array('type', 4)),
       'asset_title_type' => array('title', array('type', 4)),
+      'asset_changed' => array('changed'),
+      'asset_created' => array('created'),
     ),
     'foreign keys' => array(
       'uid' => array('users' => 'uid'),
@@ -186,4 +188,13 @@ function asset_update_7100() {
     }
   }
   return FALSE;
+}
+
+/**
+ * Add indexes for table `asset`.
+ */
+function asset_update_7101() {
+
+  db_add_index('asset', 'asset_changed', array('changed'));
+  db_add_index('asset', 'asset_created', array('created'));
 }
